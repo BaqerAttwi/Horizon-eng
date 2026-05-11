@@ -1,0 +1,167 @@
+const db = require('../db/connection');
+
+/**
+ * GET /api/reservations
+ * Returns ALL active reservations across all projects and orders.
+ * Groups by product — shows every project/order demanding each product.
+ * This is the "Stock Demand Tracker" page.
+ */
+async function getAllReservations(req, res, next) {
+  try {
+    console.log('[Reservations] Loading full demand overview...');
+
+    // All project items from active/draft projects with stock info
+    const [projectDemands] = await db.execute(`
+      SELECT
+        pi.product_id,
+        pr.reference,
+        pr.description,
+        b.name         AS brand_name,
+        pr.stock_qty,
+        pr.reserved_qty,
+        (pr.stock_qty - pr.reserved_qty) AS available_qty,
+        pi.qty         AS demanded_qty,
+        pi.project_id,
+        p.project_name,
+        p.status       AS project_status,
+        p.client_approval,
+        p.admin_approval,
+        p.deadline,
+        w.name         AS engineer_name,
+        c.name         AS client_name,
+        'project'      AS source_type
+      FROM project_items pi
+      JOIN products  pr ON pi.product_id  = pr.id
+      JOIN projects  p  ON pi.project_id  = p.id
+      LEFT JOIN brands b  ON pr.brand_id  = b.id
+      LEFT JOIN workers w ON p.engineer_id = w.id
+      LEFT JOIN clients c ON p.client_id  = c.id
+      WHERE p.status NOT IN ('completed','cancelled')
+      ORDER BY pr.reference, p.id
+    `);
+
+    console.log('[Reservations] Project demands:', projectDemands.length, 'rows');
+
+    // Group by product_id to detect conflicts
+    const productMap = {};
+    for (const row of projectDemands) {
+      const pid = row.product_id;
+      if (!productMap[pid]) {
+        productMap[pid] = {
+          product_id:    pid,
+          reference:     row.reference,
+          description:   row.description,
+          brand_name:    row.brand_name,
+          stock_qty:     row.stock_qty,
+          reserved_qty:  row.reserved_qty,
+          available_qty: row.available_qty,
+          total_demanded: 0,
+          demands: [],
+        };
+      }
+      productMap[pid].total_demanded += row.demanded_qty;
+      productMap[pid].demands.push({
+        source_type:      row.source_type,
+        project_id:       row.project_id,
+        project_name:     row.project_name,
+        project_status:   row.project_status,
+        client_approval:  row.client_approval,
+        admin_approval:   row.admin_approval,
+        deadline:         row.deadline,
+        engineer_name:    row.engineer_name,
+        client_name:      row.client_name,
+        qty:              row.demanded_qty,
+      });
+    }
+
+    // Convert map to array and flag conflicts
+    const result = Object.values(productMap).map(item => ({
+      ...item,
+      // conflict = more than one project demands this product
+      has_conflict: item.demands.length > 1,
+      // shortage = total demanded > stock available
+      has_shortage: item.total_demanded > item.stock_qty,
+    }));
+
+    // Sort: conflicts first, then shortages, then normal
+    result.sort((a, b) => {
+      if (a.has_shortage && !b.has_shortage) return -1;
+      if (!a.has_shortage && b.has_shortage) return 1;
+      if (a.has_conflict && !b.has_conflict) return -1;
+      if (!a.has_conflict && b.has_conflict) return 1;
+      return a.reference.localeCompare(b.reference);
+    });
+
+    const conflicts = result.filter(r => r.has_conflict).length;
+    const shortages = result.filter(r => r.has_shortage).length;
+    console.log(`[Reservations] ✅ ${result.length} products | ${conflicts} conflicts | ${shortages} shortages`);
+
+    res.json({
+      items: result,
+      summary: {
+        total_products: result.length,
+        conflicts,
+        shortages,
+        ok: result.length - Math.max(conflicts, shortages),
+      },
+    });
+  } catch (err) {
+    console.error('[Reservations] ❌', err.message);
+    next(err);
+  }
+}
+
+/**
+ * GET /api/reservations/product/:productId
+ * All projects + orders demanding a specific product
+ */
+async function getProductDemand(req, res, next) {
+  try {
+    const { productId } = req.params;
+    console.log('[Reservations] Product demand for id:', productId);
+
+    const [product] = await db.execute(
+      `SELECT p.*, b.name as brand_name, (p.stock_qty - p.reserved_qty) as available_qty
+       FROM products p LEFT JOIN brands b ON p.brand_id=b.id WHERE p.id=?`,
+      [productId]
+    );
+    if (!product.length) return res.status(404).json({ error: 'Product not found' });
+
+    const [demands] = await db.execute(`
+      SELECT
+        pi.qty,
+        p.id           AS project_id,
+        p.project_name,
+        p.status,
+        p.client_approval,
+        p.admin_approval,
+        p.deadline,
+        w.name         AS engineer_name,
+        c.name         AS client_name
+      FROM project_items pi
+      JOIN projects p ON pi.project_id = p.id
+      LEFT JOIN workers w ON p.engineer_id = w.id
+      LEFT JOIN clients c ON p.client_id   = c.id
+      WHERE pi.product_id = ? AND p.status NOT IN ('completed','cancelled')
+      ORDER BY p.deadline ASC
+    `, [productId]);
+
+    const totalDemanded = demands.reduce((s, d) => s + d.qty, 0);
+    const stock = product[0].stock_qty;
+
+    console.log(`[Reservations] Product ${productId}: ${demands.length} demands, total:${totalDemanded}, stock:${stock}`);
+
+    res.json({
+      product:       product[0],
+      demands,
+      total_demanded: totalDemanded,
+      has_shortage:   totalDemanded > stock,
+      shortage_qty:   Math.max(0, totalDemanded - stock),
+    });
+  } catch (err) {
+    console.error('[Reservations] ❌ productDemand:', err.message);
+    next(err);
+  }
+}
+
+module.exports = { getAllReservations, getProductDemand };
