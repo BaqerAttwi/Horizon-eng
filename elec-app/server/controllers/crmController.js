@@ -10,11 +10,12 @@ function calcItemPricing(item) {
   const markupM_pct = parseFloat(item.markupM_pct) || 0;
   const qty = parseInt(item.qty) || 1;
 
-  const markupP_amt = base * (markupP_pct / 100);
-  const subtotal = base + markupP_amt;
+  const baseTotal = base * qty;
+  const markupP_amt = baseTotal * (markupP_pct / 100);
+  const subtotal = baseTotal + markupP_amt;
   const discount_amt = subtotal * (discount_pct / 100);
   const totalpriceT = subtotal - discount_amt;
-  const manpower_amt = base * (manpower_pct / 100);
+  const manpower_amt = baseTotal * (manpower_pct / 100);
   const markupM_amt = totalpriceT * (markupM_pct / 100);
   const totalfinalProduct = totalpriceT + manpower_amt + markupM_amt;
 
@@ -24,7 +25,7 @@ function calcItemPricing(item) {
     totalpriceT,
     manpower_amt,
     markupM_amt,
-    totalfinalProduct: totalfinalProduct * qty,
+    totalfinalProduct,
   };
 }
 

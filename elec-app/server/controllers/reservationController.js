@@ -13,15 +13,15 @@ async function getAllReservations(req, res, next) {
     // All project items from active/draft projects with stock info
     const [projectDemands] = await db.execute(`
       SELECT
-        pi.product_id,
+        pci.product_id,
         pr.reference,
         pr.description,
         b.name         AS brand_name,
         pr.stock_qty,
         pr.reserved_qty,
         (pr.stock_qty - pr.reserved_qty) AS available_qty,
-        pi.qty         AS demanded_qty,
-        pi.project_id,
+        pci.qty        AS demanded_qty,
+        p.id           AS project_id,
         p.project_name,
         p.status       AS project_status,
         p.client_approval,
@@ -30,13 +30,16 @@ async function getAllReservations(req, res, next) {
         w.name         AS engineer_name,
         c.name         AS client_name,
         'project'      AS source_type
-      FROM project_items pi
-      JOIN products  pr ON pi.product_id  = pr.id
-      JOIN projects  p  ON pi.project_id  = p.id
-      LEFT JOIN brands b  ON pr.brand_id  = b.id
+      FROM panel_crm_items pci
+      JOIN panel_divisions pd ON pci.division_id = pd.id
+      JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+      JOIN projects p ON pcp.project_id = p.id
+      LEFT JOIN products pr ON pci.product_id = pr.id
+      LEFT JOIN brands b ON pr.brand_id = b.id
       LEFT JOIN workers w ON p.engineer_id = w.id
-      LEFT JOIN clients c ON p.client_id  = c.id
+      LEFT JOIN clients c ON p.client_id = c.id
       WHERE p.status NOT IN ('completed','cancelled')
+        AND pci.product_id IS NOT NULL
       ORDER BY pr.reference, p.id
     `);
 
@@ -94,6 +97,7 @@ async function getAllReservations(req, res, next) {
 
     const conflicts = result.filter(r => r.has_conflict).length;
     const shortages = result.filter(r => r.has_shortage).length;
+    const ok = result.filter(r => !r.has_shortage && !r.has_conflict).length;
     console.log(`[Reservations] ✅ ${result.length} products | ${conflicts} conflicts | ${shortages} shortages`);
 
     res.json({
@@ -102,7 +106,7 @@ async function getAllReservations(req, res, next) {
         total_products: result.length,
         conflicts,
         shortages,
-        ok: result.length - Math.max(conflicts, shortages),
+        ok,
       },
     });
   } catch (err) {
@@ -129,7 +133,7 @@ async function getProductDemand(req, res, next) {
 
     const [demands] = await db.execute(`
       SELECT
-        pi.qty,
+        pci.qty,
         p.id           AS project_id,
         p.project_name,
         p.status,
@@ -138,11 +142,13 @@ async function getProductDemand(req, res, next) {
         p.deadline,
         w.name         AS engineer_name,
         c.name         AS client_name
-      FROM project_items pi
-      JOIN projects p ON pi.project_id = p.id
+      FROM panel_crm_items pci
+      JOIN panel_divisions pd ON pci.division_id = pd.id
+      JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+      JOIN projects p ON pcp.project_id = p.id
       LEFT JOIN workers w ON p.engineer_id = w.id
       LEFT JOIN clients c ON p.client_id   = c.id
-      WHERE pi.product_id = ? AND p.status NOT IN ('completed','cancelled')
+      WHERE pci.product_id = ? AND p.status NOT IN ('completed','cancelled')
       ORDER BY p.deadline ASC
     `, [productId]);
 

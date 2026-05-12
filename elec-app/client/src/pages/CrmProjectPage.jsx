@@ -179,11 +179,13 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
 
   const base = parseFloat(item.base_price_usd || 0);
   const baseEur = parseFloat(item.base_price_euro || 0);
-  const mkP = base * (parseFloat(item.markupP_pct) / 100);
-  const afterMkP = base + mkP;
+  const qty = parseInt(item.qty) || 1;
+  const baseTotal = base * qty;
+  const mkP = baseTotal * (parseFloat(item.markupP_pct) / 100);
+  const afterMkP = baseTotal + mkP;
   const disc = afterMkP * (parseFloat(item.discount_pct) / 100);
   const totalT = afterMkP - disc;
-  const man = base * (parseFloat(item.manpower_pct) / 100);
+  const man = baseTotal * (parseFloat(item.manpower_pct) / 100);
   const mkM = totalT * (parseFloat(item.markupM_pct) / 100);
   const final = totalT + man + mkM;
   const finalEur = baseEur * (final / (base || 1));
@@ -191,13 +193,20 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
   if (editing) {
     return (
       <tr style={{ background: 'var(--panel2)' }}>
-        <td colSpan={4}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>{name}</div>
+        <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}>{name}</td>
+        <td>
+          <input type="number" min={1} className="form-input" style={{ width: 60 }} value={form.qty || 1}
+            onChange={e => setForm(f => ({ ...f, qty: parseInt(e.target.value) || 1 }))} />
         </td>
         <td>
           <input type="number" step="0.01" className="form-input" style={{ width: 75 }} value={form.base_price_usd || ''}
             onChange={e => setForm(f => ({ ...f, base_price_usd: parseFloat(e.target.value) || 0 }))} />
         </td>
+        <td className="mono" style={{ color: 'var(--muted)', fontWeight: 600 }}>
+          ${((parseFloat(form.base_price_usd) || 0) * (parseInt(form.qty) || 1)).toFixed(2)}
+        </td>
+        <td style={{ fontSize: 11, color: 'var(--muted)' }}>{desc}</td>
+        <td style={{ fontSize: 11 }}>{brand || '—'}</td>
         <td>
           <input type="number" step="0.1" className="form-input" style={{ width: 55 }} value={form.markupP_pct}
             onChange={e => setForm(f => ({ ...f, markupP_pct: parseFloat(e.target.value) || 0 }))} />
@@ -229,10 +238,11 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
   return (
     <tr>
       <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}>{name}</td>
-      <td style={{ fontSize: 11, color: 'var(--muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</td>
-      <td style={{ fontSize: 11 }}>{brand || '—'}</td>
       <td className="mono">{item.qty}</td>
       <td className="mono" style={{ color: 'var(--text)' }}>${base.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{baseEur.toFixed(2)}</div></td>
+      <td className="mono" style={{ color: 'var(--text)', fontWeight: 700 }}>${baseTotal.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{(baseEur * qty).toFixed(2)}</div></td>
+      <td style={{ fontSize: 11, color: 'var(--muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</td>
+      <td style={{ fontSize: 11 }}>{brand || '—'}</td>
       <td className="mono" style={{ color: 'var(--accent2)' }}>{item.markupP_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>+${mkP.toFixed(2)}</div></td>
       <td className="mono" style={{ color: '#60a5fa', fontWeight: 600 }}>${afterMkP.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>after markupP</div></td>
       <td className="mono" style={{ color: item.discount_pct > 0 ? 'var(--danger)' : 'var(--muted)' }}>{item.discount_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>-${disc.toFixed(2)}</div></td>
@@ -253,6 +263,9 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
 function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete }) {
   const [showAdd, setShowAdd] = useState(false);
   const [manualModal, setManualModal] = useState(null);
+  const [pendingQty, setPendingQty] = useState(null);
+  const [pendingProduct, setPendingProduct] = useState(null);
+  const [pendingManual, setPendingManual] = useState(null);
 
   const handleProductSelect = async (product) => {
     if (product.source === 'new-manual') {
@@ -260,6 +273,13 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
       setManualModal({ searchQuery: product.searchQuery, divisionId: division.id });
       return;
     }
+    setPendingProduct(product);
+    setPendingQty(1);
+  };
+
+  const confirmAdd = async () => {
+    const product = pendingProduct;
+    if (!product) return;
     const basePriceUsd = product.source === 'manual'
       ? (parseFloat(product.price_usd) || 0)
       : (parseFloat(product.price_usd) || 0);
@@ -278,33 +298,19 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
       custom_price_euro: product.source === 'manual' ? product.price_euro : null,
       base_price_usd: basePriceUsd,
       base_price_euro: basePriceEur,
-      qty: 1,
+      qty: pendingQty || 1,
       markupP_pct: division.markupP,
       markupM_pct: division.markupM,
       manpower_pct: division.manpower_pct,
     });
     setShowAdd(false);
+    setPendingProduct(null);
+    setPendingQty(null);
   };
 
-  const handleManualSaved = (mp) => {
-    const eur = parseFloat(mp.price_euro) || 0;
-    const usd = parseFloat(mp.price_usd) || 0;
-    onItemAdd(division.id, {
-      manual_product_id: mp.id,
-      is_manual: true,
-      custom_name: mp.name,
-      custom_desc: mp.description,
-      custom_brand: mp.brand,
-      custom_price_usd: mp.price_usd,
-      custom_price_euro: mp.price_euro,
-      base_price_usd: usd,
-      base_price_euro: eur,
-      qty: 1,
-      markupP_pct: division.markupP,
-      markupM_pct: division.markupM,
-      manpower_pct: division.manpower_pct,
-    });
-    setManualModal(null);
+  const cancelAdd = () => {
+    setPendingProduct(null);
+    setPendingQty(null);
   };
 
   const divColor = DIVISION_COLORS[division.division_type] || 'var(--muted)';
@@ -329,7 +335,7 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
           <table style={{ fontSize: 12 }}>
             <thead>
               <tr>
-                <th>Name</th><th>Description</th><th>Brand</th><th>Qty</th><th>Price $ / €</th>
+                <th>Name</th><th>Qty</th><th>Price for 1 $ / €</th><th>Price $ / €</th><th>Description</th><th>Brand</th>
                 <th>mkP%</th><th>After MkP $</th><th>Disc%</th><th>T.PriceT $</th>
                 <th>Man%</th><th>mkM%</th><th>Final $ / €</th><th></th>
               </tr>
@@ -344,13 +350,43 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
         </div>
       )}
 
-      {showAdd && (
+      {pendingProduct && (
+        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'rgba(59,130,246,0.05)' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--white)', marginBottom: 6 }}>
+            Add: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>{pendingProduct.reference || pendingProduct.name}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ fontSize: 11, color: 'var(--muted)' }}>Quantity:</label>
+            <input type="number" min={1} className="form-input" style={{ width: 70 }}
+              value={pendingQty} onChange={e => setPendingQty(Math.max(1, parseInt(e.target.value) || 1))} />
+            <button className="btn btn-sm btn-primary" onClick={confirmAdd}>Add</button>
+            <button className="btn btn-sm btn-secondary" onClick={cancelAdd}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {pendingManual && (
+        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'rgba(245,158,11,0.05)' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--white)', marginBottom: 6 }}>
+            Add manual product: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent2)' }}>{pendingManual.name}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ fontSize: 11, color: 'var(--muted)' }}>Quantity:</label>
+            <input type="number" min={1} className="form-input" style={{ width: 70 }}
+              value={pendingQty} onChange={e => setPendingQty(Math.max(1, parseInt(e.target.value) || 1))} />
+            <button className="btn btn-sm btn-primary" onClick={confirmManualAdd}>Add</button>
+            <button className="btn btn-sm btn-secondary" onClick={() => { setPendingManual(null); setPendingQty(null); }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {showAdd && !pendingProduct && (
         <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)' }}>
           <ProductSearch onSelect={handleProductSelect} projectId={project.id} exchangeRate={project.exchange_rate_eur_usd} />
         </div>
       )}
 
-      {!showAdd && (
+      {!showAdd && !pendingProduct && !pendingManual && (
         <div style={{ padding: '6px 12px', borderTop: '1px solid var(--border)' }}>
           <button className="btn btn-sm btn-secondary" onClick={() => setShowAdd(true)}>+ Add Product</button>
         </div>
