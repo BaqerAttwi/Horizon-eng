@@ -313,6 +313,34 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
     setPendingQty(null);
   };
 
+  const handleManualSaved = (manualProduct) => {
+    setPendingManual(manualProduct);
+    setPendingQty(1);
+  };
+
+  const confirmManualAdd = async () => {
+    const product = pendingManual;
+    if (!product) return;
+    await onItemAdd(division.id, {
+      product_id: null,
+      manual_product_id: product.id,
+      is_manual: true,
+      custom_name: product.name,
+      custom_desc: product.description || '',
+      custom_brand: product.brand || '',
+      custom_price_usd: product.price_usd || 0,
+      custom_price_euro: product.price_euro || 0,
+      base_price_usd: parseFloat(product.price_usd) || 0,
+      base_price_euro: parseFloat(product.price_euro) || 0,
+      qty: pendingQty || 1,
+      markupP_pct: division.markupP,
+      markupM_pct: division.markupM,
+      manpower_pct: division.manpower_pct,
+    });
+    setPendingManual(null);
+    setPendingQty(null);
+  };
+
   const divColor = DIVISION_COLORS[division.division_type] || 'var(--muted)';
 
   return (

@@ -38,7 +38,7 @@ export async function exportProjectPdf(projectId) {
   doc.setFontSize(18);
   doc.setTextColor(26, 95, 168);
   doc.text('HORIZON Engineering & Contracting', pw / 2, y + 8, { align: 'center' });
-  y += 16;
+  y += 26;
 
   // ── Project header ──
   doc.setDrawColor(26, 95, 168);

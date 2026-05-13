@@ -11,6 +11,7 @@ import WorkersPage     from './pages/WorkersPage';
 import ClientsPage     from './pages/ClientsPage';
 import ReservationsPage from './pages/ReservationsPage';
 import DiscountsPage   from './pages/DiscountsPage';
+import Logo            from './components/Logo';
 
 // Role badge colors
 const ROLE_COLORS = { owner:'#a78bfa', accounting:'#60a5fa', engineer:'#4ade80', secretary:'#fbbf24' };
@@ -57,7 +58,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
   return (
     <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
       <div className="sidebar-logo">
-        <h1>⚡ ElecPro</h1>
+        <h1><Logo size={32} /></h1>
         <span>Manager v2.0</span>
       </div>
 
@@ -112,7 +113,7 @@ function AppLayout() {
         {worker && (
           <div className="mobile-header">
             <button className="btn-icon" onClick={() => setMobileOpen(true)}>☰</button>
-            <span style={{ fontWeight: 800, color: 'var(--accent)' }}>⚡ ElecPro</span>
+            <span style={{ fontWeight: 800, color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Logo size={24} /></span>
           </div>
         )}
 

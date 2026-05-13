@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 
 const ROLE_COLORS = {
   owner:      '#a78bfa',
@@ -44,8 +45,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>⚡</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--white)', margin: 0 }}>ElecPro</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--white)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Logo size={40} /></h1>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4, fontFamily: 'var(--font-mono)' }}>
             Manager — Sign in to continue
           </p>
