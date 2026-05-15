@@ -176,6 +176,7 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
   const name = item.is_manual ? (item.custom_name || 'Manual Product') : item.reference;
   const desc = item.is_manual ? (item.custom_desc || '') : (item.product_desc || '');
   const brand = item.is_manual ? (item.custom_brand || '') : (item.brand_name || '');
+  const notes = item.notes || '';
 
   const base = parseFloat(item.base_price_usd || 0);
   const baseEur = parseFloat(item.base_price_euro || 0);
@@ -186,47 +187,56 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
   const disc = afterMkP * (parseFloat(item.discount_pct) / 100);
   const totalT = afterMkP - disc;
   const man = baseTotal * (parseFloat(item.manpower_pct) / 100);
-  const mkM = totalT * (parseFloat(item.markupM_pct) / 100);
+  const mkM = man * (parseFloat(item.markupM_pct) / 100);
   const final = totalT + man + mkM;
   const finalEur = baseEur * (final / (base || 1));
+  const cost = parseFloat(item.cost || 0);
+  const profit = final - cost;
 
   if (editing) {
     return (
       <tr style={{ background: 'var(--panel2)' }}>
-        <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}>{name}</td>
-        <td>
-          <input type="number" min={1} className="form-input" style={{ width: 60 }} value={form.qty || 1}
+        <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', verticalAlign: 'middle' }}>{name}</td>
+        <td style={{ verticalAlign: 'middle' }}>
+          <input type="number" min={1} className="form-input" style={{ width: 55, padding: '2px 4px', fontSize: 11 }} value={form.qty || 1}
             onChange={e => setForm(f => ({ ...f, qty: parseInt(e.target.value) || 1 }))} />
         </td>
-        <td>
-          <input type="number" step="0.01" className="form-input" style={{ width: 75 }} value={form.base_price_usd || ''}
+        <td style={{ verticalAlign: 'middle' }}>
+          <input type="number" step="0.01" className="form-input" style={{ width: 65, padding: '2px 4px', fontSize: 11 }} value={form.base_price_usd || ''}
             onChange={e => setForm(f => ({ ...f, base_price_usd: parseFloat(e.target.value) || 0 }))} />
         </td>
-        <td className="mono" style={{ color: 'var(--muted)', fontWeight: 600 }}>
+        <td className="mono" style={{ verticalAlign: 'middle', color: 'var(--muted)', fontWeight: 600 }}>
           ${((parseFloat(form.base_price_usd) || 0) * (parseInt(form.qty) || 1)).toFixed(2)}
         </td>
-        <td style={{ fontSize: 11, color: 'var(--muted)' }}>{desc}</td>
-        <td style={{ fontSize: 11 }}>{brand || '—'}</td>
-        <td>
-          <input type="number" step="0.1" className="form-input" style={{ width: 55 }} value={form.markupP_pct}
+        <td style={{ fontSize: 11, color: 'var(--muted)', verticalAlign: 'middle' }}>{desc}</td>
+        <td style={{ fontSize: 11, verticalAlign: 'middle' }}>{brand || '—'}</td>
+        <td style={{ verticalAlign: 'middle' }}>
+          <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.markupP_pct}
             onChange={e => setForm(f => ({ ...f, markupP_pct: parseFloat(e.target.value) || 0 }))} />
         </td>
-        <td className="mono" style={{ fontSize: 11, color: '#60a5fa' }}>${afterMkP.toFixed(2)}</td>
-        <td>
-          <input type="number" step="0.1" className="form-input" style={{ width: 55 }} value={form.discount_pct}
+        <td className="mono" style={{ fontSize: 11, color: '#60a5fa', verticalAlign: 'middle' }}>${afterMkP.toFixed(2)}</td>
+        <td style={{ verticalAlign: 'middle' }}>
+          <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.discount_pct}
             onChange={e => setForm(f => ({ ...f, discount_pct: parseFloat(e.target.value) || 0 }))} />
         </td>
-        <td className="mono" style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700 }}>${totalT.toFixed(2)}</td>
-        <td>
-          <input type="number" step="0.1" className="form-input" style={{ width: 55 }} value={form.manpower_pct}
+        <td className="mono" style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, verticalAlign: 'middle' }}>${totalT.toFixed(2)}</td>
+        <td style={{ verticalAlign: 'middle' }}>
+          <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.manpower_pct}
             onChange={e => setForm(f => ({ ...f, manpower_pct: parseFloat(e.target.value) || 0 }))} />
         </td>
-        <td>
-          <input type="number" step="0.1" className="form-input" style={{ width: 55 }} value={form.markupM_pct}
+        <td style={{ verticalAlign: 'middle' }}>
+          <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.markupM_pct}
             onChange={e => setForm(f => ({ ...f, markupM_pct: parseFloat(e.target.value) || 0 }))} />
         </td>
-        <td className="mono" style={{ fontWeight: 700, color: 'var(--success)' }}>${final.toFixed(2)}</td>
-        <td>
+        <td className="mono" style={{ fontWeight: 700, color: 'var(--success)', verticalAlign: 'middle' }}>${final.toFixed(2)}</td>
+        <td style={{ verticalAlign: 'middle' }}>
+          <input type="number" step="0.01" className="form-input" style={{ width: 62, padding: '2px 4px', fontSize: 11 }} value={form.cost || ''}
+            onChange={e => setForm(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))} />
+        </td>
+        <td className="mono" style={{ fontWeight: 700, color: (parseFloat(form.cost) ? (final - parseFloat(form.cost)) : final) >= 0 ? '#22c55e' : '#ef4444', verticalAlign: 'middle' }}>
+          ${(final - (parseFloat(form.cost) || 0)).toFixed(2)}
+        </td>
+        <td style={{ verticalAlign: 'middle' }}>
           <button className="btn btn-sm btn-primary" style={{ marginRight: 4 }}
             onClick={async () => { await onUpdate(item.id, form); setEditing(false); }}>Save</button>
           <button className="btn btn-sm btn-secondary" onClick={() => { setEditing(false); setForm({ ...item }); }}>Cancel</button>
@@ -237,7 +247,9 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
 
   return (
     <tr>
-      <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}>{name}</td>
+      <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}>
+        {name}{notes ? <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--muted)', cursor: 'help' }} title={notes}>📝</span> : ''}
+      </td>
       <td className="mono">{item.qty}</td>
       <td className="mono" style={{ color: 'var(--text)' }}>${base.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{baseEur.toFixed(2)}</div></td>
       <td className="mono" style={{ color: 'var(--text)', fontWeight: 700 }}>${baseTotal.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{(baseEur * qty).toFixed(2)}</div></td>
@@ -249,7 +261,10 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
       <td className="mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>${totalT.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>T.PriceT</div></td>
       <td className="mono" style={{ color: 'var(--accent2)' }}>{item.manpower_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>+${man.toFixed(2)}</div></td>
       <td className="mono" style={{ color: '#8b5cf6' }}>{item.markupM_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>+${mkM.toFixed(2)}</div></td>
+      <td className="mono" style={{ color: item.discount_pct > 0 ? 'var(--danger)' : 'var(--muted)' }}>{item.discount_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>-${disc.toFixed(2)}</div></td>
       <td className="mono" style={{ fontWeight: 700, color: 'var(--success)', fontSize: 13 }}>${final.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{finalEur.toFixed(2)}</div></td>
+      <td className="mono" style={{ color: 'var(--muted)' }}>${cost.toFixed(2)}</td>
+      <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? '#22c55e' : '#ef4444' }}>{profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>
       <td>
         <button className="btn-icon" title="Edit" onClick={() => setEditing(true)}>✏️</button>
         <button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }}
@@ -359,13 +374,13 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
       </div>
 
       {division.items?.length > 0 && (
-        <div className="table-wrap">
-          <table style={{ fontSize: 12 }}>
+        <div className="table-wrap" style={{ overflowX: 'auto' }}>
+          <table style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             <thead>
               <tr>
                 <th>Name</th><th>Qty</th><th>Price for 1 $ / €</th><th>Price $ / €</th><th>Description</th><th>Brand</th>
                 <th>mkP%</th><th>After MkP $</th><th>Disc%</th><th>T.PriceT $</th>
-                <th>Man%</th><th>mkM%</th><th>Final $ / €</th><th></th>
+                <th>Man%</th><th>mkM%</th><th>Final $ / €</th><th>Cost $</th><th>Profit $</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -543,8 +558,8 @@ export default function CrmProjectPage() {
 
   const updatePanel = async (panelId, form) => {
     try {
-      const r = await api.patch(`/projects/${id}/panels/${panelId}`, form);
-      setPanels(p => p.map(x => x.id === panelId ? r.data : x));
+      await api.patch(`/projects/${id}/panels/${panelId}`, form);
+      load();
       toast.success('Panel updated');
     } catch (e) { toast.error(e.message); }
   };

@@ -160,6 +160,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
   const [updating, setUpdating] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
+  const [pdfType, setPdfType] = useState(null);
   const [clientRejectNote, setClientRejectNote] = useState('');
 
   const load = useCallback(async () => {
@@ -211,13 +212,14 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
     finally { setUpdating(false); }
   };
 
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (type) => {
     setPdfExporting(true);
+    setPdfType(type);
     try {
-      await exportProjectPdf(projectId);
+      await exportProjectPdf(projectId, type);
       toast.success('✅ PDF exported');
     } catch (e) { toast.error('PDF export failed: ' + e.message); }
-    finally { setPdfExporting(false); }
+    finally { setPdfExporting(false); setPdfType(null); }
   };
 
   if (loading) return <div className="modal-overlay"><div className="modal"><div className="modal-body" style={{ textAlign: 'center', padding: 40 }}><span className="spinner" />&nbsp; Loading...</div></div></div>;
@@ -364,9 +366,15 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
                   ✏️ Edit Project
                 </button>
               )}
-              <button className="btn btn-secondary" onClick={handleExportPdf} disabled={pdfExporting}
-                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
-                {pdfExporting ? <><span className="spinner" />Exporting...</> : '📄 Export PDF'}
+              {isRole('owner') && (
+                <button className="btn btn-secondary" onClick={() => handleExportPdf('owner')} disabled={pdfExporting}
+                  style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  {pdfExporting && pdfType === 'owner' ? <><span className="spinner" />Exporting...</> : '📄 Export PDF (Owner)'}
+                </button>
+              )}
+              <button className="btn btn-secondary" onClick={() => handleExportPdf('client')} disabled={pdfExporting}
+                style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)' }}>
+                {pdfExporting && pdfType === 'client' ? <><span className="spinner" />Exporting...</> : '📄 Export PDF (Client)'}
               </button>
             </div>
 
@@ -390,6 +398,15 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
   const [detail, setDetail] = useState(null);
+  const [search, setSearch] = useState('');
+
+  const filtered = projects.filter(p =>
+    !search.trim() ||
+    p.project_name?.toLowerCase().includes(search.toLowerCase()) ||
+    String(p.id).includes(search) ||
+    p.engineer_name?.toLowerCase().includes(search.toLowerCase()) ||
+    p.client_name?.toLowerCase().includes(search.toLowerCase())
+  );
 
   const load = async () => {
     setLoading(true);
@@ -403,11 +420,11 @@ export default function ProjectsPage() {
   useEffect(() => { load(); }, []);
 
   const del = async (p) => {
-    if (!confirm(`Soft-delete project "${p.project_name}"? It will be kept for 3 months.`)) return;
+    if (!confirm(`Permanently delete project "${p.project_name}"? All CRM data will be removed.`)) return;
     try {
       await api.delete(`/projects/${p.id}`);
       setProjects(ps => ps.filter(x => x.id !== p.id));
-      toast.success('Project soft-deleted');
+      toast.success('Project deleted');
     } catch (e) { toast.error(e.message); }
   };
 
@@ -435,12 +452,15 @@ export default function ProjectsPage() {
       <div className="page-header">
         <div>
           <div className="page-title">🔧 Projects CRM</div>
-          <div className="page-subtitle">{projects.length} projects</div>
+          <div className="page-subtitle">{projects.length} projects{search ? ` (${filtered.length} matching)` : ''}</div>
         </div>
         <button className="btn btn-primary" onClick={() => setModal({})}>+ New Project</button>
       </div>
 
-      {loading && <div style={{ textAlign: 'center', padding: 32 }}><span className="spinner" /> Loading...</div>}
+      <div style={{ marginBottom: 16 }}>
+        <input className="form-input" placeholder="🔍 Search by name, ID, engineer, or client..."
+          value={search} onChange={e => setSearch(e.target.value)} />
+      </div>
 
       <div className="card">
         <div className="table-wrap">
@@ -454,9 +474,9 @@ export default function ProjectsPage() {
             </thead>
             <tbody>
               {!projects.length && !loading && (
-                <tr><td colSpan={13}><div className="empty"><div className="empty-icon">🔧</div><p>No projects yet.</p></div></td></tr>
+                <tr><td colSpan={13}><div className="empty"><div className="empty-icon">{search ? '🔍' : '🔧'}</div><p>{search ? 'No projects match your search.' : 'No projects yet.'}</p></div></td></tr>
               )}
-              {projects.map(p => {
+              {filtered.map(p => {
                 const pri = priorityLabel(p);
                 const prog = p.total_panels > 0 ? Math.round((p.completed_panels / p.total_panels) * 100) : 0;
                 return (

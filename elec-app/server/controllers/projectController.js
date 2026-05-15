@@ -205,10 +205,10 @@ async function removeProjectItem(req, res, next) {
 
 async function deleteProject(req, res, next) {
   try {
-    await db.execute('UPDATE projects SET deleted_at=NOW() WHERE id=?', [req.params.id]);
+    await db.execute('DELETE FROM projects WHERE id=?', [req.params.id]);
     await recalcReservedQty();
-    console.log(`[Projects] Soft-deleted id:${req.params.id}`);
-    res.json({ message: 'Project soft-deleted (will be removed after 3 months)' });
+    console.log(`[Projects] Hard-deleted id:${req.params.id}`);
+    res.json({ message: 'Project permanently deleted' });
   } catch (err) { console.error('[Projects] ❌ delete:', err.message); next(err); }
 }
 
@@ -265,14 +265,4 @@ async function getDraftNotifications(req, res, next) {
   } catch (err) { console.error('[Projects] ❌ getDraftNotifications:', err.message); next(err); }
 }
 
-async function cleanupOldDeleted(req, res, next) {
-  try {
-    const [result] = await db.execute(
-      `DELETE FROM projects WHERE deleted_at IS NOT NULL AND deleted_at < DATE_SUB(NOW(), INTERVAL 3 MONTH)`
-    );
-    console.log(`[Projects] Cleanup: ${result.affectedRows} old deleted projects removed`);
-    res.json({ message: `Cleaned up ${result.affectedRows} old deleted projects` });
-  } catch (err) { console.error('[Projects] ❌ cleanup:', err.message); next(err); }
-}
-
-module.exports = { getProjects, getProject, createProject, updateProject, addProjectItem, removeProjectItem, deleteProject, adminApproval, getDraftNotifications, cleanupOldDeleted };
+module.exports = { getProjects, getProject, createProject, updateProject, addProjectItem, removeProjectItem, deleteProject, adminApproval, getDraftNotifications };

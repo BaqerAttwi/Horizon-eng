@@ -9,7 +9,7 @@ const { getWorkers, createWorker, updateWorker, deleteWorker } = require('../con
 const { getClients, createClient, updateClient, deleteClient } = require('../controllers/clientController');
 const { getProjects, getProject, createProject, updateProject,
         addProjectItem, removeProjectItem, deleteProject, adminApproval,
-        getDraftNotifications, cleanupOldDeleted } = require('../controllers/projectController');
+        getDraftNotifications } = require('../controllers/projectController');
 const { getAllReservations, getProductDemand } = require('../controllers/reservationController');
 const { getDiscounts, createDiscount, updateDiscount, deleteDiscount } = require('../controllers/discountController');
 const {
@@ -67,7 +67,6 @@ router.delete('/clients/:id',   requireAuth, requireRole('owner'), deleteClient)
 // ── Projects (all roles read, owner+engineer write) ──────────
 router.get('/projects',                      requireAuth, getProjects);
 router.get('/projects/draft-notifications', requireAuth, getDraftNotifications);
-router.post('/projects/cleanup-deleted',    requireAuth, requireRole('owner'), cleanupOldDeleted);
 router.get('/projects/:id',                  requireAuth, getProject);
 router.post('/projects',                     requireAuth, requireRole('owner','engineer'), createProject);
 router.patch('/projects/:id',                requireAuth, requireRole('owner','engineer'), updateProject);

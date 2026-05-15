@@ -16,7 +16,7 @@ function calcItemPricing(item) {
   const discount_amt = subtotal * (discount_pct / 100);
   const totalpriceT = subtotal - discount_amt;
   const manpower_amt = baseTotal * (manpower_pct / 100);
-  const markupM_amt = totalpriceT * (markupM_pct / 100);
+  const markupM_amt = manpower_amt * (markupM_pct / 100);
   const totalfinalProduct = totalpriceT + manpower_amt + markupM_amt;
 
   return {
@@ -108,6 +108,18 @@ async function updatePanel(req, res, next) {
       'UPDATE project_crm_panels SET panel_name=?, markupP=?, markupM=?, manpower_pct=? WHERE id=? AND project_id=?',
       [panel_name||null, markupP||0, markupM||0, manpower_pct||0, req.params.panelId, req.params.projectId]
     );
+
+    // Cascade panel markups to all items in this panel
+    const [divisions] = await db.execute('SELECT id FROM panel_divisions WHERE panel_id=?', [req.params.panelId]);
+    for (const div of divisions) {
+      await db.execute(
+        'UPDATE panel_crm_items SET markupP_pct=?, manpower_pct=?, markupM_pct=? WHERE division_id=?',
+        [markupP||0, manpower_pct||0, markupM||0, div.id]
+      );
+      await recalcDivisionTotals(div.id);
+    }
+    await recalcPanelTotals(req.params.panelId);
+
     const [rows] = await db.execute('SELECT * FROM project_crm_panels WHERE id=?', [req.params.panelId]);
     res.json(rows[0]);
   } catch (err) { console.error('[CRM] ❌ updatePanel:', err.message); next(err); }
@@ -170,6 +182,15 @@ async function updateDivision(req, res, next) {
       'UPDATE panel_divisions SET division_type=?, markupP=?, markupM=?, manpower_pct=? WHERE id=? AND panel_id=?',
       [division_type, markupP||0, markupM||0, manpower_pct||0, req.params.divisionId, req.params.panelId]
     );
+
+    // Cascade division markups to all items in this division
+    await db.execute(
+      'UPDATE panel_crm_items SET markupP_pct=?, manpower_pct=?, markupM_pct=? WHERE division_id=?',
+      [markupP||0, manpower_pct||0, markupM||0, req.params.divisionId]
+    );
+    await recalcDivisionTotals(req.params.divisionId);
+    await recalcPanelTotals(req.params.panelId);
+
     const [rows] = await db.execute('SELECT * FROM panel_divisions WHERE id=?', [req.params.divisionId]);
     res.json(rows[0]);
   } catch (err) { console.error('[CRM] ❌ updateDivision:', err.message); next(err); }
@@ -253,7 +274,7 @@ async function createCrmItem(req, res, next) {
     const {
       product_id, manual_product_id, is_manual, custom_name, custom_desc,
       custom_brand, custom_price_euro, custom_price_usd, qty, base_price_usd, base_price_euro,
-      markupP_pct, discount_pct, manpower_pct, markupM_pct, notes
+      markupP_pct, discount_pct, manpower_pct, markupM_pct, notes, cost
     } = req.body;
 
     if (!req.params.divisionId) return res.status(400).json({ error: 'division_id required' });
@@ -305,15 +326,15 @@ async function createCrmItem(req, res, next) {
       `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
         custom_name,custom_desc,custom_brand,custom_price_euro,custom_price_usd,
         qty,base_price_usd,base_price_euro,markupP_pct,discount_pct,manpower_pct,markupM_pct,
-        markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,notes)
-       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,notes,cost)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         req.params.divisionId, product_id||null, mpId||null, is_manual||false,
         custom_name||null, custom_desc||null, custom_brand||null,
         custom_price_euro||null, custom_price_usd||null,
         qty||1, usd, eur, markupP_pct||0, disc||0, manpower_pct||0, markupM_pct||0,
         pricing.markupP_amt, pricing.discount_amt, pricing.totalpriceT,
-        pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct, notes||null
+        pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct, notes||null, cost||0
       ]
     );
 
@@ -327,7 +348,7 @@ async function createCrmItem(req, res, next) {
 
 async function updateCrmItem(req, res, next) {
   try {
-    const { qty, base_price_usd, markupP_pct, discount_pct, manpower_pct, markupM_pct, notes } = req.body;
+    const { qty, base_price_usd, markupP_pct, discount_pct, manpower_pct, markupM_pct, notes, cost } = req.body;
 
     const [existing] = await db.execute('SELECT * FROM panel_crm_items WHERE id=? AND division_id=?', [req.params.itemId, req.params.divisionId]);
     if (!existing.length) return res.status(404).json({ error: 'Item not found' });
@@ -347,12 +368,14 @@ async function updateCrmItem(req, res, next) {
     await db.execute(
       `UPDATE panel_crm_items SET qty=?,base_price_usd=?,markupP_pct=?,discount_pct=?,
         manpower_pct=?,markupM_pct=?,markupP_amt=?,discount_amt=?,totalpriceT=?,
-        manpower_amt=?,markupM_amt=?,totalfinalProduct=?,notes=? WHERE id=?`,
+        manpower_amt=?,markupM_amt=?,totalfinalProduct=?,notes=?,cost=? WHERE id=?`,
       [
         item.qty, item.base_price_usd, item.markupP_pct, item.discount_pct,
         item.manpower_pct, item.markupM_pct, pricing.markupP_amt, pricing.discount_amt,
         pricing.totalpriceT, pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct,
-        notes !== undefined ? notes : existing[0].notes, req.params.itemId
+        notes !== undefined ? notes : existing[0].notes,
+        cost !== undefined ? cost : existing[0].cost,
+        req.params.itemId
       ]
     );
 
