@@ -12,12 +12,18 @@ const { getProjects, getProject, createProject, updateProject,
         getDraftNotifications } = require('../controllers/projectController');
 const { getAllReservations, getProductDemand } = require('../controllers/reservationController');
 const { getDiscounts, createDiscount, updateDiscount, deleteDiscount } = require('../controllers/discountController');
+const { previewImport, createFromImport } = require('../controllers/pdfImportController');
+const {
+  getMyPendingRequests, getMySentRequests,
+  createRequest, respondToRequest, deleteRequest,
+  getEngineersOnProject,
+} = require('../controllers/engineerRequestController');
 const {
   getPanels, createPanel, updatePanel, deletePanel, togglePanelComplete,
   getDivisions, createDivision, updateDivision, deleteDivision,
   getManualProducts, createManualProduct, deleteManualProduct,
   getCrmItems, createCrmItem, updateCrmItem, deleteCrmItem,
-  getProjectCrm,
+  getProjectCrm, copyPanelFromProject,
 } = require('../controllers/crmController');
 
 const router = express.Router();
@@ -69,6 +75,8 @@ router.get('/projects',                      requireAuth, getProjects);
 router.get('/projects/draft-notifications', requireAuth, getDraftNotifications);
 router.get('/projects/:id',                  requireAuth, getProject);
 router.post('/projects',                     requireAuth, requireRole('owner','engineer'), createProject);
+router.post('/projects/import-pdf/preview',  requireAuth, requireRole('owner','engineer'), upload.single('file'), previewImport);
+router.post('/projects/import-pdf/create',   requireAuth, requireRole('owner','engineer'), createFromImport);
 router.patch('/projects/:id',                requireAuth, requireRole('owner','engineer'), updateProject);
 router.patch('/projects/:id/admin-approval', requireAuth, requireRole('owner'), adminApproval);
 router.delete('/projects/:id',               requireAuth, requireRole('owner'), deleteProject);
@@ -79,6 +87,7 @@ router.delete('/projects/:id/items/:itemId', requireAuth, requireRole('owner','e
 router.get('/projects/:projectId/crm',                     requireAuth, getProjectCrm);
 router.get('/projects/:projectId/panels',                  requireAuth, getPanels);
 router.post('/projects/:projectId/panels',                 requireAuth, requireRole('owner','engineer'), createPanel);
+router.post('/projects/:projectId/panels/copy-from',       requireAuth, requireRole('owner','engineer'), copyPanelFromProject);
 router.patch('/projects/:projectId/panels/:panelId',       requireAuth, requireRole('owner','engineer'), updatePanel);
 router.patch('/projects/:projectId/panels/:panelId/complete', requireAuth, requireRole('owner','engineer'), togglePanelComplete);
 router.delete('/projects/:projectId/panels/:panelId',      requireAuth, requireRole('owner','engineer'), deletePanel);
@@ -99,5 +108,13 @@ router.get('/projects/:projectId/panels/:panelId/divisions/:divisionId/items',  
 router.post('/projects/:projectId/panels/:panelId/divisions/:divisionId/items',       requireAuth, requireRole('owner','engineer'), createCrmItem);
 router.patch('/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId', requireAuth, requireRole('owner','engineer'), updateCrmItem);
 router.delete('/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId', requireAuth, requireRole('owner','engineer'), deleteCrmItem);
+
+// ── Engineer Collaboration Requests ──────────────────────────
+router.get('/engineer-requests/pending',   requireAuth, getMyPendingRequests);
+router.get('/engineer-requests/sent',      requireAuth, getMySentRequests);
+router.post('/engineer-requests',          requireAuth, requireRole('owner','engineer'), createRequest);
+router.patch('/engineer-requests/:requestId/respond', requireAuth, respondToRequest);
+router.delete('/engineer-requests/:requestId', requireAuth, requireRole('owner','engineer'), deleteRequest);
+router.get('/projects/:projectId/engineers', requireAuth, getEngineersOnProject);
 
 module.exports = router;

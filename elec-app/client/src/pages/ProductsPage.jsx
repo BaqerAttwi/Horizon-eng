@@ -216,12 +216,13 @@ export default function ProductsPage() {
                 <th>Stock</th>
                 <th>Reserved</th>
                 <th>Available</th>
+                <th>Date Imported</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {products.length === 0 && !loading && (
-                <tr><td colSpan={10}>
+                <tr><td colSpan={11}>
                   <div className="empty">
                     <div className="empty-icon">📭</div>
                     <p>No products found. Import an Excel file to get started.</p>
@@ -247,6 +248,9 @@ export default function ProductsPage() {
                     }
                   </td>
                   <td><StockBadge avail={p.available_qty} /></td>
+                  <td className="mono" style={{fontSize:12,color:'var(--muted)'}}>
+                    {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
+                  </td>
                   <td>
                     <button className="btn-icon" title="Edit" onClick={()=>setEditing(p)}>✏️</button>
                   </td>

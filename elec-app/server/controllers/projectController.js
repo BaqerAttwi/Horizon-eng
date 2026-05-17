@@ -4,12 +4,20 @@ async function recalcReservedQty() {
   await db.execute(`
     UPDATE products p
     SET reserved_qty = COALESCE((
-      SELECT SUM(pi.qty)
-      FROM project_items pi
-      JOIN projects prj ON pi.project_id = prj.id
-      WHERE pi.product_id = p.id
-        AND prj.status NOT IN ('completed', 'cancelled')
-        AND prj.deleted_at IS NULL
+      SELECT SUM(sub.qty) FROM (
+        SELECT pi.qty, pi.product_id
+        FROM project_items pi
+        JOIN projects prj ON pi.project_id = prj.id
+        WHERE prj.status NOT IN ('completed', 'cancelled') AND prj.deleted_at IS NULL
+        UNION ALL
+        SELECT pci.qty, pci.product_id
+        FROM panel_crm_items pci
+        JOIN panel_divisions pd ON pci.division_id = pd.id
+        JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+        JOIN projects prj ON pcp.project_id = prj.id
+        WHERE pci.product_id IS NOT NULL
+          AND prj.status NOT IN ('completed', 'cancelled') AND prj.deleted_at IS NULL
+      ) sub WHERE sub.product_id = p.id
     ), 0)
   `);
 }
@@ -265,4 +273,4 @@ async function getDraftNotifications(req, res, next) {
   } catch (err) { console.error('[Projects] ❌ getDraftNotifications:', err.message); next(err); }
 }
 
-module.exports = { getProjects, getProject, createProject, updateProject, addProjectItem, removeProjectItem, deleteProject, adminApproval, getDraftNotifications };
+module.exports = { getProjects, getProject, createProject, updateProject, addProjectItem, removeProjectItem, deleteProject, adminApproval, getDraftNotifications, recalcReservedQty };

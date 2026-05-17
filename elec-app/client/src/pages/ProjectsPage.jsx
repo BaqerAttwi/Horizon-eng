@@ -162,6 +162,29 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
   const [pdfExporting, setPdfExporting] = useState(false);
   const [pdfType, setPdfType] = useState(null);
   const [clientRejectNote, setClientRejectNote] = useState('');
+  const [collaborators, setCollaborators] = useState([]);
+  const [workers, setWorkers] = useState([]);
+  const [inviteEngId, setInviteEngId] = useState('');
+  const [inviting, setInviting] = useState(false);
+
+  useEffect(() => {
+    if (!project) return;
+    api.get(`/projects/${projectId}/engineers`).then(r => setCollaborators(r.data)).catch(() => {});
+    if (isRole('owner','engineer')) {
+      api.get('/workers').then(r => setWorkers(r.data.filter(w => w.role === 'engineer'))).catch(() => {});
+    }
+  }, [project?.id]);
+
+  const handleInvite = async () => {
+    if (!inviteEngId) { toast.error('Select an engineer'); return; }
+    setInviting(true);
+    try {
+      await api.post('/engineer-requests', { project_id: projectId, target_engineer_id: parseInt(inviteEngId) });
+      toast.success('Invitation sent');
+      setInviteEngId('');
+    } catch (e) { toast.error(e.message); }
+    finally { setInviting(false); }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -356,6 +379,35 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
               </div>
             )}
 
+            {/* ── Collaborators ── */}
+            <div style={{ background: 'rgba(99,102,241,0.04)', borderRadius: 8, padding: 14, border: '1px solid rgba(99,102,241,0.15)' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--white)', marginBottom: 8 }}>🤝 Collaborators</div>
+              {collaborators.length > 0 ? (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                  {collaborators.map(c => (
+                    <span key={c.id} style={{ fontSize: 12, padding: '3px 10px', background: 'rgba(99,102,241,0.1)', borderRadius: 20, color: '#818cf8' }}>
+                      {c.name}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>No collaborators yet</div>
+              )}
+              {isRole('owner','engineer') && (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <select className="input" style={{ flex: 1, fontSize: 12 }} value={inviteEngId} onChange={e => setInviteEngId(e.target.value)}>
+                    <option value="">Select engineer...</option>
+                    {workers.filter(w => w.id !== project.engineer_id && !collaborators.some(c => c.id === w.id)).map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))}
+                  </select>
+                  <button className="btn btn-sm btn-primary" disabled={inviting || !inviteEngId} onClick={handleInvite}>
+                    {inviting ? '...' : 'Invite'}
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* ── Action Buttons ── */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
               <button className="btn btn-primary" onClick={() => { onClose(); navigate(`/projects/${project.id}/crm`); }}>
@@ -398,6 +450,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
   const [detail, setDetail] = useState(null);
+  const [importModal, setImportModal] = useState(false);
   const [search, setSearch] = useState('');
 
   const filtered = projects.filter(p =>
@@ -455,6 +508,7 @@ export default function ProjectsPage() {
           <div className="page-subtitle">{projects.length} projects{search ? ` (${filtered.length} matching)` : ''}</div>
         </div>
         <button className="btn btn-primary" onClick={() => setModal({})}>+ New Project</button>
+        <button className="btn btn-secondary" onClick={() => setImportModal(true)}>📄 Import PDF</button>
       </div>
 
       <div style={{ marginBottom: 16 }}>
@@ -523,6 +577,204 @@ export default function ProjectsPage() {
       {detail !== null && (
         <ProjectDetailModal projectId={detail} onClose={() => setDetail(null)} onUpdated={onUpdated} />
       )}
+      {importModal && (
+        <ImportPdfModal onClose={() => setImportModal(false)} onCreated={(pid) => { setImportModal(false); setDetail(pid); load(); }} />
+      )}
+    </div>
+  );
+}
+
+// ── Import PDF Modal ────────────────────────────────────────────
+function ImportPdfModal({ onClose, onCreated }) {
+  const [step, setStep] = useState('form');
+  const [uploading, setUploading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [form, setForm] = useState({ project_name: '', client_id: '', engineer_id: '', deadline: '', exchange_rate: 1.08, panel_count: '' });
+  const [clients, setClients] = useState([]);
+  const [engineers, setEngineers] = useState([]);
+  const [unmatchedAction, setUnmatchedAction] = useState({});
+
+  useEffect(() => {
+    api.get('/clients').then(r => setClients(r.data)).catch(() => {});
+    api.get('/workers').then(r => setEngineers(r.data.filter(w => w.role === 'engineer' || w.role === 'owner'))).catch(() => {});
+  }, []);
+
+  const handleFileAndPreview = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') { toast.error('Please select a PDF file'); return; }
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const r = await api.post('/projects/import-pdf/preview', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setPreview(r.data);
+      setStep('preview');
+      toast.success(`Found ${r.data.total_items} items (${r.data.matched.length} matched, ${r.data.unmatched.length} unmatched)`);
+    } catch (err) { toast.error(err.response?.data?.error || err.message); }
+    finally { setUploading(false); }
+  };
+
+  const handleCreate = async () => {
+    if (!form.project_name.trim()) { toast.error('Project name required'); return; }
+    setCreating(true);
+    try {
+      const panelsWithItems = preview.panels.map(p => {
+        const divs = {};
+        // Rebuild panel divisions with matched/unmatched items
+        for (const item of [...preview.matched, ...(preview.unmatched.filter(u => !unmatchedAction[u.name]?.skip))]) {
+          const divType = item.division_type || 'INCOMING';
+          if (!divs[divType]) divs[divType] = { division_type: divType, items: [] };
+          divs[divType].items.push({
+            ...item,
+            product_id: item.product_id || null,
+            base_price_usd: item.base_price_usd || 0,
+            base_price_euro: item.base_price_euro || 0,
+            discount: item.discount || 0,
+          });
+        }
+        return { ...p, divisions: Object.values(divs) };
+      });
+
+      // Include unmatched items that aren't skipped
+      const finalUnmatched = preview.unmatched.filter(u => !unmatchedAction[u.name]?.skip).map(u => ({
+        ...u,
+        product_id: null,
+        base_price_usd: 0,
+        base_price_euro: 0,
+      }));
+
+      await api.post('/projects/import-pdf/create', {
+        project_name: form.project_name,
+        engineer_id: parseInt(form.engineer_id) || null,
+        client_id: parseInt(form.client_id) || null,
+        exchange_rate_eur_usd: parseFloat(form.exchange_rate) || 1.08,
+        deadline: form.deadline || null,
+        total_panels: parseInt(form.panel_count) || preview.panels.length,
+        panels: panelsWithItems,
+        matched_items: preview.matched,
+        unmatched_items: finalUnmatched,
+      });
+      toast.success('Project created from PDF!');
+      const r = await api.get('/projects');
+      const created = r.data[0];
+      onCreated(created?.id);
+      onClose();
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message;
+      toast.error(`Create failed: ${msg}`);
+    }
+    finally { setCreating(false); }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="modal-title">📄 Import Project from PDF</div>
+          <button className="btn-icon" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          {step === 'form' && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Project Name *</label>
+                  <input className="input" value={form.project_name} onChange={e => setForm(f => ({ ...f, project_name: e.target.value }))} placeholder="e.g. New Office Building" />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Client</label>
+                  <select className="input" value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}>
+                    <option value="">Select client...</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Engineer</label>
+                  <select className="input" value={form.engineer_id} onChange={e => setForm(f => ({ ...f, engineer_id: e.target.value }))}>
+                    <option value="">Select engineer...</option>
+                    {engineers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Deadline</label>
+                  <input className="input" type="date" value={form.deadline} onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Exchange Rate (EUR→USD)</label>
+                  <input className="input" type="number" step="0.01" value={form.exchange_rate} onChange={e => setForm(f => ({ ...f, exchange_rate: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Panel Count</label>
+                  <input className="input" type="number" min={1} value={form.panel_count} onChange={e => setForm(f => ({ ...f, panel_count: e.target.value }))} placeholder="Auto from PDF" />
+                </div>
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>PDF File *</label>
+                <input className="input" type="file" accept="application/pdf" onChange={handleFileAndPreview} disabled={uploading} />
+                {uploading && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>⏳ Parsing PDF...</div>}
+              </div>
+            </>
+          )}
+
+          {step === 'preview' && preview && (
+            <>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--white)' }}>Preview: {preview.panels.length} panels, {preview.total_items} items</div>
+                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                  <span style={{ color: '#22c55e' }}>{preview.matched.length} matched</span>
+                  {preview.unmatched.length > 0 && <span style={{ color: '#f59e0b', marginLeft: 8 }}>{preview.unmatched.length} unmatched</span>}
+                </div>
+              </div>
+
+              {preview.matched.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', marginBottom: 4 }}>✅ Matched Items</div>
+                  <div style={{ fontSize: 11, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {preview.matched.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 8, padding: '2px 0' }}>
+                        <span style={{ color: 'var(--white)', minWidth: 200 }}>{item.name}</span>
+                        <span>x{item.qty}</span>
+                        {item.discount > 0 && <span style={{ color: 'var(--danger)' }}>{item.discount}% off</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {preview.unmatched.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 4 }}>⚠️ Unmatched Items (not found in DB)</div>
+                  <div style={{ fontSize: 11, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {preview.unmatched.map((item, i) => {
+                      const action = unmatchedAction[item.name] || 'create';
+                      return (
+                        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '2px 0' }}>
+                          <span style={{ color: 'var(--white)', minWidth: 200 }}>{item.name}</span>
+                          <span>x{item.qty}</span>
+                          <select className="input" style={{ width: 130, fontSize: 10 }} value={action} onChange={e => setUnmatchedAction(u => ({ ...u, [item.name]: e.target.value }))}>
+                            <option value="create">Create as manual</option>
+                            <option value="skip">Skip item</option>
+                          </select>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+                <button className="btn btn-sm btn-secondary" onClick={() => setStep('form')}>Back</button>
+                <button className="btn btn-sm btn-primary" onClick={handleCreate} disabled={creating}>
+                  {creating ? '⏳ Creating...' : '✅ Create Project'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

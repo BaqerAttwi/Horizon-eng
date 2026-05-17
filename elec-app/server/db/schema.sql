@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS projects (
   client_approval ENUM('pending','approved','rejected') DEFAULT 'pending',
   admin_approval  ENUM('pending','approved','rejected') DEFAULT 'pending',
   rejection_note  TEXT,
+  client_rejection_note TEXT,
   deadline        DATE,
   total_cost      DECIMAL(14,2) DEFAULT 0,
   total_price     DECIMAL(14,2) DEFAULT 0,
@@ -161,8 +162,10 @@ CREATE TABLE IF NOT EXISTS project_crm_panels (
   manpower_pct   DECIMAL(5,2) DEFAULT 0,
   total_price    DECIMAL(14,2) DEFAULT 0,
   is_completed   BOOLEAN DEFAULT FALSE,
+  updated_by     INT DEFAULT NULL,
   created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (updated_by) REFERENCES workers(id) ON DELETE SET NULL,
   UNIQUE KEY uq_panel_project_num (project_id, panel_number)
 );
 
@@ -216,6 +219,7 @@ CREATE TABLE IF NOT EXISTS panel_crm_items (
   markupM_pct       DECIMAL(5,2) DEFAULT 0,
   markupM_amt       DECIMAL(14,4) DEFAULT 0,
   totalfinalProduct DECIMAL(14,4) DEFAULT 0,
+  cost              DECIMAL(14,2) DEFAULT 0,
   notes             TEXT,
   created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (division_id) REFERENCES panel_divisions(id) ON DELETE CASCADE,
@@ -223,11 +227,54 @@ CREATE TABLE IF NOT EXISTS panel_crm_items (
   FOREIGN KEY (manual_product_id) REFERENCES panel_manual_products(id) ON DELETE SET NULL
 );
 
+-- ── Engineer Collaboration Requests ──────────────────────────
+CREATE TABLE IF NOT EXISTS project_engineer_requests (
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  project_id        INT NOT NULL,
+  requested_by      INT NOT NULL,
+  target_engineer_id INT NOT NULL,
+  status            ENUM('pending','accepted','rejected') DEFAULT 'pending',
+  rejection_reason  TEXT,
+  created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (requested_by) REFERENCES workers(id) ON DELETE CASCADE,
+  FOREIGN KEY (target_engineer_id) REFERENCES workers(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_project_engineer (project_id, target_engineer_id)
+);
+
 -- ── Seed: default owner (password: admin123) ─────────────────
--- MIGRATION: Run these on existing DB:
+-- NOTE: client_rejection_note and cost are now in CREATE TABLE above.
+-- Legacy migration ALTERs (already applied in existing DB):
 -- ALTER TABLE project_crm_panels ADD COLUMN is_completed BOOLEAN DEFAULT FALSE;
 -- ALTER TABLE panel_crm_items ADD COLUMN base_price_euro DECIMAL(14,4) AFTER base_price_usd;
--- ALTER TABLE projects ADD COLUMN client_rejection_note TEXT; 
+-- ALTER TABLE projects ADD COLUMN client_rejection_note TEXT;
+-- ALTER TABLE panel_crm_items ADD COLUMN cost DECIMAL(14,2) DEFAULT 0 AFTER totalfinalProduct;
+-- ALTER TABLE project_crm_panels ADD COLUMN updated_by INT DEFAULT NULL AFTER is_completed;
+-- ALTER TABLE project_crm_panels ADD FOREIGN KEY (updated_by) REFERENCES workers(id) ON DELETE SET NULL;
+
+-- ── View: Product Demand (always reflects latest CRM data) ────
+-- DROP VIEW IF EXISTS product_demand_view;
+-- CREATE VIEW product_demand_view AS
+-- SELECT
+--   pr.id AS product_id,
+--   pr.reference,
+--   pr.description,
+--   b.name AS brand_name,
+--   pr.stock_qty,
+--   COALESCE(SUM(pci.qty), 0) AS total_demanded,
+--   COUNT(DISTINCT p.id) AS project_count,
+--   pr.stock_qty - COALESCE(SUM(pci.qty), 0) AS available_qty,
+--   CASE WHEN COALESCE(SUM(pci.qty), 0) > pr.stock_qty THEN 1 ELSE 0 END AS has_shortage,
+--   CASE WHEN COUNT(DISTINCT p.id) > 1 THEN 1 ELSE 0 END AS has_conflict
+-- FROM products pr
+-- LEFT JOIN brands b ON pr.brand_id = b.id
+-- LEFT JOIN panel_crm_items pci ON pci.product_id = pr.id
+-- LEFT JOIN panel_divisions pd ON pci.division_id = pd.id
+-- LEFT JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+-- LEFT JOIN projects p ON pcp.project_id = p.id AND p.status NOT IN ('completed','cancelled') AND p.deleted_at IS NULL
+-- GROUP BY pr.id, pr.reference, pr.description, b.name, pr.stock_qty
+-- ORDER BY has_shortage DESC, has_conflict DESC, pr.reference;
 
 -- password_hash below = bcrypt of 'admin123'
 INSERT IGNORE INTO workers (id, name, email, role, password_hash)

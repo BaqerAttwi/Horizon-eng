@@ -11,6 +11,7 @@ import WorkersPage     from './pages/WorkersPage';
 import ClientsPage     from './pages/ClientsPage';
 import ReservationsPage from './pages/ReservationsPage';
 import DiscountsPage   from './pages/DiscountsPage';
+import RequestsPage    from './pages/RequestsPage';
 import Logo            from './components/Logo';
 
 // Role badge colors
@@ -23,6 +24,7 @@ const NAV = [
   { to: '/reservations', icon: '📊', label: 'Demand Tracker',  perm: 'reservations' },
   { to: '/upload',       icon: '⬆️', label: 'Import Excel',    perm: 'upload' },
   { to: '/projects',     icon: '🔧', label: 'Projects',       perm: 'projects' },
+  { to: '/requests',     icon: '🤝', label: 'Requests',       perm: 'requests' },
   { to: '/discounts',    icon: '🏷️', label: 'Brand Discounts', perm: 'discounts' },
   { to: '/workers',      icon: '👷', label: 'Workers',        perm: 'workers' },
   { to: '/clients',      icon: '🏢', label: 'Clients',        perm: 'clients' },
@@ -125,6 +127,7 @@ function AppLayout() {
           <Route path="/upload"    element={<ProtectedRoute perm="upload"><UploadPage /></ProtectedRoute>} />
           <Route path="/projects"  element={<ProtectedRoute perm="projects"><ProjectsPage /></ProtectedRoute>} />
           <Route path="/projects/:id/crm" element={<ProtectedRoute perm="projects"><CrmProjectPage /></ProtectedRoute>} />
+          <Route path="/requests"  element={<ProtectedRoute perm="requests"><RequestsPage /></ProtectedRoute>} />
           <Route path="/discounts"  element={<ProtectedRoute perm="discounts"><DiscountsPage /></ProtectedRoute>} />
           <Route path="/workers"   element={<ProtectedRoute perm="workers"><WorkersPage /></ProtectedRoute>} />
           <Route path="/clients"   element={<ProtectedRoute perm="clients"><ClientsPage /></ProtectedRoute>} />

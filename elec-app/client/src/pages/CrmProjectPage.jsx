@@ -61,6 +61,7 @@ function ProductSearch({ onSelect, projectId, exchangeRate }) {
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <div style={{ fontSize: 11, color: 'var(--success)', fontFamily: 'var(--font-mono)' }}>${usd.toFixed(2)} / €{eur.toFixed(2)}</div>
                 <div style={{ fontSize: 11, color: 'var(--muted)' }}>{p.brand_name}</div>
+                <div style={{ fontSize: 10, color: 'var(--muted)' }}>{p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}</div>
               </div>
             </div>
             );
@@ -193,6 +194,15 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
   const cost = parseFloat(item.cost || 0);
   const profit = final - cost;
 
+  const convertEurEdit = (euro) => {
+    const rate = project.exchange_rate_eur_usd || 1.08;
+    setForm(f => ({ ...f, base_price_euro: euro, base_price_usd: euro ? (parseFloat(euro) * rate).toFixed(2) : '' }));
+  };
+  const convertUsdEdit = (usd) => {
+    const rate = project.exchange_rate_eur_usd || 1.08;
+    setForm(f => ({ ...f, base_price_usd: usd, base_price_euro: usd ? (parseFloat(usd) / rate).toFixed(4) : '' }));
+  };
+
   if (editing) {
     return (
       <tr style={{ background: 'var(--panel2)' }}>
@@ -202,8 +212,10 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
             onChange={e => setForm(f => ({ ...f, qty: parseInt(e.target.value) || 1 }))} />
         </td>
         <td style={{ verticalAlign: 'middle' }}>
-          <input type="number" step="0.01" className="form-input" style={{ width: 65, padding: '2px 4px', fontSize: 11 }} value={form.base_price_usd || ''}
-            onChange={e => setForm(f => ({ ...f, base_price_usd: parseFloat(e.target.value) || 0 }))} />
+          <input type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11 }} value={form.base_price_usd || ''}
+            onChange={e => convertUsdEdit(e.target.value)} placeholder="USD $" />
+          <input type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11, marginTop: 2 }} value={form.base_price_euro || ''}
+            onChange={e => convertEurEdit(e.target.value)} placeholder="EUR €" />
         </td>
         <td className="mono" style={{ verticalAlign: 'middle', color: 'var(--muted)', fontWeight: 600 }}>
           ${((parseFloat(form.base_price_usd) || 0) * (parseInt(form.qty) || 1)).toFixed(2)}
@@ -261,7 +273,6 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
       <td className="mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>${totalT.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>T.PriceT</div></td>
       <td className="mono" style={{ color: 'var(--accent2)' }}>{item.manpower_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>+${man.toFixed(2)}</div></td>
       <td className="mono" style={{ color: '#8b5cf6' }}>{item.markupM_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>+${mkM.toFixed(2)}</div></td>
-      <td className="mono" style={{ color: item.discount_pct > 0 ? 'var(--danger)' : 'var(--muted)' }}>{item.discount_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>-${disc.toFixed(2)}</div></td>
       <td className="mono" style={{ fontWeight: 700, color: 'var(--success)', fontSize: 13 }}>${final.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{finalEur.toFixed(2)}</div></td>
       <td className="mono" style={{ color: 'var(--muted)' }}>${cost.toFixed(2)}</td>
       <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? '#22c55e' : '#ef4444' }}>{profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>
@@ -464,6 +475,11 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
           <span style={{ marginLeft: 12, fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>
             Total: ${(parseFloat(panel.total_price) || 0).toFixed(2)}
           </span>
+          {panel.updated_by_name && (
+            <span style={{ marginLeft: 10, fontSize: 10, color: 'var(--muted)' }}>
+              — Last edit: {panel.updated_by_name}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           {editing ? (
@@ -534,6 +550,12 @@ export default function CrmProjectPage() {
   const [panels, setPanels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddPanel, setShowAddPanel] = useState(false);
+  const [showCopyPanel, setShowCopyPanel] = useState(false);
+  const [copyStep, setCopyStep] = useState('projects');
+  const [sourceProjects, setSourceProjects] = useState([]);
+  const [selectedSourceProject, setSelectedSourceProject] = useState(null);
+  const [selectedSourcePanel, setSelectedSourcePanel] = useState(null);
+  const [copying, setCopying] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -554,6 +576,32 @@ export default function CrmProjectPage() {
       toast.success(`Panel #${panel_number} added`);
       setShowAddPanel(false);
     } catch (e) { toast.error(e.message); }
+  };
+
+  const openCopyPanel = async () => {
+    setShowCopyPanel(true);
+    setCopyStep('projects');
+    setSelectedSourceProject(null);
+    setSelectedSourcePanel(null);
+    try {
+      const r = await api.get('/projects');
+      setSourceProjects(r.data.filter(p => p.id !== parseInt(id)));
+    } catch (e) { toast.error(e.message); }
+  };
+
+  const copyPanel = async () => {
+    if (!selectedSourceProject || !selectedSourcePanel) return;
+    setCopying(true);
+    try {
+      await api.post(`/projects/${id}/panels/copy-from`, {
+        sourceProjectId: selectedSourceProject.id,
+        sourcePanelId: selectedSourcePanel.id,
+      });
+      toast.success('Panel copied');
+      setShowCopyPanel(false);
+      load();
+    } catch (e) { toast.error(e.message); }
+    finally { setCopying(false); }
   };
 
   const updatePanel = async (panelId, form) => {
@@ -664,7 +712,10 @@ export default function CrmProjectPage() {
             );
           })()} 
         </div>
-        <button className="btn btn-primary" onClick={() => setShowAddPanel(true)}>+ Add Panel</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary" onClick={() => setShowAddPanel(true)}>+ Add Panel</button>
+          <button className="btn btn-secondary" onClick={openCopyPanel}>📋 Copy from existing</button>
+        </div>
       </div>
 
       {showAddPanel && (
@@ -687,6 +738,67 @@ export default function CrmProjectPage() {
                 const input = document.getElementById('panelNumInput');
                 if (input && input.value) addPanel(parseInt(input.value));
               }}>Add Panel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCopyPanel && (
+        <div className="modal-overlay" onClick={() => setShowCopyPanel(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <div className="modal-header">
+              <span className="modal-title">📋 Copy Panel from Existing Project</span>
+              <button className="btn-icon" onClick={() => setShowCopyPanel(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              {copyStep === 'projects' && (
+                <>
+                  <label className="form-label">Select Source Project</label>
+                  {sourceProjects.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 13, padding: 12 }}>No other projects available</div>}
+                  <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {sourceProjects.map(p => (
+                      <div key={p.id} className="card" style={{ cursor: 'pointer', padding: '8px 12px', background: selectedSourceProject?.id === p.id ? 'var(--accent)' : 'var(--panel)', color: selectedSourceProject?.id === p.id ? '#fff' : 'inherit' }}
+                        onClick={async () => {
+                          setSelectedSourceProject(p);
+                          setCopyStep('panels');
+                          const r = await api.get(`/projects/${p.id}/crm`);
+                          setSelectedSourceProject(prev => ({ ...prev, panels: r.data.panels || [] }));
+                        }}>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{p.project_name}</div>
+                        <div style={{ fontSize: 11, color: selectedSourceProject?.id === p.id ? '#ddd' : 'var(--muted)' }}>{p.client_name || 'No client'} • {p.crm_panels || 0} panels</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {copyStep === 'panels' && selectedSourceProject && (
+                <>
+                  <div style={{ marginBottom: 8 }}>
+                    <button className="btn btn-sm btn-secondary" onClick={() => { setCopyStep('projects'); setSelectedSourcePanel(null); }}>← Back</button>
+                    <span style={{ marginLeft: 8, fontWeight: 600, fontSize: 13 }}>{selectedSourceProject.project_name}</span>
+                  </div>
+                  <label className="form-label">Select Panel to Copy</label>
+                  <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {(selectedSourceProject.panels || []).map(p => (
+                      <div key={p.id} className="card" style={{ cursor: 'pointer', padding: '8px 12px', background: selectedSourcePanel?.id === p.id ? 'var(--accent)' : 'var(--panel)', color: selectedSourcePanel?.id === p.id ? '#fff' : 'inherit' }}
+                        onClick={() => setSelectedSourcePanel(p)}>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>Panel #{p.panel_number}{p.panel_name ? ` — ${p.panel_name}` : ''}</div>
+                        <div style={{ fontSize: 11, color: selectedSourcePanel?.id === p.id ? '#ddd' : 'var(--muted)' }}>
+                          {(p.divisions || []).length} divisions • ${parseFloat(p.total_price || 0).toFixed(2)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowCopyPanel(false)}>Cancel</button>
+              {copyStep === 'panels' && (
+                <button className="btn btn-primary" disabled={!selectedSourcePanel || copying} onClick={copyPanel}>
+                  {copying ? <><span className="spinner" /> Copying...</> : '📋 Copy Panel'}
+                </button>
+              )}
             </div>
           </div>
         </div>
