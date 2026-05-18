@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../api/client';
 
@@ -63,7 +64,7 @@ function DemandRow({ item, onExpand, expanded }) {
                 </thead>
                 <tbody>
                   {item.demands.map((d, i) => (
-                    <tr key={i} style={{ borderTop: '1px solid rgba(30,48,84,0.5)' }}>
+                    <tr key={i} style={{ borderTop: '1px solid var(--border)' }}>
                       <td style={{ padding: '7px 16px' }}>
                         <span className={`badge ${ADMIN_APPROVAL_BADGE[d.admin_approval] || 'badge-gray'}`}>{d.admin_approval||'pending'}</span>
                       </td>
@@ -159,28 +160,35 @@ export default function ReservationsPage() {
 
       {/* Summary stats */}
       {data?.summary && (
-        <div className="stats-row">
-          <div className="stat-card" style={{ cursor: 'pointer', borderColor: filter === 'all' ? 'var(--accent)' : 'var(--border)' }} onClick={() => setFilter('all')}>
-            <div className="stat-value">{data.summary.total_products}</div>
-            <div className="stat-label">Products Demanded</div>
-          </div>
-          <div className="stat-card" style={{ cursor: 'pointer', borderColor: filter === 'shortage' ? 'var(--danger)' : 'var(--border)' }} onClick={() => setFilter('shortage')}>
-            <div className="stat-value" style={{ color: data.summary.shortages > 0 ? 'var(--danger)' : 'var(--muted)' }}>
-              🔴 {data.summary.shortages}
-            </div>
-            <div className="stat-label">Shortages</div>
-          </div>
-          <div className="stat-card" style={{ cursor: 'pointer', borderColor: filter === 'conflict' ? 'var(--accent2)' : 'var(--border)' }} onClick={() => setFilter('conflict')}>
-            <div className="stat-value" style={{ color: data.summary.conflicts > 0 ? 'var(--accent2)' : 'var(--muted)' }}>
-              🟡 {data.summary.conflicts}
-            </div>
-            <div className="stat-label">Multi-Project Conflicts</div>
-          </div>
-          <div className="stat-card" style={{ cursor: 'pointer', borderColor: filter === 'ok' ? 'var(--success)' : 'var(--border)' }} onClick={() => setFilter('ok')}>
-            <div className="stat-value" style={{ color: 'var(--success)' }}>🟢 {data.summary.ok}</div>
-            <div className="stat-label">No Issues</div>
-          </div>
-        </div>
+        <motion.div className="stats-row"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.05 } },
+          }}
+        >
+          {[
+            { key: 'all',     label: 'Products Demanded',     value: data.summary.total_products,     color: null,                     borderC: 'var(--accent)' },
+            { key: 'shortage',label: 'Shortages',             value: `🔴 ${data.summary.shortages}`,  color: data.summary.shortages > 0 ? 'var(--danger)' : 'var(--muted)', borderC: 'var(--danger)' },
+            { key: 'conflict',label: 'Multi-Project Conflicts',value: `🟡 ${data.summary.conflicts}`, color: data.summary.conflicts > 0 ? 'var(--accent2)' : 'var(--muted)', borderC: 'var(--accent2)' },
+            { key: 'ok',      label: 'No Issues',             value: `🟢 ${data.summary.ok}`,         color: 'var(--success)',        borderC: 'var(--success)' },
+          ].map(c => (
+            <motion.div key={c.key} className="stat-card"
+              variants={{
+                hidden: { opacity: 0, y: 12 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
+              }}
+              style={{ cursor: 'pointer', borderColor: filter === c.key ? c.borderC : 'var(--border)' }}
+              onClick={() => setFilter(c.key)}
+              whileHover={{ scale: 1.02, borderColor: c.borderC }}
+              transition={{ duration: 0.15 }}
+            >
+              <div className="stat-value" style={{ color: c.color || 'var(--white)' }}>{c.value}</div>
+              <div className="stat-label">{c.label}</div>
+            </motion.div>
+          ))}
+        </motion.div>
       )}
 
       {/* Legend */}

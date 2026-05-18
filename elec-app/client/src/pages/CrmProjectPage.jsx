@@ -5,7 +5,7 @@ import api from '../api/client';
 import { useDebounce } from '../hooks/useDebounce';
 
 const DIVISION_TYPES = ['INCOMING', 'OUTGOING', 'Enclosure', 'Accessories', 'Measurement'];
-const DIVISION_COLORS = { INCOMING: '#3b82f6', OUTGOING: '#10b981', Enclosure: '#8b5cf6', Accessories: '#f59e0b', Measurement: '#ec4899' };
+const DIVISION_COLORS = { INCOMING: '#1a5fa8', OUTGOING: '#4a8fc4', Enclosure: '#8b5cf6', Accessories: '#f59e0b', Measurement: '#6aaed6' };
 
 // ── Product Search ────────────────────────────────────────────
 function ProductSearch({ onSelect, projectId, exchangeRate }) {
@@ -226,7 +226,7 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
           <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.markupP_pct}
             onChange={e => setForm(f => ({ ...f, markupP_pct: parseFloat(e.target.value) || 0 }))} />
         </td>
-        <td className="mono" style={{ fontSize: 11, color: '#60a5fa', verticalAlign: 'middle' }}>${afterMkP.toFixed(2)}</td>
+        <td className="mono" style={{ fontSize: 11, color: 'var(--primary-light)', verticalAlign: 'middle' }}>${afterMkP.toFixed(2)}</td>
         <td style={{ verticalAlign: 'middle' }}>
           <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.discount_pct}
             onChange={e => setForm(f => ({ ...f, discount_pct: parseFloat(e.target.value) || 0 }))} />
@@ -245,7 +245,7 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
           <input type="number" step="0.01" className="form-input" style={{ width: 62, padding: '2px 4px', fontSize: 11 }} value={form.cost || ''}
             onChange={e => setForm(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))} />
         </td>
-        <td className="mono" style={{ fontWeight: 700, color: (parseFloat(form.cost) ? (final - parseFloat(form.cost)) : final) >= 0 ? '#22c55e' : '#ef4444', verticalAlign: 'middle' }}>
+        <td className="mono" style={{ fontWeight: 700, color: (parseFloat(form.cost) ? (final - parseFloat(form.cost)) : final) >= 0 ? 'var(--success)' : 'var(--danger)', verticalAlign: 'middle' }}>
           ${(final - (parseFloat(form.cost) || 0)).toFixed(2)}
         </td>
         <td style={{ verticalAlign: 'middle' }}>
@@ -275,7 +275,7 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
       <td className="mono" style={{ color: '#8b5cf6' }}>{item.markupM_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>+${mkM.toFixed(2)}</div></td>
       <td className="mono" style={{ fontWeight: 700, color: 'var(--success)', fontSize: 13 }}>${final.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{finalEur.toFixed(2)}</div></td>
       <td className="mono" style={{ color: 'var(--muted)' }}>${cost.toFixed(2)}</td>
-      <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? '#22c55e' : '#ef4444' }}>{profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>
+      <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>{profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>
       <td>
         <button className="btn-icon" title="Edit" onClick={() => setEditing(true)}>✏️</button>
         <button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }}
@@ -405,7 +405,7 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
       )}
 
       {pendingProduct && (
-        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'rgba(59,130,246,0.05)' }}>
+        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'rgba(26,95,168,0.06)' }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--white)', marginBottom: 6 }}>
             Add: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>{pendingProduct.reference || pendingProduct.name}</span>
           </div>
@@ -467,7 +467,7 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
   };
 
   return (
-    <div style={{ marginBottom: 20, border: panel.is_completed ? '2px solid #22c55e' : '1px solid var(--border)', borderRadius: 10, overflow: 'visible', position: 'relative' }}>
+    <div style={{ marginBottom: 20, border: panel.is_completed ? '2px solid var(--success)' : '1px solid var(--border)', borderRadius: 10, overflow: 'visible', position: 'relative' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--panel2)', borderBottom: '1px solid var(--border)' }}>
         <div>
           <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--white)' }}>Panel #{panel.panel_number}</span>
@@ -489,20 +489,20 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
             </>
           ) : (
             <>
-              <button className="btn btn-sm" style={{ background: panel.is_completed ? 'rgba(34,197,94,0.15)' : 'rgba(59,130,246,0.15)', color: panel.is_completed ? '#22c55e' : '#3b82f6' }}
+              <button className="btn btn-sm" style={{ background: panel.is_completed ? 'rgba(34,197,94,0.15)' : 'rgba(26,95,168,0.15)', color: panel.is_completed ? 'var(--success)' : 'var(--accent)' }}
                 onClick={() => onToggleComplete(panel.id)}>
                 {panel.is_completed ? '✓ Complete' : '☐ Mark Complete'}
               </button>
               <button className="btn btn-sm btn-secondary" onClick={() => setEditing(true)}>Edit Panel</button>
             </>
           )}
-          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}
+          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)' }}
             onClick={() => onDeletePanel(panel.id)}>Delete</button>
         </div>
       </div>
 
       {editing && (
-        <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'rgba(59,130,246,0.03)' }}>
+        <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'rgba(26,95,168,0.04)' }}>
           <div className="form-row" style={{ gap: 12 }}>
             <div className="form-group" style={{ flex: 2 }}>
               <label className="form-label">Panel Name</label>

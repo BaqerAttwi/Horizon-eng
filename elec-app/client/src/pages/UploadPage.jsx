@@ -55,7 +55,7 @@ export default function UploadPage() {
         style={{
           borderStyle: 'dashed',
           borderColor: drag ? 'var(--accent)' : file ? 'var(--success)' : 'var(--border)',
-          background: drag ? 'rgba(59,130,246,.05)' : 'var(--panel)',
+          background: drag ? 'rgba(26,95,168,.06)' : 'var(--panel)',
           padding: 40, textAlign: 'center', cursor: 'pointer', marginBottom: 20,
         }}
         onClick={() => inputRef.current.click()}
@@ -80,7 +80,7 @@ export default function UploadPage() {
       </div>
 
       {/* Info box */}
-      <div className="card card-body" style={{marginBottom:20,background:'rgba(59,130,246,.05)',borderColor:'rgba(59,130,246,.2)'}}>
+      <div className="card card-body" style={{marginBottom:20,background:'rgba(26,95,168,.06)',borderColor:'rgba(26,95,168,.2)'}}>
         <div style={{fontSize:12,fontFamily:'var(--font-mono)',color:'var(--muted)',lineHeight:1.8}}>
           <strong style={{color:'var(--accent)'}}>Expected format:</strong><br/>
           Sheet: <code style={{color:'var(--accent2)'}}>PL</code> &nbsp;|&nbsp;

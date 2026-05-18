@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useDebounce } from '../hooks/useDebounce';
@@ -188,7 +189,11 @@ export default function ProductsPage() {
       </div>
 
       {/* Filters */}
-      <div className="search-bar" style={{marginBottom:16}}>
+      <motion.div className="search-bar" style={{marginBottom:16}}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, delay: 0.05, ease: 'easeOut' }}
+      >
         <input
           className="form-input" style={{maxWidth:300}}
           placeholder="🔍 Search reference or description..."
@@ -199,10 +204,14 @@ export default function ProductsPage() {
           {brands.map(b=><option key={b.id} value={b.name}>{b.name}</option>)}
         </select>
         {loading && <span className="spinner" />}
-      </div>
+      </motion.div>
 
       {/* Table */}
-      <div className="card">
+      <motion.div className="card"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1, ease: 'easeOut' }}
+      >
         <div className="table-wrap">
           <table>
             <thead>
@@ -240,7 +249,7 @@ export default function ProductsPage() {
                   <td className="mono">{p.stock_qty}</td>
                   <td>
                     {p.reserved_qty > 0
-                      ? <button className="btn btn-sm" style={{background:'rgba(245,158,11,.15)',color:'#fbbf24',border:'1px solid rgba(245,158,11,.3)',cursor:'pointer'}}
+                      ? <button className="btn btn-sm" style={{background:'rgba(245,158,11,.15)',color:'var(--badge-yellow)',border:'1px solid rgba(245,158,11,.3)',cursor:'pointer'}}
                           onClick={()=>navigate('/reservations')}>
                           {p.reserved_qty} reserved
                         </button>
@@ -268,7 +277,7 @@ export default function ProductsPage() {
             <button className="btn btn-sm btn-secondary" disabled={page>=totalPages} onClick={()=>setPage(p=>p+1)}>Next →</button>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {editing  && <EditModal product={editing} onClose={()=>setEditing(null)} onSaved={onSaved} />}
     </div>

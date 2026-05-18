@@ -25,6 +25,9 @@ const {
   getCrmItems, createCrmItem, updateCrmItem, deleteCrmItem,
   getProjectCrm, copyPanelFromProject,
 } = require('../controllers/crmController');
+const {
+  getEngineerStats, getClientStats, getSummary, getProjectTeam,
+} = require('../controllers/analyticsController');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -116,5 +119,11 @@ router.post('/engineer-requests',          requireAuth, requireRole('owner','eng
 router.patch('/engineer-requests/:requestId/respond', requireAuth, respondToRequest);
 router.delete('/engineer-requests/:requestId', requireAuth, requireRole('owner','engineer'), deleteRequest);
 router.get('/projects/:projectId/engineers', requireAuth, getEngineersOnProject);
+
+// ── Analytics (owner only) ─────────────────────────────────
+router.get('/analytics/summary',            requireAuth, requireRole('owner'), getSummary);
+router.get('/analytics/engineers',          requireAuth, requireRole('owner'), getEngineerStats);
+router.get('/analytics/clients',            requireAuth, requireRole('owner'), getClientStats);
+router.get('/analytics/projects/:projectId/team', requireAuth, getProjectTeam);
 
 module.exports = router;

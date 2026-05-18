@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AnimatedPage }   from './components/AnimatedPage';
 import LoginPage       from './pages/LoginPage';
 import ProductsPage    from './pages/ProductsPage';
 import UploadPage      from './pages/UploadPage';
@@ -12,6 +14,7 @@ import ClientsPage     from './pages/ClientsPage';
 import ReservationsPage from './pages/ReservationsPage';
 import DiscountsPage   from './pages/DiscountsPage';
 import RequestsPage    from './pages/RequestsPage';
+import AnalyticsPage   from './pages/AnalyticsPage';
 import Logo            from './components/Logo';
 
 // Role badge colors
@@ -28,6 +31,7 @@ const NAV = [
   { to: '/discounts',    icon: '🏷️', label: 'Brand Discounts', perm: 'discounts' },
   { to: '/workers',      icon: '👷', label: 'Workers',        perm: 'workers' },
   { to: '/clients',      icon: '🏢', label: 'Clients',        perm: 'clients' },
+  { to: '/analytics',    icon: '📈', label: 'Analytics',      perm: 'analytics' },
 ];
 
 // Protected route wrapper
@@ -47,7 +51,7 @@ function ProtectedRoute({ children, perm }) {
   return children;
 }
 
-function Sidebar({ mobileOpen, setMobileOpen }) {
+function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
   const { worker, logout, can } = useAuth();
   const navigate = useNavigate();
 
@@ -77,6 +81,12 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
         ))}
       </nav>
 
+      {/* Theme toggle */}
+      <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+        <span className="toggle-icon">{theme === 'dark' ? '☀️' : '🌙'}</span>
+        {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+      </button>
+
       {/* Worker info at bottom */}
       {worker && (
         <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
@@ -104,35 +114,57 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
 
 function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('horizon-theme') || 'dark');
   const { worker } = useAuth();
+  const location = useLocation();
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('horizon-theme', next);
+  };
 
   return (
-    <div className="layout">
-      {worker && <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />}
-      {mobileOpen && <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.5)',zIndex:199 }} onClick={() => setMobileOpen(false)} />}
+    <div className={`layout${theme === 'light' ? ' light-mode' : ''}`}>
+      {worker && <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} theme={theme} toggleTheme={toggleTheme} />}
+
+      {/* Mobile overlay backdrop */}
+      {mobileOpen && (
+        <div
+          style={{
+            position:'fixed', inset:0, background:'rgba(0,0,0,.6)',
+            zIndex:199, backdropFilter:'blur(2px)',
+            WebkitBackdropFilter:'blur(2px)',
+          }}
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
       <main className="main">
         {worker && (
           <div className="mobile-header">
-            <button className="btn-icon" onClick={() => setMobileOpen(true)}>☰</button>
+            <button className="btn-icon" onClick={() => setMobileOpen(true)} aria-label="Open menu">☰</button>
             <span style={{ fontWeight: 800, color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Logo size={24} /></span>
           </div>
         )}
 
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/"          element={<Navigate to="/products" replace />} />
-          <Route path="/products"  element={<ProtectedRoute perm="products"><ProductsPage /></ProtectedRoute>} />
-          <Route path="/reservations" element={<ProtectedRoute perm="reservations"><ReservationsPage /></ProtectedRoute>} />
-          <Route path="/upload"    element={<ProtectedRoute perm="upload"><UploadPage /></ProtectedRoute>} />
-          <Route path="/projects"  element={<ProtectedRoute perm="projects"><ProjectsPage /></ProtectedRoute>} />
-          <Route path="/projects/:id/crm" element={<ProtectedRoute perm="projects"><CrmProjectPage /></ProtectedRoute>} />
-          <Route path="/requests"  element={<ProtectedRoute perm="requests"><RequestsPage /></ProtectedRoute>} />
-          <Route path="/discounts"  element={<ProtectedRoute perm="discounts"><DiscountsPage /></ProtectedRoute>} />
-          <Route path="/workers"   element={<ProtectedRoute perm="workers"><WorkersPage /></ProtectedRoute>} />
-          <Route path="/clients"   element={<ProtectedRoute perm="clients"><ClientsPage /></ProtectedRoute>} />
-          <Route path="*"          element={<Navigate to="/products" replace />} />
-        </Routes>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/login" element={<AnimatedPage><LoginPage /></AnimatedPage>} />
+            <Route path="/"          element={<Navigate to="/products" replace />} />
+            <Route path="/products"  element={<AnimatedPage><ProtectedRoute perm="products"><ProductsPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/reservations" element={<AnimatedPage><ProtectedRoute perm="reservations"><ReservationsPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/upload"    element={<AnimatedPage><ProtectedRoute perm="upload"><UploadPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/projects"  element={<AnimatedPage><ProtectedRoute perm="projects"><ProjectsPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/projects/:id/crm" element={<AnimatedPage><ProtectedRoute perm="projects"><CrmProjectPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/requests"  element={<AnimatedPage><ProtectedRoute perm="requests"><RequestsPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/discounts"  element={<AnimatedPage><ProtectedRoute perm="discounts"><DiscountsPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/workers"   element={<AnimatedPage><ProtectedRoute perm="workers"><WorkersPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/clients"   element={<AnimatedPage><ProtectedRoute perm="clients"><ClientsPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/analytics" element={<AnimatedPage><ProtectedRoute perm="analytics"><AnalyticsPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="*"          element={<Navigate to="/products" replace />} />
+          </Routes>
+        </AnimatePresence>
       </main>
     </div>
   );

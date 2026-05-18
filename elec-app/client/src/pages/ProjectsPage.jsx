@@ -270,13 +270,13 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
             <div className="stats-row">
               <div className="stat-card">
                 <div className="stat-label">Admin Approval</div>
-                <div className="stat-value" style={{ fontSize: 16, color: project.admin_approval === 'approved' ? '#22c55e' : project.admin_approval === 'rejected' ? '#ef4444' : '#f59e0b' }}>
+                <div className="stat-value" style={{ fontSize: 16, color: project.admin_approval === 'approved' ? 'var(--success)' : project.admin_approval === 'rejected' ? 'var(--danger)' : 'var(--accent2)' }}>
                   {project.admin_approval || 'pending'}
                 </div>
               </div>
               <div className="stat-card">
                 <div className="stat-label">Client Approval</div>
-                <div className="stat-value" style={{ fontSize: 16, color: project.client_approval === 'approved' ? '#22c55e' : project.client_approval === 'rejected' ? '#ef4444' : '#f59e0b' }}>
+                <div className="stat-value" style={{ fontSize: 16, color: project.client_approval === 'approved' ? 'var(--success)' : project.client_approval === 'rejected' ? 'var(--danger)' : 'var(--accent2)' }}>
                   {project.client_approval}
                 </div>
               </div>
@@ -286,7 +286,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
               </div>
               <div className="stat-card">
                 <div className="stat-label">Total Price</div>
-                <div className="stat-value" style={{ fontSize: 16, color: '#22c55e' }}>${parseFloat(project.total_price || 0).toFixed(0)}</div>
+                <div className="stat-value" style={{ fontSize: 16, color: 'var(--success)' }}>${parseFloat(project.total_price || 0).toFixed(0)}</div>
               </div>
             </div>
 
@@ -316,7 +316,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
 
             {/* ── Owner: Admin Approval Section ── */}
             {isRole('owner') && (
-              <div style={{ background: 'rgba(59,130,246,0.04)', borderRadius: 8, padding: 14, border: '1px solid rgba(59,130,246,0.15)' }}>
+              <div style={{ background: 'rgba(26,95,168,0.05)', borderRadius: 8, padding: 14, border: '1px solid rgba(26,95,168,0.2)' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--white)', marginBottom: 8 }}>👑 Owner Controls</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                   <span style={{ fontSize: 11, color: 'var(--muted)', marginRight: 4 }}>Admin Approval:</span>
@@ -324,7 +324,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
                     <button key={a} className={`btn btn-sm ${project.admin_approval === a ? 'btn-primary' : 'btn-secondary'}`}
                       disabled={project.admin_approval === a || updating}
                       onClick={() => changeAdminApproval(a)}
-                      style={a === 'approved' ? { background: 'rgba(34,197,94,0.2)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' } : a === 'rejected' ? { background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' } : {}}>
+                      style={a === 'approved' ? { background: 'rgba(34,197,94,0.2)', color: 'var(--success)', border: '1px solid rgba(34,197,94,0.3)' } : a === 'rejected' ? { background: 'rgba(239,68,68,0.2)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.3)' } : {}}>
                       {a === 'approved' ? '✓' : a === 'rejected' ? '✕' : '—'} {a}
                     </button>
                   ))}
@@ -395,7 +395,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
               )}
               {isRole('owner','engineer') && (
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <select className="input" style={{ flex: 1, fontSize: 12 }} value={inviteEngId} onChange={e => setInviteEngId(e.target.value)}>
+                  <select className="form-input" style={{ flex: 1, fontSize: 12 }} value={inviteEngId} onChange={e => setInviteEngId(e.target.value)}>
                     <option value="">Select engineer...</option>
                     {workers.filter(w => w.id !== project.engineer_id && !collaborators.some(c => c.id === w.id)).map(w => (
                       <option key={w.id} value={w.id}>{w.name}</option>
@@ -420,12 +420,12 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
               )}
               {isRole('owner') && (
                 <button className="btn btn-secondary" onClick={() => handleExportPdf('owner')} disabled={pdfExporting}
-                  style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)' }}>
                   {pdfExporting && pdfType === 'owner' ? <><span className="spinner" />Exporting...</> : '📄 Export PDF (Owner)'}
                 </button>
               )}
               <button className="btn btn-secondary" onClick={() => handleExportPdf('client')} disabled={pdfExporting}
-                style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)' }}>
+                style={{ background: 'rgba(26,95,168,0.1)', color: 'var(--accent)', border: '1px solid rgba(26,95,168,0.2)' }}>
                 {pdfExporting && pdfType === 'client' ? <><span className="spinner" />Exporting...</> : '📄 Export PDF (Client)'}
               </button>
             </div>
@@ -682,38 +682,38 @@ function ImportPdfModal({ onClose, onCreated }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Project Name *</label>
-                  <input className="input" value={form.project_name} onChange={e => setForm(f => ({ ...f, project_name: e.target.value }))} placeholder="e.g. New Office Building" />
+                  <input className="form-input" value={form.project_name} onChange={e => setForm(f => ({ ...f, project_name: e.target.value }))} placeholder="e.g. New Office Building" />
                 </div>
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Client</label>
-                  <select className="input" value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}>
+                  <select className="form-input" value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}>
                     <option value="">Select client...</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Engineer</label>
-                  <select className="input" value={form.engineer_id} onChange={e => setForm(f => ({ ...f, engineer_id: e.target.value }))}>
+                  <select className="form-input" value={form.engineer_id} onChange={e => setForm(f => ({ ...f, engineer_id: e.target.value }))}>
                     <option value="">Select engineer...</option>
                     {engineers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Deadline</label>
-                  <input className="input" type="date" value={form.deadline} onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))} />
+                  <input className="form-input" type="date" value={form.deadline} onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))} />
                 </div>
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Exchange Rate (EUR→USD)</label>
-                  <input className="input" type="number" step="0.01" value={form.exchange_rate} onChange={e => setForm(f => ({ ...f, exchange_rate: e.target.value }))} />
+                  <input className="form-input" type="number" step="0.01" value={form.exchange_rate} onChange={e => setForm(f => ({ ...f, exchange_rate: e.target.value }))} />
                 </div>
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Panel Count</label>
-                  <input className="input" type="number" min={1} value={form.panel_count} onChange={e => setForm(f => ({ ...f, panel_count: e.target.value }))} placeholder="Auto from PDF" />
+                  <input className="form-input" type="number" min={1} value={form.panel_count} onChange={e => setForm(f => ({ ...f, panel_count: e.target.value }))} placeholder="Auto from PDF" />
                 </div>
               </div>
               <div style={{ marginTop: 16 }}>
                 <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>PDF File *</label>
-                <input className="input" type="file" accept="application/pdf" onChange={handleFileAndPreview} disabled={uploading} />
+                <input className="form-input" type="file" accept="application/pdf" onChange={handleFileAndPreview} disabled={uploading} />
                 {uploading && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>⏳ Parsing PDF...</div>}
               </div>
             </>
@@ -724,14 +724,14 @@ function ImportPdfModal({ onClose, onCreated }) {
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--white)' }}>Preview: {preview.panels.length} panels, {preview.total_items} items</div>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-                  <span style={{ color: '#22c55e' }}>{preview.matched.length} matched</span>
-                  {preview.unmatched.length > 0 && <span style={{ color: '#f59e0b', marginLeft: 8 }}>{preview.unmatched.length} unmatched</span>}
+                  <span style={{ color: 'var(--success)' }}>{preview.matched.length} matched</span>
+                  {preview.unmatched.length > 0 && <span style={{ color: 'var(--accent2)', marginLeft: 8 }}>{preview.unmatched.length} unmatched</span>}
                 </div>
               </div>
 
               {preview.matched.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', marginBottom: 4 }}>✅ Matched Items</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>✅ Matched Items</div>
                   <div style={{ fontSize: 11, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {preview.matched.map((item, i) => (
                       <div key={i} style={{ display: 'flex', gap: 8, padding: '2px 0' }}>
@@ -746,7 +746,7 @@ function ImportPdfModal({ onClose, onCreated }) {
 
               {preview.unmatched.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', marginBottom: 4 }}>⚠️ Unmatched Items (not found in DB)</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent2)', marginBottom: 4 }}>⚠️ Unmatched Items (not found in DB)</div>
                   <div style={{ fontSize: 11, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {preview.unmatched.map((item, i) => {
                       const action = unmatchedAction[item.name] || 'create';
@@ -754,7 +754,7 @@ function ImportPdfModal({ onClose, onCreated }) {
                         <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '2px 0' }}>
                           <span style={{ color: 'var(--white)', minWidth: 200 }}>{item.name}</span>
                           <span>x{item.qty}</span>
-                          <select className="input" style={{ width: 130, fontSize: 10 }} value={action} onChange={e => setUnmatchedAction(u => ({ ...u, [item.name]: e.target.value }))}>
+                          <select className="form-input" style={{ width: 130, fontSize: 10 }} value={action} onChange={e => setUnmatchedAction(u => ({ ...u, [item.name]: e.target.value }))}>
                             <option value="create">Create as manual</option>
                             <option value="skip">Skip item</option>
                           </select>

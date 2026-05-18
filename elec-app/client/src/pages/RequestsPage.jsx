@@ -83,8 +83,8 @@ export default function RequestsPage() {
                     <div style={{ fontSize: 11, color: 'var(--muted)' }}>{new Date(r.created_at).toLocaleDateString()}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn btn-sm" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }} onClick={() => handleRespond(r.id, 'accept')}>Accept</button>
-                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }} onClick={() => handleRespond(r.id, 'reject')}>Reject</button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(34,197,94,0.15)', color: 'var(--success)' }} onClick={() => handleRespond(r.id, 'accept')}>Accept</button>
+                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)' }} onClick={() => handleRespond(r.id, 'reject')}>Reject</button>
                   </div>
                 </div>
               ))}
@@ -104,7 +104,7 @@ export default function RequestsPage() {
                   <div>
                     <div style={{ fontWeight: 600, color: 'var(--white)' }}>{r.project_name}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>To: <strong>{r.target_name}</strong></div>
-                    <div style={{ fontSize: 11, color: r.status === 'accepted' ? '#22c55e' : r.status === 'rejected' ? '#ef4444' : 'var(--muted)' }}>
+                    <div style={{ fontSize: 11, color: r.status === 'accepted' ? 'var(--success)' : r.status === 'rejected' ? 'var(--danger)' : 'var(--muted)' }}>
                       {r.status === 'pending' ? '⏳ Pending' : r.status === 'accepted' ? '✓ Accepted' : '✗ Rejected'}
                       {r.status === 'rejected' && r.rejection_reason && ` — ${r.rejection_reason}`}
                     </div>
@@ -127,7 +127,7 @@ export default function RequestsPage() {
             <h3>Reject Request</h3>
             <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>Provide a reason for rejection:</p>
             <textarea
-              className="input" rows={3}
+              className="form-textarea" rows={3}
               style={{ width: '100%', marginTop: 8 }}
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
@@ -135,7 +135,7 @@ export default function RequestsPage() {
             />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
               <button className="btn btn-sm btn-secondary" onClick={() => { setRejectModal(null); setRejectReason(''); }}>Cancel</button>
-              <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }} onClick={handleRejectConfirm}>Reject</button>
+              <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)' }} onClick={handleRejectConfirm}>Reject</button>
             </div>
           </div>
         </div>

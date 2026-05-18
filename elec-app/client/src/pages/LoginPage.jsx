@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
@@ -35,59 +36,77 @@ export default function LoginPage() {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+  };
+  const childVariants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  };
+
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg)',
-      backgroundImage: 'radial-gradient(ellipse at 30% 20%, rgba(59,130,246,0.08) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(168,85,247,0.06) 0%, transparent 50%)',
-    }}>
-      <div style={{ width: '100%', maxWidth: 400, padding: '0 20px' }}>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--bg)',
+        backgroundImage: 'radial-gradient(ellipse at 30% 20%, rgba(26,95,168,0.1) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(74,143,196,0.06) 0%, transparent 50%)',
+      }}
+    >
+      <motion.div variants={childVariants} style={{ width: '100%', maxWidth: 400, padding: '0 20px' }}>
 
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <motion.div variants={childVariants} style={{ textAlign: 'center', marginBottom: 32 }}>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--white)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Logo size={40} /></h1>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4, fontFamily: 'var(--font-mono)' }}>
             Manager — Sign in to continue
           </p>
-        </div>
+        </motion.div>
 
         {/* Form */}
-        <div className="card" style={{ padding: 28 }}>
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="form-group">
-              <label className="form-label">Email Address</label>
-              <input
-                className="form-input"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                autoFocus
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <input
-                className="form-input"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={e => setPass(e.target.value)}
-              />
-            </div>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              style={{ width: '100%', justifyContent: 'center', padding: '11px', marginTop: 4 }}
-              disabled={loading}
-            >
-              {loading ? <><span className="spinner" /> Signing in...</> : '🔑 Sign In'}
-            </button>
-          </form>
-        </div>
+        <motion.div variants={childVariants}>
+          <div className="card" style={{ padding: 28 }}>
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <input
+                  className="form-input"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <input
+                  className="form-input"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPass(e.target.value)}
+                />
+              </div>
+              <motion.button
+                type="submit"
+                className="btn btn-primary"
+                style={{ width: '100%', justifyContent: 'center', padding: '11px', marginTop: 4 }}
+                disabled={loading}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {loading ? <><span className="spinner" /> Signing in...</> : '🔑 Sign In'}
+              </motion.button>
+            </form>
+          </div>
+        </motion.div>
 
         {/* Role info */}
-        <div style={{ marginTop: 24, padding: '14px 16px', background: 'var(--panel)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+        <motion.div variants={childVariants} style={{ marginTop: 24, padding: '14px 16px', background: 'var(--panel)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
           <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 10, letterSpacing: '0.08em' }}>
             ROLE ACCESS LEVELS
           </div>
@@ -105,12 +124,12 @@ export default function LoginPage() {
               <span style={{ fontSize: 11, color: 'var(--muted)' }}>{r.access}</span>
             </div>
           ))}
-        </div>
+        </motion.div>
 
-        <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 11, marginTop: 16, fontFamily: 'var(--font-mono)' }}>
+        <motion.p variants={childVariants} style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 11, marginTop: 16, fontFamily: 'var(--font-mono)' }}>
           Contact the owner to get your account
-        </p>
-      </div>
-    </div>
+        </motion.p>
+      </motion.div>
+    </motion.div>
   );
 }
