@@ -230,11 +230,11 @@ function calcItemPricing(item) {
   const base = parseFloat(item.base_price_usd) || 0;
   const qty = parseInt(item.qty) || 1;
   const baseTotal = base * qty;
-  const mkP = baseTotal * (parseFloat(item.markupP_pct) / 100);
-  const afterMkP = baseTotal + mkP;
-  const disc = afterMkP * (parseFloat(item.discount_pct) / 100);
-  const totalT = afterMkP - disc;
-  const man = baseTotal * (parseFloat(item.manpower_pct) / 100);
+  const disc = baseTotal * (parseFloat(item.discount_pct) / 100);
+  const afterDisc = baseTotal - disc;
+  const mkP = afterDisc * (parseFloat(item.markupP_pct) / 100);
+  const totalT = afterDisc + mkP;
+  const man = afterDisc * (parseFloat(item.manpower_pct) / 100);
   const mkM = man * (parseFloat(item.markupM_pct) / 100);
   const final = totalT + man + mkM;
   return {

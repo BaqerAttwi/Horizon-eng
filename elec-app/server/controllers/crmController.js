@@ -4,7 +4,35 @@ const { recalcReservedQty } = require('./projectController');
 // One-time recalculation on startup to fix existing data
 recalcReservedQty().catch(err => console.error('[CRM] init recalcReservedQty error:', err.message));
 
-// ── Helpers ────────────────────────────────────────────────────
+// ── Access Control Helper ──────────────────────────────────────
+// Engineers can only access projects they lead or collaborate on
+async function checkProjectAccess(req, res, projectId) {
+  const user = req.worker;
+  if (user.role === 'engineer') {
+    const [[access]] = await db.execute(
+      `SELECT p.id FROM projects p
+       LEFT JOIN project_engineer_requests per ON per.project_id = p.id
+         AND per.target_engineer_id = ? AND per.status = 'accepted'
+       WHERE p.id = ? AND p.deleted_at IS NULL
+         AND (p.engineer_id = ? OR per.id IS NOT NULL)`,
+      [user.id, projectId, user.id]
+    );
+    if (!access) {
+      res.status(403).json({ error: 'Access denied — you are not assigned to this project' });
+      return false;
+    }
+  }
+  return true;
+}
+
+// Check access via panel ID (looks up project from panel)
+async function checkPanelAccess(req, res, panelId) {
+  const [[panel]] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [panelId]);
+  if (!panel) { res.status(404).json({ error: 'Panel not found' }); return false; }
+  return checkProjectAccess(req, res, panel.project_id);
+}
+
+// ── Helpers ───────────────────────────────────────────────────
 
 function calcItemPricing(item) {
   const base = parseFloat(item.base_price_usd) || 0;
@@ -15,11 +43,11 @@ function calcItemPricing(item) {
   const qty = parseInt(item.qty) || 1;
 
   const baseTotal = base * qty;
-  const markupP_amt = baseTotal * (markupP_pct / 100);
-  const subtotal = baseTotal + markupP_amt;
-  const discount_amt = subtotal * (discount_pct / 100);
-  const totalpriceT = subtotal - discount_amt;
-  const manpower_amt = baseTotal * (manpower_pct / 100);
+  const discount_amt = baseTotal * (discount_pct / 100);
+  const afterDiscount = baseTotal - discount_amt;
+  const markupP_amt = afterDiscount * (markupP_pct / 100);
+  const totalpriceT = afterDiscount + markupP_amt;
+  const manpower_amt = afterDiscount * (manpower_pct / 100);
   const markupM_amt = manpower_amt * (markupM_pct / 100);
   const totalfinalProduct = totalpriceT + manpower_amt + markupM_amt;
 
@@ -73,6 +101,9 @@ async function recalcPanelTotals(panelId) {
 
 async function getPanels(req, res, next) {
   try {
+    const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
+    if (!hasAccess) return;
+
     const [panels] = await db.execute(
       `SELECT p.*, COUNT(d.id) as division_count
        FROM project_crm_panels p
@@ -88,6 +119,9 @@ async function getPanels(req, res, next) {
 
 async function createPanel(req, res, next) {
   try {
+    const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
+    if (!hasAccess) return;
+
     const { panel_number, panel_name, markupP, markupM, manpower_pct } = req.body;
     if (!panel_number) return res.status(400).json({ error: 'panel_number required' });
 
@@ -107,6 +141,9 @@ async function createPanel(req, res, next) {
 
 async function updatePanel(req, res, next) {
   try {
+    const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
+    if (!hasAccess) return;
+
     const { panel_name, markupP, markupM, manpower_pct } = req.body;
     await db.execute(
       'UPDATE project_crm_panels SET panel_name=?, markupP=?, markupM=?, manpower_pct=?, updated_by=? WHERE id=? AND project_id=?',
@@ -137,6 +174,9 @@ async function updatePanel(req, res, next) {
 
 async function deletePanel(req, res, next) {
   try {
+    const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
+    if (!hasAccess) return;
+
     await db.execute('DELETE FROM project_crm_panels WHERE id=? AND project_id=?', [req.params.panelId, req.params.projectId]);
     await recalcPanelTotals(req.params.panelId);
     await recalcReservedQty();
@@ -146,6 +186,9 @@ async function deletePanel(req, res, next) {
 
 async function togglePanelComplete(req, res, next) {
   try {
+    const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
+    if (!hasAccess) return;
+
     const [panels] = await db.execute('SELECT is_completed FROM project_crm_panels WHERE id=? AND project_id=?', [req.params.panelId, req.params.projectId]);
     if (!panels.length) return res.status(404).json({ error: 'Panel not found' });
     const newVal = panels[0].is_completed ? 0 : 1;
@@ -166,6 +209,9 @@ async function togglePanelComplete(req, res, next) {
 
 async function getDivisions(req, res, next) {
   try {
+    const hasAccess = await checkPanelAccess(req, res, req.params.panelId);
+    if (!hasAccess) return;
+
     const [divisions] = await db.execute(
       `SELECT d.*,
         (SELECT COUNT(*) FROM panel_crm_items i WHERE i.division_id=d.id) as item_count
@@ -178,6 +224,9 @@ async function getDivisions(req, res, next) {
 
 async function createDivision(req, res, next) {
   try {
+    const hasAccess = await checkPanelAccess(req, res, req.params.panelId);
+    if (!hasAccess) return;
+
     const { division_type, markupP, markupM, manpower_pct } = req.body;
     if (!division_type) return res.status(400).json({ error: 'division_type required' });
 
@@ -194,6 +243,9 @@ async function createDivision(req, res, next) {
 
 async function updateDivision(req, res, next) {
   try {
+    const hasAccess = await checkPanelAccess(req, res, req.params.panelId);
+    if (!hasAccess) return;
+
     const { division_type, markupP, markupM, manpower_pct } = req.body;
     await db.execute(
       'UPDATE panel_divisions SET division_type=?, markupP=?, markupM=?, manpower_pct=? WHERE id=? AND panel_id=?',
@@ -215,6 +267,9 @@ async function updateDivision(req, res, next) {
 
 async function deleteDivision(req, res, next) {
   try {
+    const hasAccess = await checkPanelAccess(req, res, req.params.panelId);
+    if (!hasAccess) return;
+
     await db.execute('DELETE FROM panel_divisions WHERE id=? AND panel_id=?', [req.params.divisionId, req.params.panelId]);
     await recalcPanelTotals(req.params.panelId);
     res.json({ message: 'Division deleted' });
@@ -225,6 +280,9 @@ async function deleteDivision(req, res, next) {
 
 async function getManualProducts(req, res, next) {
   try {
+    const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
+    if (!hasAccess) return;
+
     const [products] = await db.execute(
       'SELECT * FROM panel_manual_products WHERE project_id=? ORDER BY name',
       [req.params.projectId]
@@ -235,6 +293,9 @@ async function getManualProducts(req, res, next) {
 
 async function createManualProduct(req, res, next) {
   try {
+    const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
+    if (!hasAccess) return;
+
     const { name, description, price_euro, price_usd, brand } = req.body;
     if (!name) return res.status(400).json({ error: 'name required' });
 
@@ -249,15 +310,31 @@ async function createManualProduct(req, res, next) {
 
 async function deleteManualProduct(req, res, next) {
   try {
+    const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
+    if (!hasAccess) return;
+
     await db.execute('DELETE FROM panel_manual_products WHERE id=? AND project_id=?', [req.params.productId, req.params.projectId]);
     res.json({ message: 'Manual product deleted' });
   } catch (err) { console.error('[CRM] ❌ deleteManualProduct:', err.message); next(err); }
+}
+
+// Check access via division ID (looks up project from division → panel → project)
+async function checkDivisionAccess(req, res, divisionId) {
+  const [[div]] = await db.execute(`
+    SELECT pcp.project_id FROM panel_divisions d
+    JOIN project_crm_panels pcp ON d.panel_id = pcp.id
+    WHERE d.id = ?`, [divisionId]);
+  if (!div) { res.status(404).json({ error: 'Division not found' }); return false; }
+  return checkProjectAccess(req, res, div.project_id);
 }
 
 // ── CRM Items ──────────────────────────────────────────────────
 
 async function getCrmItems(req, res, next) {
   try {
+    const hasAccess = await checkDivisionAccess(req, res, req.params.divisionId);
+    if (!hasAccess) return;
+
     const [items] = await db.execute(
       `SELECT i.*, p.reference, p.description as product_desc, b.name as brand_name,
               p.price_euro, p.price_usd
@@ -288,6 +365,9 @@ async function getCrmItems(req, res, next) {
 
 async function createCrmItem(req, res, next) {
   try {
+    const hasAccess = await checkDivisionAccess(req, res, req.params.divisionId);
+    if (!hasAccess) return;
+
     const {
       product_id, manual_product_id, is_manual, custom_name, custom_desc,
       custom_brand, custom_price_euro, custom_price_usd, qty, base_price_usd, base_price_euro,
@@ -366,10 +446,24 @@ async function createCrmItem(req, res, next) {
 
 async function updateCrmItem(req, res, next) {
   try {
+    const hasAccess = await checkDivisionAccess(req, res, req.params.divisionId);
+    if (!hasAccess) return;
+
     const { qty, base_price_usd, base_price_euro, markupP_pct, discount_pct, manpower_pct, markupM_pct, notes, cost } = req.body;
 
     const [existing] = await db.execute('SELECT * FROM panel_crm_items WHERE id=? AND division_id=?', [req.params.itemId, req.params.divisionId]);
     if (!existing.length) return res.status(404).json({ error: 'Item not found' });
+
+    const priceFieldsChanged = (
+      (base_price_usd !== undefined && parseFloat(base_price_usd) !== parseFloat(existing[0].base_price_usd)) ||
+      (base_price_euro !== undefined && parseFloat(base_price_euro) !== parseFloat(existing[0].base_price_euro))
+    );
+
+    if (req.worker.role === 'engineer' && priceFieldsChanged) {
+      const { createPriceChangeRequest } = require('./priceChangeController');
+      req.body.item_id = req.params.itemId;
+      return createPriceChangeRequest(req, res, next);
+    }
 
     // Get project exchange rate
     const [projRows] = await db.execute('SELECT exchange_rate_eur_usd FROM projects WHERE id=?', [req.params.projectId]);
@@ -425,6 +519,9 @@ async function updateCrmItem(req, res, next) {
 
 async function deleteCrmItem(req, res, next) {
   try {
+    const hasAccess = await checkDivisionAccess(req, res, req.params.divisionId);
+    if (!hasAccess) return;
+
     await db.execute('DELETE FROM panel_crm_items WHERE id=? AND division_id=?', [req.params.itemId, req.params.divisionId]);
     await recalcPanelTotals(req.params.panelId);
     await recalcReservedQty();
@@ -437,6 +534,10 @@ async function deleteCrmItem(req, res, next) {
 async function getProjectCrm(req, res, next) {
   try {
     const projectId = req.params.projectId;
+
+    // Check engineer access
+    const hasAccess = await checkProjectAccess(req, res, projectId);
+    if (!hasAccess) return;
 
     // Get project info with exchange rate
     const [project] = await db.execute(
@@ -517,6 +618,13 @@ async function copyPanelFromProject(req, res, next) {
   try {
     const { sourceProjectId, sourcePanelId } = req.body;
     const targetProjectId = req.params.projectId;
+
+    // Check access to both source and target projects
+    const hasTargetAccess = await checkProjectAccess(req, res, targetProjectId);
+    if (!hasTargetAccess) return;
+    const hasSourceAccess = await checkProjectAccess(req, res, sourceProjectId);
+    if (!hasSourceAccess) return;
+
     const currentUserId = req.worker?.id;
 
     if (!sourceProjectId || !sourcePanelId) {
@@ -607,4 +715,6 @@ module.exports = {
   getManualProducts, createManualProduct, deleteManualProduct,
   getCrmItems, createCrmItem, updateCrmItem, deleteCrmItem,
   getProjectCrm, copyPanelFromProject,
+  recalcDivisionTotals, recalcPanelTotals,
+  calcItemPricing,
 };

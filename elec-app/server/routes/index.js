@@ -28,6 +28,13 @@ const {
 const {
   getEngineerStats, getClientStats, getSummary, getProjectTeam,
 } = require('../controllers/analyticsController');
+const { getDashboard } = require('../controllers/dashboardController');
+const {
+  getNotifications, markAsRead, markAllAsRead, deleteNotification,
+} = require('../controllers/notificationController');
+const {
+  createPriceChangeRequest, getPendingRequests, approveRequest, rejectRequest, getMyRequests, getPendingForProject,
+} = require('../controllers/priceChangeController');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -125,5 +132,22 @@ router.get('/analytics/summary',            requireAuth, requireRole('owner'), g
 router.get('/analytics/engineers',          requireAuth, requireRole('owner'), getEngineerStats);
 router.get('/analytics/clients',            requireAuth, requireRole('owner'), getClientStats);
 router.get('/analytics/projects/:projectId/team', requireAuth, getProjectTeam);
+
+// ── Dashboard (all authenticated) ──────────────────────────
+router.get('/dashboard',                    requireAuth, getDashboard);
+
+// ── Notifications ──────────────────────────────────────────
+router.get('/notifications',                requireAuth, getNotifications);
+router.patch('/notifications/:notificationId/read', requireAuth, markAsRead);
+router.patch('/notifications/read-all',     requireAuth, markAllAsRead);
+router.delete('/notifications/:notificationId', requireAuth, deleteNotification);
+
+// ── Price Change Requests ─────────────────────────────────
+router.post('/price-changes',               requireAuth, requireRole('owner','engineer'), createPriceChangeRequest);
+router.get('/price-changes',                requireAuth, getPendingRequests);
+router.get('/price-changes/my',             requireAuth, getMyRequests);
+router.get('/price-changes/project/:projectId', requireAuth, getPendingForProject);
+router.patch('/price-changes/:requestId/approve', requireAuth, requireRole('owner'), approveRequest);
+router.patch('/price-changes/:requestId/reject',  requireAuth, requireRole('owner'), rejectRequest);
 
 module.exports = router;

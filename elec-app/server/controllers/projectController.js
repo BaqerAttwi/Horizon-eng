@@ -24,6 +24,20 @@ async function recalcReservedQty() {
 
 async function getProjects(req, res, next) {
   try {
+    const user = req.worker;
+    let whereClause = 'WHERE p.deleted_at IS NULL';
+    const params = [];
+
+    // Engineers only see their own projects + projects they collaborate on
+    if (user.role === 'engineer') {
+      whereClause = `WHERE p.deleted_at IS NULL
+        AND (p.engineer_id = ? OR p.id IN (
+          SELECT per.project_id FROM project_engineer_requests per
+          WHERE per.target_engineer_id = ? AND per.status = 'accepted'
+        ))`;
+      params.push(user.id, user.id);
+    }
+
     const [projects] = await db.execute(
       `SELECT p.*, w.name as engineer_name, c.name as client_name,
               (SELECT COUNT(*) FROM project_items pi WHERE pi.project_id=p.id) as item_count,
@@ -36,26 +50,43 @@ async function getProjects(req, res, next) {
        FROM projects p
        LEFT JOIN workers w ON p.engineer_id=w.id
        LEFT JOIN clients c ON p.client_id=c.id
-       WHERE p.deleted_at IS NULL
+       ${whereClause}
        ORDER BY
          CASE WHEN p.status='draft' THEN 0 ELSE 1 END,
          CASE WHEN p.status='draft' AND p.deadline IS NOT NULL THEN p.deadline ELSE '9999-12-31' END,
-         p.created_at DESC`
+         p.created_at DESC`,
+      params
     );
-    console.log('[Projects] GET →', projects.length);
+    console.log('[Projects] GET →', projects.length, '(filtered for', user.role + ')');
     res.json(projects);
   } catch (err) { console.error('[Projects] ❌ getAll:', err.message); next(err); }
 }
 
 async function getProject(req, res, next) {
   try {
+    const user = req.worker;
+    const projectId = req.params.id;
+
+    // Check if engineer has access to this project
+    if (user.role === 'engineer') {
+      const [[access]] = await db.execute(
+        `SELECT p.id FROM projects p
+         LEFT JOIN project_engineer_requests per ON per.project_id = p.id
+           AND per.target_engineer_id = ? AND per.status = 'accepted'
+         WHERE p.id = ? AND p.deleted_at IS NULL
+           AND (p.engineer_id = ? OR per.id IS NOT NULL)`,
+        [user.id, projectId, user.id]
+      );
+      if (!access) return res.status(403).json({ error: 'Access denied — you are not assigned to this project' });
+    }
+
     const [rows] = await db.execute(
       `SELECT p.*, w.name as engineer_name, c.name as client_name
        FROM projects p
        LEFT JOIN workers w ON p.engineer_id=w.id
        LEFT JOIN clients c ON p.client_id=c.id
        WHERE p.id=? AND p.deleted_at IS NULL`,
-      [req.params.id]
+      [projectId]
     );
     if (!rows.length) return res.status(404).json({ error: 'Project not found' });
 
@@ -66,10 +97,10 @@ async function getProject(req, res, next) {
        JOIN products pr ON pi.product_id=pr.id
        LEFT JOIN brands b ON pr.brand_id=b.id
        WHERE pi.project_id=?`,
-      [req.params.id]
+      [projectId]
     );
 
-    console.log(`[Projects] GET id:${req.params.id} items:${items.length}`);
+    console.log(`[Projects] GET id:${projectId} items:${items.length}`);
     res.json({ ...rows[0], items });
   } catch (err) { console.error('[Projects] ❌ getOne:', err.message); next(err); }
 }

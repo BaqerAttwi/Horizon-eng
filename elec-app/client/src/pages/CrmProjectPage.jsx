@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useDebounce } from '../hooks/useDebounce';
+import { useAuth } from '../context/AuthContext';
 
 const DIVISION_TYPES = ['INCOMING', 'OUTGOING', 'Enclosure', 'Accessories', 'Measurement'];
 const DIVISION_COLORS = { INCOMING: '#1a5fa8', OUTGOING: '#4a8fc4', Enclosure: '#8b5cf6', Accessories: '#f59e0b', Measurement: '#6aaed6' };
@@ -170,7 +171,7 @@ function ManualProductModal({ project, onClose, onSaved, prefill }) {
 }
 
 // ── CRM Item Row ──────────────────────────────────────────────
-function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
+function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCost, pendingPriceChange }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...item });
 
@@ -183,16 +184,17 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
   const baseEur = parseFloat(item.base_price_euro || 0);
   const qty = parseInt(item.qty) || 1;
   const baseTotal = base * qty;
-  const mkP = baseTotal * (parseFloat(item.markupP_pct) / 100);
-  const afterMkP = baseTotal + mkP;
-  const disc = afterMkP * (parseFloat(item.discount_pct) / 100);
-  const totalT = afterMkP - disc;
-  const man = baseTotal * (parseFloat(item.manpower_pct) / 100);
+  const disc = baseTotal * (parseFloat(item.discount_pct) / 100);
+  const afterDisc = baseTotal - disc;
+  const mkP = afterDisc * (parseFloat(item.markupP_pct) / 100);
+  const totalT = afterDisc + mkP;
+  const man = afterDisc * (parseFloat(item.manpower_pct) / 100);
   const mkM = man * (parseFloat(item.markupM_pct) / 100);
   const final = totalT + man + mkM;
   const finalEur = baseEur * (final / (base || 1));
   const cost = parseFloat(item.cost || 0);
   const profit = final - cost;
+  const isLoss = final < cost && cost > 0;
 
   const convertEurEdit = (euro) => {
     const rate = project.exchange_rate_eur_usd || 1.08;
@@ -223,13 +225,13 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
         <td style={{ fontSize: 11, color: 'var(--muted)', verticalAlign: 'middle' }}>{desc}</td>
         <td style={{ fontSize: 11, verticalAlign: 'middle' }}>{brand || '—'}</td>
         <td style={{ verticalAlign: 'middle' }}>
-          <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.markupP_pct}
-            onChange={e => setForm(f => ({ ...f, markupP_pct: parseFloat(e.target.value) || 0 }))} />
-        </td>
-        <td className="mono" style={{ fontSize: 11, color: 'var(--primary-light)', verticalAlign: 'middle' }}>${afterMkP.toFixed(2)}</td>
-        <td style={{ verticalAlign: 'middle' }}>
           <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.discount_pct}
             onChange={e => setForm(f => ({ ...f, discount_pct: parseFloat(e.target.value) || 0 }))} />
+        </td>
+        <td className="mono" style={{ fontSize: 11, color: '#60a5fa', fontWeight: 600, verticalAlign: 'middle' }}>${afterDisc.toFixed(2)}</td>
+        <td style={{ verticalAlign: 'middle' }}>
+          <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.markupP_pct}
+            onChange={e => setForm(f => ({ ...f, markupP_pct: parseFloat(e.target.value) || 0 }))} />
         </td>
         <td className="mono" style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, verticalAlign: 'middle' }}>${totalT.toFixed(2)}</td>
         <td style={{ verticalAlign: 'middle' }}>
@@ -248,6 +250,13 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
         <td className="mono" style={{ fontWeight: 700, color: (parseFloat(form.cost) ? (final - parseFloat(form.cost)) : final) >= 0 ? 'var(--success)' : 'var(--danger)', verticalAlign: 'middle' }}>
           ${(final - (parseFloat(form.cost) || 0)).toFixed(2)}
         </td>
+        {!hideCost && <td style={{ verticalAlign: 'middle' }}>
+          <input type="number" step="0.01" className="form-input" style={{ width: 62, padding: '2px 4px', fontSize: 11 }} value={form.cost || ''}
+            onChange={e => setForm(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))} />
+        </td>}
+        {!hideCost && <td className="mono" style={{ fontWeight: 700, color: (parseFloat(form.cost) ? (final - parseFloat(form.cost)) : final) >= 0 ? 'var(--success)' : 'var(--danger)', verticalAlign: 'middle' }}>
+          ${(final - (parseFloat(form.cost) || 0)).toFixed(2)}
+        </td>}
         <td style={{ verticalAlign: 'middle' }}>
           <button className="btn btn-sm btn-primary" style={{ marginRight: 4 }}
             onClick={async () => { await onUpdate(item.id, form); setEditing(false); }}>Save</button>
@@ -258,24 +267,28 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
   }
 
   return (
-    <tr>
+    <tr style={pendingPriceChange ? { background: 'rgba(245,158,11,0.06)' } : {}}>
       <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}>
         {name}{notes ? <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--muted)', cursor: 'help' }} title={notes}>📝</span> : ''}
+        {pendingPriceChange && (
+          <span style={{ marginLeft: 6, fontSize: 9, padding: '1px 5px', borderRadius: 4, background: 'rgba(245,158,11,0.2)', color: 'var(--badge-yellow)', fontWeight: 700, cursor: 'help' }}
+            title="Price change pending approval">⏳ PENDING</span>
+        )}
       </td>
       <td className="mono">{item.qty}</td>
       <td className="mono" style={{ color: 'var(--text)' }}>${base.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{baseEur.toFixed(2)}</div></td>
       <td className="mono" style={{ color: 'var(--text)', fontWeight: 700 }}>${baseTotal.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{(baseEur * qty).toFixed(2)}</div></td>
       <td style={{ fontSize: 11, color: 'var(--muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</td>
       <td style={{ fontSize: 11 }}>{brand || '—'}</td>
-      <td className="mono" style={{ color: 'var(--accent2)' }}>{item.markupP_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>+${mkP.toFixed(2)}</div></td>
-      <td className="mono" style={{ color: '#60a5fa', fontWeight: 600 }}>${afterMkP.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>after markupP</div></td>
       <td className="mono" style={{ color: item.discount_pct > 0 ? 'var(--danger)' : 'var(--muted)' }}>{item.discount_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>-${disc.toFixed(2)}</div></td>
+      <td className="mono" style={{ color: '#60a5fa', fontWeight: 600 }}>${afterDisc.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>after disc</div></td>
+      <td className="mono" style={{ color: 'var(--accent2)' }}>{item.markupP_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>+${mkP.toFixed(2)}</div></td>
       <td className="mono" style={{ color: 'var(--accent)', fontWeight: 700 }}>${totalT.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>T.PriceT</div></td>
       <td className="mono" style={{ color: 'var(--accent2)' }}>{item.manpower_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>+${man.toFixed(2)}</div></td>
       <td className="mono" style={{ color: '#8b5cf6' }}>{item.markupM_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>+${mkM.toFixed(2)}</div></td>
-      <td className="mono" style={{ fontWeight: 700, color: 'var(--success)', fontSize: 13 }}>${final.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{finalEur.toFixed(2)}</div></td>
-      <td className="mono" style={{ color: 'var(--muted)' }}>${cost.toFixed(2)}</td>
-      <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>{profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>
+      <td className="mono" style={{ fontWeight: 700, color: isLoss ? 'var(--danger)' : 'var(--success)', fontSize: 13 }}>${final.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{finalEur.toFixed(2)}</div></td>
+      {!hideCost && <td className="mono" style={{ color: 'var(--muted)' }}>${cost.toFixed(2)}</td>}
+      {!hideCost && <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>{profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>}
       <td>
         <button className="btn-icon" title="Edit" onClick={() => setEditing(true)}>✏️</button>
         <button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }}
@@ -286,7 +299,7 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete }) {
 }
 
 // ── Division Section ──────────────────────────────────────────
-function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete }) {
+function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, hideCost, pendingPriceChanges }) {
   const [showAdd, setShowAdd] = useState(false);
   const [manualModal, setManualModal] = useState(null);
   const [pendingQty, setPendingQty] = useState(null);
@@ -390,14 +403,17 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
             <thead>
               <tr>
                 <th>Name</th><th>Qty</th><th>Price for 1 $ / €</th><th>Price $ / €</th><th>Description</th><th>Brand</th>
-                <th>mkP%</th><th>After MkP $</th><th>Disc%</th><th>T.PriceT $</th>
-                <th>Man%</th><th>mkM%</th><th>Final $ / €</th><th>Cost $</th><th>Profit $</th><th></th>
+                <th>Disc%</th><th>After Disc $</th><th>mkP%</th><th>T.PriceT $</th>
+                <th>Man%</th><th>mkM%</th><th>Final $ / €</th>
+                {!hideCost && <><th>Cost $</th><th>Profit $</th></>}
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {division.items.map(item => (
                 <CrmItemRow key={item.id} item={item} division={division} panel={panel} project={project}
-                  onUpdate={onItemUpdate} onDelete={onItemDelete} />
+                  onUpdate={onItemUpdate} onDelete={onItemDelete} hideCost={hideCost}
+                  pendingPriceChange={pendingPriceChanges?.[item.id] || null} />
               ))}
             </tbody>
           </table>
@@ -456,7 +472,7 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
 
 // ── Panel Section ─────────────────────────────────────────────
 function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleComplete,
-  onAddDivision, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, onPanelTotalUpdate }) {
+  onAddDivision, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, onPanelTotalUpdate, hideCost, pendingPriceChanges }) {
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct });
@@ -527,7 +543,8 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
       {panel.divisions?.map(div => (
         <DivisionSection key={div.id} division={div} panel={panel} project={project}
           onItemAdd={onItemAdd} onItemUpdate={onItemUpdate} onItemDelete={onItemDelete}
-          onDivisionDelete={onDivisionDelete} />
+          onDivisionDelete={onDivisionDelete} hideCost={hideCost}
+          pendingPriceChanges={pendingPriceChanges} />
       ))}
 
       <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
@@ -546,9 +563,11 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
 export default function CrmProjectPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isRole } = useAuth();
   const [project, setProject] = useState(null);
   const [panels, setPanels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pendingPriceChanges, setPendingPriceChanges] = useState({});
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [showCopyPanel, setShowCopyPanel] = useState(false);
   const [copyStep, setCopyStep] = useState('projects');
@@ -557,11 +576,18 @@ export default function CrmProjectPage() {
   const [selectedSourcePanel, setSelectedSourcePanel] = useState(null);
   const [copying, setCopying] = useState(false);
 
+  const hideCost = isRole('engineer');
+
   const load = useCallback(async () => {
     try {
       const r = await api.get(`/projects/${id}/crm`);
       setProject(r.data);
       setPanels(r.data.panels || []);
+
+      const pc = await api.get(`/price-changes/project/${id}`);
+      const map = {};
+      pc.data.forEach(req => { map[req.item_id] = req; });
+      setPendingPriceChanges(map);
     } catch (e) { toast.error(e.message); }
     finally { setLoading(false); }
   }, [id]);
@@ -663,9 +689,13 @@ export default function CrmProjectPage() {
     try {
       const div = panels.flatMap(p => p.divisions || []).find(d => d.items?.some(i => i.id === itemId));
       const panel = panels.find(p => p.divisions?.some(d => d.id === div?.id));
-      await api.patch(`/projects/${id}/panels/${panel.id}/divisions/${div.id}/items/${itemId}`, form);
+      const r = await api.patch(`/projects/${id}/panels/${panel.id}/divisions/${div.id}/items/${itemId}`, form);
       load();
-      toast.success('Item updated');
+      if (r.data && r.data.message && r.data.message.includes('request')) {
+        toast.success('⏳ Price change request sent — waiting for admin approval');
+      } else {
+        toast.success('Item updated');
+      }
     } catch (e) { toast.error(e.message); }
   };
 
@@ -816,7 +846,8 @@ export default function CrmProjectPage() {
         <PanelSection key={panel.id} panel={panel} project={project}
           onUpdatePanel={updatePanel} onDeletePanel={deletePanel} onToggleComplete={togglePanelComplete}
           onAddDivision={addDivision} onItemAdd={addItem} onItemUpdate={updateItem}
-          onItemDelete={deleteItem} onDivisionDelete={deleteDivision} />
+          onItemDelete={deleteItem} onDivisionDelete={deleteDivision} hideCost={hideCost}
+          pendingPriceChanges={pendingPriceChanges} />
       ))}
     </div>
   );

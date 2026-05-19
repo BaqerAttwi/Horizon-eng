@@ -1,14 +1,24 @@
 const db = require('../db/connection');
 
+// Engineer access filter: only projects they lead or collaborate on
+function engineerProjectFilter(userId) {
+  return `AND (p.engineer_id = ${userId} OR p.id IN (
+    SELECT per.project_id FROM project_engineer_requests per
+    WHERE per.target_engineer_id = ${userId} AND per.status = 'accepted'
+  ))`;
+}
+
 /**
  * GET /api/reservations
  * Returns ALL active reservations across all projects and orders.
- * Groups by product — shows every project/order demanding each product.
- * This is the "Stock Demand Tracker" page.
+ * Engineers only see demand for their own + collaborated projects.
  */
 async function getAllReservations(req, res, next) {
   try {
-    console.log('[Reservations] Loading full demand overview...');
+    const user = req.worker;
+    const engFilter = user.role === 'engineer' ? engineerProjectFilter(user.id) : '';
+
+    console.log('[Reservations] Loading demand overview (role:', user.role + ')...');
 
     // All project items from active/draft projects with stock info
     const [projectDemands] = await db.execute(`
@@ -40,6 +50,7 @@ async function getAllReservations(req, res, next) {
       LEFT JOIN clients c ON p.client_id = c.id
       WHERE p.status NOT IN ('completed','cancelled')
         AND pci.product_id IS NOT NULL
+        ${engFilter}
       ORDER BY pr.reference, p.id
     `);
 
@@ -118,11 +129,15 @@ async function getAllReservations(req, res, next) {
 /**
  * GET /api/reservations/product/:productId
  * All projects + orders demanding a specific product
+ * Engineers only see demand from their own + collaborated projects.
  */
 async function getProductDemand(req, res, next) {
   try {
+    const user = req.worker;
     const { productId } = req.params;
-    console.log('[Reservations] Product demand for id:', productId);
+    const engFilter = user.role === 'engineer' ? engineerProjectFilter(user.id) : '';
+
+    console.log('[Reservations] Product demand for id:', productId, '(role:', user.role + ')');
 
     const [product] = await db.execute(
       `SELECT p.*, b.name as brand_name, (p.stock_qty - p.reserved_qty) as available_qty
@@ -149,6 +164,7 @@ async function getProductDemand(req, res, next) {
       LEFT JOIN workers w ON p.engineer_id = w.id
       LEFT JOIN clients c ON p.client_id   = c.id
       WHERE pci.product_id = ? AND p.status NOT IN ('completed','cancelled')
+        ${engFilter}
       ORDER BY p.deadline ASC
     `, [productId]);
 

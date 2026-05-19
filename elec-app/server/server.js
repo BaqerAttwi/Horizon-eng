@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
 const routes  = require('./routes');
+const { runNotificationChecks } = require('./controllers/notificationController');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -27,5 +28,11 @@ app.use((err, req, res, _next) => {
 
 const server = app.listen(PORT, () => {
   console.log(`[Server] ✅ Running on http://localhost:${PORT}`);
+
+  // Run notification checks on startup
+  runNotificationChecks();
+
+  // Run checks every 6 hours
+  setInterval(runNotificationChecks, 6 * 60 * 60 * 1000);
 });
 server.timeout = 600000;

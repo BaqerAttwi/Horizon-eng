@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useDebounce } from '../hooks/useDebounce';
+import { useAuth } from '../context/AuthContext';
 
 function fmt(val, sym='') {
   if (val === null || val === undefined) return <span style={{color:'var(--muted)'}}>—</span>;
@@ -142,6 +143,7 @@ function EditModal({ product, onClose, onSaved }) {
 
 export default function ProductsPage() {
   const navigate = useNavigate();
+  const { isRole } = useAuth();
   const [products, setProducts]   = useState([]);
   const [brands, setBrands]       = useState([]);
   const [total, setTotal]         = useState(0);
@@ -152,6 +154,8 @@ export default function ProductsPage() {
   const [editing, setEditing]     = useState(null);
   const debouncedSearch = useDebounce(search, 300);
   const LIMIT = 50;
+
+  const hideCost = isRole('engineer');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -219,7 +223,7 @@ export default function ProductsPage() {
                 <th>Reference</th>
                 <th>Description</th>
                 <th>Brand</th>
-                <th>Cost</th>
+                {!hideCost && <th>Cost</th>}
                 <th>Euro €</th>
                 <th>USD $</th>
                 <th>Stock</th>
@@ -243,7 +247,7 @@ export default function ProductsPage() {
                   <td className="mono" style={{fontWeight:600,color:'var(--accent)'}}>{p.reference}</td>
                   <td style={{maxWidth:250,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={p.description}>{p.description||'—'}</td>
                   <td><span className="badge badge-purple">{p.brand_name||'—'}</span></td>
-                  <td className="mono">{fmt(p.price_cost,'')}</td>
+                  {!hideCost && <td className="mono">{fmt(p.price_cost,'')}</td>}
                   <td className="mono">{fmt(p.price_euro,'€')}</td>
                   <td className="mono">{fmt(p.price_usd,'$')}</td>
                   <td className="mono">{p.stock_qty}</td>
@@ -261,7 +265,9 @@ export default function ProductsPage() {
                     {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
                   </td>
                   <td>
-                    <button className="btn-icon" title="Edit" onClick={()=>setEditing(p)}>✏️</button>
+                    {!hideCost && (
+                      <button className="btn-icon" title="Edit" onClick={()=>setEditing(p)}>✏️</button>
+                    )}
                   </td>
                 </tr>
               ))}

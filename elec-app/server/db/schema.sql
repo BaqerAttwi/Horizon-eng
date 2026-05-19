@@ -243,6 +243,58 @@ CREATE TABLE IF NOT EXISTS project_engineer_requests (
   UNIQUE KEY uq_project_engineer (project_id, target_engineer_id)
 );
 
+-- ── CRM Price Change Requests (engineer → admin approval) ─────
+CREATE TABLE IF NOT EXISTS crm_price_change_requests (
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  item_id           INT NOT NULL,
+  project_id        INT NOT NULL,
+  panel_id          INT NOT NULL,
+  division_id       INT NOT NULL,
+  old_base_price_usd    DECIMAL(14,4),
+  old_base_price_euro   DECIMAL(14,4),
+  old_markupP_pct       DECIMAL(5,2),
+  old_discount_pct      DECIMAL(5,2),
+  old_manpower_pct      DECIMAL(5,2),
+  old_markupM_pct       DECIMAL(5,2),
+  old_qty               INT,
+  new_base_price_usd    DECIMAL(14,4),
+  new_base_price_euro   DECIMAL(14,4),
+  new_markupP_pct       DECIMAL(5,2),
+  new_discount_pct      DECIMAL(5,2),
+  new_manpower_pct      DECIMAL(5,2),
+  new_markupM_pct       DECIMAL(5,2),
+  new_qty               INT,
+  requested_by      INT NOT NULL,
+  status            ENUM('pending','approved','rejected') DEFAULT 'pending',
+  approved_by       INT DEFAULT NULL,
+  rejection_reason  TEXT,
+  created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (item_id) REFERENCES panel_crm_items(id) ON DELETE CASCADE,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (panel_id) REFERENCES project_crm_panels(id) ON DELETE CASCADE,
+  FOREIGN KEY (division_id) REFERENCES panel_divisions(id) ON DELETE CASCADE,
+  FOREIGN KEY (requested_by) REFERENCES workers(id) ON DELETE CASCADE,
+  FOREIGN KEY (approved_by) REFERENCES workers(id) ON DELETE SET NULL,
+  INDEX idx_status (status),
+  INDEX idx_project (project_id)
+);
+
+-- ── Notifications (in-app alerts for all roles) ──────────────
+CREATE TABLE IF NOT EXISTS notifications (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  user_id     INT NOT NULL,
+  type        ENUM('deadline','approval','status','request','stock','general') NOT NULL,
+  title       VARCHAR(250) NOT NULL,
+  message     TEXT,
+  link        VARCHAR(250),
+  is_read     BOOLEAN DEFAULT FALSE,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES workers(id) ON DELETE CASCADE,
+  INDEX idx_user_read (user_id, is_read),
+  INDEX idx_created (created_at)
+);
+
 -- ── Seed: default owner (password: admin123) ─────────────────
 -- NOTE: client_rejection_note and cost are now in CREATE TABLE above.
 -- Legacy migration ALTERs (already applied in existing DB):

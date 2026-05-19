@@ -15,6 +15,10 @@ import ReservationsPage from './pages/ReservationsPage';
 import DiscountsPage   from './pages/DiscountsPage';
 import RequestsPage    from './pages/RequestsPage';
 import AnalyticsPage   from './pages/AnalyticsPage';
+import DashboardPage   from './pages/DashboardPage';
+import NotificationsPage from './pages/NotificationsPage';
+import PriceChangesPage from './pages/PriceChangesPage';
+import NotificationBell from './components/NotificationBell';
 import Logo            from './components/Logo';
 
 // Role badge colors
@@ -23,11 +27,13 @@ const ROLE_ICONS  = { owner:'👑', accounting:'💼', engineer:'⚙️', secret
 
 // Nav items with permission check
 const NAV = [
+  { to: '/dashboard',   icon: '🏠', label: 'Dashboard',      perm: null },
   { to: '/products',     icon: '📦', label: 'Products',       perm: 'products' },
   { to: '/reservations', icon: '📊', label: 'Demand Tracker',  perm: 'reservations' },
   { to: '/upload',       icon: '⬆️', label: 'Import Excel',    perm: 'upload' },
   { to: '/projects',     icon: '🔧', label: 'Projects',       perm: 'projects' },
   { to: '/requests',     icon: '🤝', label: 'Requests',       perm: 'requests' },
+  { to: '/price-changes', icon: '💰', label: 'Price Changes',  perm: 'price-changes' },
   { to: '/discounts',    icon: '🏷️', label: 'Brand Discounts', perm: 'discounts' },
   { to: '/workers',      icon: '👷', label: 'Workers',        perm: 'workers' },
   { to: '/clients',      icon: '🏢', label: 'Clients',        perm: 'clients' },
@@ -145,24 +151,29 @@ function AppLayout() {
           <div className="mobile-header">
             <button className="btn-icon" onClick={() => setMobileOpen(true)} aria-label="Open menu">☰</button>
             <span style={{ fontWeight: 800, color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Logo size={24} /></span>
+            <div style={{ flex: 1 }} />
+            <NotificationBell />
           </div>
         )}
 
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/login" element={<AnimatedPage><LoginPage /></AnimatedPage>} />
-            <Route path="/"          element={<Navigate to="/products" replace />} />
+            <Route path="/"          element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<AnimatedPage><ProtectedRoute><DashboardPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/products"  element={<AnimatedPage><ProtectedRoute perm="products"><ProductsPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/reservations" element={<AnimatedPage><ProtectedRoute perm="reservations"><ReservationsPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/upload"    element={<AnimatedPage><ProtectedRoute perm="upload"><UploadPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/projects"  element={<AnimatedPage><ProtectedRoute perm="projects"><ProjectsPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/projects/:id/crm" element={<AnimatedPage><ProtectedRoute perm="projects"><CrmProjectPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/requests"  element={<AnimatedPage><ProtectedRoute perm="requests"><RequestsPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/price-changes" element={<AnimatedPage><ProtectedRoute perm="price-changes"><PriceChangesPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/discounts"  element={<AnimatedPage><ProtectedRoute perm="discounts"><DiscountsPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/workers"   element={<AnimatedPage><ProtectedRoute perm="workers"><WorkersPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/clients"   element={<AnimatedPage><ProtectedRoute perm="clients"><ClientsPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/analytics" element={<AnimatedPage><ProtectedRoute perm="analytics"><AnalyticsPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="*"          element={<Navigate to="/products" replace />} />
+            <Route path="/notifications" element={<AnimatedPage><ProtectedRoute><NotificationsPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="*"          element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </AnimatePresence>
       </main>
