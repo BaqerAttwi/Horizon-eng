@@ -110,6 +110,14 @@ body {
 .sidebar-logo h1 { font-size: 16px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
 .sidebar-logo span { font-size: 10px; color: var(--muted); font-family: var(--font-mono); }
 .sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+.nav-group-label {
+  padding: 14px 16px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
 .nav-link {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 12px; border-radius: var(--radius);
@@ -273,9 +281,12 @@ tr:hover td { background: var(--panel2); }
   .stat-value { font-size: 20px; }
 
   .form-row { grid-template-columns: 1fr; }
+
+  /* Force full-width inputs on mobile (overrides inline widths) */
   .form-input, .form-select, .form-textarea { padding: 10px 12px; font-size: 14px; }
-  .form-label { font-size: 10px; }
   select.form-select { font-size: 14px; }
+  input.form-input, select.form-select, textarea.form-textarea { width: 100% !important; min-width: 0 !important; }
+  .form-input[type="number"] { width: 100% !important; min-width: 0 !important; }
 
   table { font-size: 11px; }
   th, td { padding: 6px 6px; white-space: nowrap; }
@@ -307,6 +318,33 @@ tr:hover td { background: var(--panel2); }
 
   .stats-row .stat-card:active { background: var(--panel2); }
   .nav-link { padding: 12px; min-height: 44px; }
+
+  /* CRM table: narrower spacing on mobile */
+  .crm-item-row td { padding: 4px 3px !important; font-size: 10px !important; }
+  .crm-item-row input { font-size: 10px !important; }
+  .crm-item-row .btn-icon { min-width: 28px; min-height: 28px; padding: 4px; font-size: 11px; }
+
+  /* Force table-wrap to be scrollable on mobile always */
+  .table-wrap { max-width: 100vw; }
+  .table-wrap table { min-width: 600px; }
+
+  /* Fix grid for manual product form */
+  .manual-prod-grid { grid-template-columns: 1fr !important; }
+
+  /* Notification items: stack on mobile */
+  .notif-item { flex-direction: column; gap: 8px; }
+  .notif-actions { align-self: flex-end; }
+
+  /* Messages: stack compose area on mobile */
+  .msg-compose { flex-direction: column !important; }
+  .msg-compose textarea { min-height: 80px; }
+  .msg-compose button { align-self: flex-end; }
+
+  /* Fix KPI last card centering (5 cards -> 2+2+1) */
+  .stats-row .stat-card:last-child:nth-child(odd) { grid-column: 1 / -1; justify-self: center; width: 50%; }
+
+  /* Price change diff column: allow shrinking on mobile */
+  .pchange-diff { min-width: auto !important; width: 100%; }
 }
 
 @media (max-width: 768px) {

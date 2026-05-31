@@ -220,6 +220,8 @@ CREATE TABLE IF NOT EXISTS panel_crm_items (
   markupM_amt       DECIMAL(14,4) DEFAULT 0,
   totalfinalProduct DECIMAL(14,4) DEFAULT 0,
   cost              DECIMAL(14,2) DEFAULT 0,
+  override_markup   BOOLEAN DEFAULT FALSE,
+  visible_in_client_pdf BOOLEAN DEFAULT TRUE,
   notes             TEXT,
   created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (division_id) REFERENCES panel_divisions(id) ON DELETE CASCADE,
@@ -284,7 +286,7 @@ CREATE TABLE IF NOT EXISTS crm_price_change_requests (
 CREATE TABLE IF NOT EXISTS notifications (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   user_id     INT NOT NULL,
-  type        ENUM('deadline','approval','status','request','stock','general') NOT NULL,
+  type        ENUM('deadline','approval','status','request','stock','general','manual_product','manual_product_approved','manual_product_rejected') NOT NULL DEFAULT 'general',
   title       VARCHAR(250) NOT NULL,
   message     TEXT,
   link        VARCHAR(250),
@@ -295,8 +297,34 @@ CREATE TABLE IF NOT EXISTS notifications (
   INDEX idx_created (created_at)
 );
 
+-- ── Item Groups (reusable product sets for quick CRM add) ────
+CREATE TABLE IF NOT EXISTS item_groups (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  name        VARCHAR(250) NOT NULL,
+  created_by  INT NOT NULL,
+  is_public   BOOLEAN DEFAULT FALSE,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES workers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS item_group_items (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  group_id    INT NOT NULL,
+  product_id  INT,
+  is_manual   BOOLEAN DEFAULT FALSE,
+  custom_name VARCHAR(250),
+  description TEXT,
+  price_usd   DECIMAL(14,4) DEFAULT NULL,
+  price_euro  DECIMAL(14,4) DEFAULT NULL,
+  qty         INT DEFAULT 1,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (group_id) REFERENCES item_groups(id) ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+);
+
 -- ── Seed: default owner (password: admin123) ─────────────────
 -- NOTE: client_rejection_note and cost are now in CREATE TABLE above.
+-- ALTER TABLE panel_crm_items ADD COLUMN visible_in_client_pdf BOOLEAN DEFAULT TRUE AFTER override_markup;
 -- Legacy migration ALTERs (already applied in existing DB):
 -- ALTER TABLE project_crm_panels ADD COLUMN is_completed BOOLEAN DEFAULT FALSE;
 -- ALTER TABLE panel_crm_items ADD COLUMN base_price_euro DECIMAL(14,4) AFTER base_price_usd;
@@ -304,6 +332,10 @@ CREATE TABLE IF NOT EXISTS notifications (
 -- ALTER TABLE panel_crm_items ADD COLUMN cost DECIMAL(14,2) DEFAULT 0 AFTER totalfinalProduct;
 -- ALTER TABLE project_crm_panels ADD COLUMN updated_by INT DEFAULT NULL AFTER is_completed;
 -- ALTER TABLE project_crm_panels ADD FOREIGN KEY (updated_by) REFERENCES workers(id) ON DELETE SET NULL;
+-- ALTER TABLE item_group_items ADD COLUMN description TEXT AFTER custom_name;
+-- ALTER TABLE item_group_items ADD COLUMN price_usd DECIMAL(14,4) DEFAULT NULL AFTER description;
+-- ALTER TABLE item_group_items ADD COLUMN price_euro DECIMAL(14,4) DEFAULT NULL AFTER price_usd;
+-- CREATE TABLE IF NOT EXISTS manual_product_requests LIKE ... (run the full CREATE above);
 
 -- ── View: Product Demand (always reflects latest CRM data) ────
 -- DROP VIEW IF EXISTS product_demand_view;
@@ -332,6 +364,32 @@ CREATE TABLE IF NOT EXISTS notifications (
 INSERT IGNORE INTO workers (id, name, email, role, password_hash)
 VALUES (1, 'Admin Owner', 'admin@company.com', 'owner',
         '$2b$10$rOzHwG5k5h1Z5k5h1Z5k5uK5h1Z5k5h1Z5k5h1Z5k5h1Z5k5h1Z5');
+
+-- ── Manual Product Requests (engineer adds → owner approves) ──
+CREATE TABLE IF NOT EXISTS manual_product_requests (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  name            VARCHAR(250) NOT NULL,
+  description     TEXT,
+  price_usd       DECIMAL(14,4),
+  price_euro      DECIMAL(14,4),
+  brand           VARCHAR(100),
+  reference       VARCHAR(100),
+  created_by      INT NOT NULL,
+  status          ENUM('pending','approved','rejected') DEFAULT 'pending',
+  rejection_reason TEXT,
+  created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES workers(id) ON DELETE CASCADE
+);
+
+-- Messages / Announcements
+CREATE TABLE IF NOT EXISTS messages (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  content     TEXT NOT NULL,
+  created_by  INT NOT NULL,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES workers(id) ON DELETE CASCADE
+);
 
 -- NOTE: Run this in MySQL after importing schema to set real password:
 -- UPDATE workers SET password_hash = '$2b$10$...' WHERE id=1;

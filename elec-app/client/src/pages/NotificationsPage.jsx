@@ -83,6 +83,7 @@ export default function NotificationsPage() {
                   key={n.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
+                  className="notif-item"
                   style={{
                     display: 'flex', gap: 12, alignItems: 'flex-start',
                     padding: '14px 16px',
@@ -106,7 +107,7 @@ export default function NotificationsPage() {
                       {new Date(n.created_at).toLocaleString()}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <div className="notif-actions" style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     {!n.is_read && (
                       <button className="btn btn-sm btn-secondary" onClick={() => handleRead(n.id)}>Read</button>
                     )}

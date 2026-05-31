@@ -1,4 +1,4 @@
-import pool from '../db/connection.js';
+const pool = require('../db/connection');
 
 // ── Helper: Build date filter clause ───────────────────────────
 function dateFilter(field, dateFrom, dateTo) {
@@ -16,7 +16,7 @@ function dateParams(dateFrom, dateTo) {
 }
 
 // ── Engineer Performance Stats ──────────────────────────────────
-export async function getEngineerStats(req, res, next) {
+async function getEngineerStats(req, res, next) {
   try {
     const { date_from, date_to } = req.query;
     const df = dateFilter('p.created_at', date_from, date_to);
@@ -68,7 +68,7 @@ export async function getEngineerStats(req, res, next) {
 }
 
 // ─ Client Profitability Stats ──────────────────────────────────
-export async function getClientStats(req, res, next) {
+async function getClientStats(req, res, next) {
   try {
     const { date_from, date_to } = req.query;
     const df = dateFilter('p.created_at', date_from, date_to);
@@ -100,7 +100,7 @@ export async function getClientStats(req, res, next) {
 }
 
 // ── Overall Summary ────────────────────────────────────────────
-export async function getSummary(req, res, next) {
+async function getSummary(req, res, next) {
   try {
     const { date_from, date_to } = req.query;
     const df = dateFilter('p.created_at', date_from, date_to);
@@ -173,7 +173,7 @@ export async function getSummary(req, res, next) {
 }
 
 // ── Project Team Members ────────────────────────────────────────
-export async function getProjectTeam(req, res, next) {
+async function getProjectTeam(req, res, next) {
   try {
     const { projectId } = req.params;
     const [[project]] = await pool.query(`
@@ -200,3 +200,5 @@ export async function getProjectTeam(req, res, next) {
     next(err);
   }
 }
+
+module.exports = { getEngineerStats, getClientStats, getSummary, getProjectTeam };

@@ -99,7 +99,7 @@ async function getPendingRequests(req, res, next) {
         req.name AS requested_by_name,
         app.name AS approved_by_name,
         cp.reference, cp.description AS product_desc, b.name AS brand_name,
-        cp.custom_name, cp.custom_desc, cp.custom_brand
+        ci.custom_name, ci.custom_desc, ci.custom_brand
        FROM crm_price_change_requests r
        JOIN projects p ON p.id = r.project_id
        JOIN workers req ON req.id = r.requested_by

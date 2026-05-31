@@ -150,11 +150,15 @@ async function updatePanel(req, res, next) {
       [panel_name||null, markupP||0, markupM||0, manpower_pct||0, req.worker.id, req.params.panelId, req.params.projectId]
     );
 
-    // Cascade panel markups to all items in this panel
+    // Cascade panel markups to items and divisions
     const [divisions] = await db.execute('SELECT id FROM panel_divisions WHERE panel_id=?', [req.params.panelId]);
     for (const div of divisions) {
       await db.execute(
-        'UPDATE panel_crm_items SET markupP_pct=?, manpower_pct=?, markupM_pct=? WHERE division_id=?',
+        'UPDATE panel_divisions SET markupP=?, markupM=?, manpower_pct=? WHERE id=?',
+        [markupP||0, markupM||0, manpower_pct||0, div.id]
+      );
+      await db.execute(
+        'UPDATE panel_crm_items SET markupP_pct=?, manpower_pct=?, markupM_pct=? WHERE division_id=? AND (override_markup IS NULL OR override_markup = FALSE)',
         [markupP||0, manpower_pct||0, markupM||0, div.id]
       );
       await recalcDivisionTotals(div.id);
@@ -252,9 +256,9 @@ async function updateDivision(req, res, next) {
       [division_type, markupP||0, markupM||0, manpower_pct||0, req.params.divisionId, req.params.panelId]
     );
 
-    // Cascade division markups to all items in this division
+    // Cascade division markups to items (skip manually overridden)
     await db.execute(
-      'UPDATE panel_crm_items SET markupP_pct=?, manpower_pct=?, markupM_pct=? WHERE division_id=?',
+      'UPDATE panel_crm_items SET markupP_pct=?, manpower_pct=?, markupM_pct=? WHERE division_id=? AND (override_markup IS NULL OR override_markup = FALSE)',
       [markupP||0, manpower_pct||0, markupM||0, req.params.divisionId]
     );
     await recalcDivisionTotals(req.params.divisionId);
@@ -423,8 +427,8 @@ async function createCrmItem(req, res, next) {
       `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
         custom_name,custom_desc,custom_brand,custom_price_euro,custom_price_usd,
         qty,base_price_usd,base_price_euro,markupP_pct,discount_pct,manpower_pct,markupM_pct,
-        markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,notes,cost)
-       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,notes,cost,override_markup,visible_in_client_pdf)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,1)`,
       [
         req.params.divisionId, product_id||null, mpId||null, is_manual||false,
         custom_name||null, custom_desc||null, custom_brand||null,
@@ -449,7 +453,7 @@ async function updateCrmItem(req, res, next) {
     const hasAccess = await checkDivisionAccess(req, res, req.params.divisionId);
     if (!hasAccess) return;
 
-    const { qty, base_price_usd, base_price_euro, markupP_pct, discount_pct, manpower_pct, markupM_pct, notes, cost } = req.body;
+    const { qty, base_price_usd, base_price_euro, markupP_pct, discount_pct, manpower_pct, markupM_pct, notes, cost, visible_in_client_pdf } = req.body;
 
     const [existing] = await db.execute('SELECT * FROM panel_crm_items WHERE id=? AND division_id=?', [req.params.itemId, req.params.divisionId]);
     if (!existing.length) return res.status(404).json({ error: 'Item not found' });
@@ -495,16 +499,21 @@ async function updateCrmItem(req, res, next) {
 
     const pricing = calcItemPricing(item);
 
+    const markupChanged = (
+      (markupP_pct !== undefined) || (manpower_pct !== undefined) || (markupM_pct !== undefined)
+    );
+
     await db.execute(
       `UPDATE panel_crm_items SET qty=?,base_price_usd=?,base_price_euro=?,markupP_pct=?,discount_pct=?,
         manpower_pct=?,markupM_pct=?,markupP_amt=?,discount_amt=?,totalpriceT=?,
-        manpower_amt=?,markupM_amt=?,totalfinalProduct=?,notes=?,cost=? WHERE id=?`,
+        manpower_amt=?,markupM_amt=?,totalfinalProduct=?,notes=?,cost=?${markupChanged ? ',override_markup=1' : ''}${visible_in_client_pdf !== undefined ? ',visible_in_client_pdf=?' : ''} WHERE id=?`,
       [
         item.qty, item.base_price_usd, item.base_price_euro, item.markupP_pct, item.discount_pct,
         item.manpower_pct, item.markupM_pct, pricing.markupP_amt, pricing.discount_amt,
         pricing.totalpriceT, pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct,
         notes !== undefined ? notes : existing[0].notes,
         cost !== undefined ? cost : existing[0].cost,
+        ...(visible_in_client_pdf !== undefined ? [visible_in_client_pdf] : []),
         req.params.itemId
       ]
     );
@@ -681,12 +690,12 @@ async function copyPanelFromProject(req, res, next) {
           `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
             custom_name,custom_desc,custom_brand,custom_price_euro,custom_price_usd,
             qty,base_price_usd,base_price_euro,markupP_pct,discount_pct,manpower_pct,markupM_pct,
-            markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,cost,notes)
-           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,cost,notes,override_markup,visible_in_client_pdf)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [newDivisionId, si.product_id, newManualProductId, si.is_manual,
            si.custom_name, si.custom_desc, si.custom_brand, si.custom_price_euro, si.custom_price_usd,
            si.qty, si.base_price_usd, si.base_price_euro, si.markupP_pct, si.discount_pct, si.manpower_pct, si.markupM_pct,
-           si.markupP_amt, si.discount_amt, si.totalpriceT, si.manpower_amt, si.markupM_amt, si.totalfinalProduct, si.cost, si.notes]
+           si.markupP_amt, si.discount_amt, si.totalpriceT, si.manpower_amt, si.markupM_amt, si.totalfinalProduct, si.cost, si.notes, 0, si.visible_in_client_pdf]
         );
       }
 

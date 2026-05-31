@@ -40,7 +40,16 @@ function ProductSearch({ onSelect, projectId, exchangeRate }) {
   return (
     <div style={{ position: 'relative', zIndex: 100 }}>
       <input className="form-input" placeholder="🔍 Search database or type to add manual..."
-        value={q} onChange={e => setQ(e.target.value)} />
+        value={q} onChange={e => setQ(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' && q.trim() && results.length) {
+            const p = results[0];
+            const { eur, usd } = displayPrice(p);
+            onSelect({ ...p, source: 'db', price_usd: usd, price_euro: eur });
+            setQ('');
+            setRes([]);
+          }
+        }} />
       {q.trim() && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
@@ -58,6 +67,7 @@ function ProductSearch({ onSelect, projectId, exchangeRate }) {
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{p.reference}</div>
                 <div style={{ fontSize: 11, color: 'var(--muted)' }}>{p.description}</div>
+                {p.smart_code ? <div style={{ fontSize: 10, color: 'var(--badge-yellow)' }}>📌 {p.smart_code}</div> : null}
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <div style={{ fontSize: 11, color: 'var(--success)', fontFamily: 'var(--font-mono)' }}>${usd.toFixed(2)} / €{eur.toFixed(2)}</div>
@@ -170,6 +180,88 @@ function ManualProductModal({ project, onClose, onSaved, prefill }) {
   );
 }
 
+// ── Group Select Modal ─────────────────────────────────────────
+function GroupSelectModal({ project, division, panel, onAddItem, onClose }) {
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    api.get('/item-groups')
+      .then(r => setGroups(r.data || []))
+      .catch(e => toast.error(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const addGroup = async (group) => {
+    setAdding(true);
+    try {
+      const r = await api.get(`/item-groups/${group.id}/items`);
+      const items = r.data || [];
+      if (!items.length) { toast.error('Group has no items'); setAdding(false); return; }
+
+      for (const grpItem of items) {
+        const basePriceUsd = parseFloat(grpItem.price_usd) || 0;
+        const basePriceEur = parseFloat(grpItem.price_euro) || (basePriceUsd / (project.exchange_rate_eur_usd || 1.08));
+
+        await onAddItem(division.id, {
+          product_id: grpItem.product_id || null,
+          is_manual: grpItem.is_manual || false,
+          custom_name: grpItem.custom_name || null,
+          custom_desc: grpItem.description || null,
+          base_price_usd: basePriceUsd,
+          base_price_euro: basePriceEur,
+          qty: grpItem.qty || 1,
+          markupP_pct: division.markupP || panel.markupP || 0,
+          markupM_pct: division.markupM || panel.markupM || 0,
+          manpower_pct: division.manpower_pct || panel.manpower_pct || 0,
+        });
+      }
+      toast.success(`✅ Group "${group.name}" added (${items.length} items)`);
+      onClose();
+    } catch (e) {
+      toast.error('❌ ' + e.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-title">Add Group Data</span>
+          <button className="btn-icon" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          {loading ? (
+            <div style={{display:'flex',justifyContent:'center',padding:20}}><span className="spinner" /></div>
+          ) : groups.length === 0 ? (
+            <div className="empty"><div className="empty-icon">📭</div><p>No groups available. Create them in Item Groups page.</p></div>
+          ) : (
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:8}}>
+              {groups.map(g => (
+                <div key={g.id} className="card" style={{cursor:'pointer',padding:12,margin:0}}
+                  onClick={() => !adding && addGroup(g)}>
+                  <div style={{fontWeight:700,fontSize:13,color:'var(--white)'}}>{g.name}</div>
+                  <div style={{fontSize:11,color:'var(--muted)',marginTop:4}}>
+                    by {g.created_by_name} • {g.item_count} items
+                    {g.is_public && <span className="badge badge-green" style={{marginLeft:6,fontSize:9}}>Public</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {adding && <div style={{textAlign:'center',marginTop:8}}><span className="spinner" /> Adding items...</div>}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── CRM Item Row ──────────────────────────────────────────────
 function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCost, pendingPriceChange }) {
   const [editing, setEditing] = useState(false);
@@ -207,7 +299,11 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
 
   if (editing) {
     return (
-      <tr style={{ background: 'var(--panel2)' }}>
+      <tr className="crm-item-row" style={{ background: 'var(--panel2)' }}>
+        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+          <input type="checkbox" checked={!!form.visible_in_client_pdf}
+            onChange={e => setForm(f => ({ ...f, visible_in_client_pdf: e.target.checked ? 1 : 0 }))} />
+        </td>
         <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', verticalAlign: 'middle' }}>{name}</td>
         <td style={{ verticalAlign: 'middle' }}>
           <input type="number" min={1} className="form-input" style={{ width: 55, padding: '2px 4px', fontSize: 11 }} value={form.qty || 1}
@@ -243,13 +339,6 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
             onChange={e => setForm(f => ({ ...f, markupM_pct: parseFloat(e.target.value) || 0 }))} />
         </td>
         <td className="mono" style={{ fontWeight: 700, color: 'var(--success)', verticalAlign: 'middle' }}>${final.toFixed(2)}</td>
-        <td style={{ verticalAlign: 'middle' }}>
-          <input type="number" step="0.01" className="form-input" style={{ width: 62, padding: '2px 4px', fontSize: 11 }} value={form.cost || ''}
-            onChange={e => setForm(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))} />
-        </td>
-        <td className="mono" style={{ fontWeight: 700, color: (parseFloat(form.cost) ? (final - parseFloat(form.cost)) : final) >= 0 ? 'var(--success)' : 'var(--danger)', verticalAlign: 'middle' }}>
-          ${(final - (parseFloat(form.cost) || 0)).toFixed(2)}
-        </td>
         {!hideCost && <td style={{ verticalAlign: 'middle' }}>
           <input type="number" step="0.01" className="form-input" style={{ width: 62, padding: '2px 4px', fontSize: 11 }} value={form.cost || ''}
             onChange={e => setForm(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))} />
@@ -267,7 +356,16 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
   }
 
   return (
-    <tr style={pendingPriceChange ? { background: 'rgba(245,158,11,0.06)' } : {}}>
+    <tr className="crm-item-row" style={pendingPriceChange ? { background: 'rgba(245,158,11,0.06)' } : {}}>
+      <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+        <span style={{ cursor: 'pointer', fontSize: 14, opacity: item.visible_in_client_pdf ? 1 : 0.35, userSelect: 'none' }}
+          onClick={async () => {
+            await onUpdate(item.id, { visible_in_client_pdf: item.visible_in_client_pdf ? 0 : 1 });
+          }}
+          title={item.visible_in_client_pdf ? 'Visible in Client PDF — click to hide' : 'Hidden from Client PDF — click to show'}>
+          {item.visible_in_client_pdf ? '👁' : '🚫'}
+        </span>
+      </td>
       <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}>
         {name}{notes ? <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--muted)', cursor: 'help' }} title={notes}>📝</span> : ''}
         {pendingPriceChange && (
@@ -301,6 +399,7 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
 // ── Division Section ──────────────────────────────────────────
 function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, hideCost, pendingPriceChanges }) {
   const [showAdd, setShowAdd] = useState(false);
+  const [showGroup, setShowGroup] = useState(false);
   const [manualModal, setManualModal] = useState(null);
   const [pendingQty, setPendingQty] = useState(null);
   const [pendingProduct, setPendingProduct] = useState(null);
@@ -402,6 +501,7 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
           <table style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             <thead>
               <tr>
+                <th style={{ width: 32 }}><span style={{ fontSize: 11 }}>👁</span></th>
                 <th>Name</th><th>Qty</th><th>Price for 1 $ / €</th><th>Price $ / €</th><th>Description</th><th>Brand</th>
                 <th>Disc%</th><th>After Disc $</th><th>mkP%</th><th>T.PriceT $</th>
                 <th>Man%</th><th>mkM%</th><th>Final $ / €</th>
@@ -457,9 +557,15 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
       )}
 
       {!showAdd && !pendingProduct && !pendingManual && (
-        <div style={{ padding: '6px 12px', borderTop: '1px solid var(--border)' }}>
+        <div style={{ padding: '6px 12px', borderTop: '1px solid var(--border)', display: 'flex', gap: 6 }}>
           <button className="btn btn-sm btn-secondary" onClick={() => setShowAdd(true)}>+ Add Product</button>
+          <button className="btn btn-sm btn-secondary" onClick={() => setShowGroup(true)}>+ Add Group</button>
         </div>
+      )}
+
+      {showGroup && (
+        <GroupSelectModal project={project} division={division} panel={panel} onDone={() => setShowGroup(false)}
+          onAddItem={onItemAdd} onClose={() => setShowGroup(false)} />
       )}
 
       {manualModal && (
@@ -710,10 +816,42 @@ export default function CrmProjectPage() {
     } catch (e) { toast.error(e.message); }
   };
 
+  const [activeTab, setActiveTab] = useState('items');
+
   if (loading) return <div className="page"><div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /> Loading CRM...</div></div>;
   if (!project) return <div className="page"><div className="empty"><p>Project not found</p></div></div>;
 
   const projectTotal = panels.reduce((s, p) => s + (parseFloat(p.total_price) || 0), 0);
+
+  // ── Brand aggregation helper ──
+  const brandData = (() => {
+    const map = {};
+    for (const panel of panels) {
+      for (const div of panel.divisions || []) {
+        for (const item of div.items || []) {
+          const brand = item.is_manual
+            ? (item.custom_brand || 'Unbranded')
+            : (item.brand_name || 'Unbranded');
+          const base = parseFloat(item.base_price_usd) || 0;
+          const qty = item.qty || 1;
+          const baseTotal = base * qty;
+          const discAmt = baseTotal * (parseFloat(item.discount_pct) / 100);
+          const afterDisc = baseTotal - discAmt;
+          const mkPAmt = afterDisc * (parseFloat(item.markupP_pct) / 100);
+          const tPrice = afterDisc + mkPAmt;
+          const manAmt = afterDisc * (parseFloat(item.manpower_pct) / 100);
+          const mkMAmt = manAmt * (parseFloat(item.markupM_pct) / 100);
+          const finalPrice = tPrice + manAmt + mkMAmt;
+          const cost = parseFloat(item.cost || 0);
+          if (!map[brand]) map[brand] = { brand, total_cost: 0, total_price: 0, count: 0 };
+          map[brand].total_cost += cost;
+          map[brand].total_price += finalPrice;
+          map[brand].count++;
+        }
+      }
+    }
+    return Object.values(map).sort((a, b) => b.total_price - a.total_price);
+  })();
 
   return (
     <div className="page">
@@ -746,6 +884,18 @@ export default function CrmProjectPage() {
           <button className="btn btn-primary" onClick={() => setShowAddPanel(true)}>+ Add Panel</button>
           <button className="btn btn-secondary" onClick={openCopyPanel}>📋 Copy from existing</button>
         </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
+        <button onClick={() => setActiveTab('items')}
+          style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'items' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'items' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
+          📋 Items
+        </button>
+        <button onClick={() => setActiveTab('brands')}
+          style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'brands' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'brands' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
+          🏷️ Brand Summary
+        </button>
       </div>
 
       {showAddPanel && (
@@ -842,13 +992,71 @@ export default function CrmProjectPage() {
         </div>
       )}
 
-      {panels.map(panel => (
+      {activeTab === 'items' && panels.map(panel => (
         <PanelSection key={panel.id} panel={panel} project={project}
           onUpdatePanel={updatePanel} onDeletePanel={deletePanel} onToggleComplete={togglePanelComplete}
           onAddDivision={addDivision} onItemAdd={addItem} onItemUpdate={updateItem}
           onItemDelete={deleteItem} onDivisionDelete={deleteDivision} hideCost={hideCost}
           pendingPriceChanges={pendingPriceChanges} />
       ))}
+
+      {activeTab === 'brands' && (
+        <div className="card">
+          <div className="card-body">
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--white)', marginBottom: 12 }}>🏷️ Brand Cost / Price Breakdown</h3>
+            {brandData.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>No items in this project</div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                      <th style={{ textAlign: 'left', padding: '8px 10px', color: 'var(--muted)', fontWeight: 600 }}>Brand</th>
+                      <th style={{ textAlign: 'center', padding: '8px 10px', color: 'var(--muted)', fontWeight: 600 }}>Items</th>
+                      {!hideCost && <th style={{ textAlign: 'right', padding: '8px 10px', color: 'var(--muted)', fontWeight: 600 }}>Total Cost</th>}
+                      <th style={{ textAlign: 'right', padding: '8px 10px', color: 'var(--muted)', fontWeight: 600 }}>Total Price</th>
+                      {!hideCost && (
+                        <th style={{ textAlign: 'right', padding: '8px 10px', color: 'var(--muted)', fontWeight: 600 }}>Profit / Loss</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {brandData.map(b => {
+                      const profit = b.total_price - b.total_cost;
+                      return (
+                        <tr key={b.brand} style={{ borderBottom: '1px solid var(--border)' }}>
+                          <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--accent)' }}>{b.brand}</td>
+                          <td style={{ padding: '8px 10px', textAlign: 'center', color: 'var(--muted)' }}>{b.count}</td>
+                          {!hideCost && <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>${b.total_cost.toFixed(2)}</td>}
+                          <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--success)', fontWeight: 700 }}>${b.total_price.toFixed(2)}</td>
+                          {!hideCost && (
+                            <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                              {profit >= 0 ? '+' : '-'}${Math.abs(profit).toFixed(2)}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ borderTop: '2px solid var(--border)', fontWeight: 700 }}>
+                      <td style={{ padding: '8px 10px', color: 'var(--white)' }}>Total</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'center', color: 'var(--white)' }}>{brandData.reduce((s, b) => s + b.count, 0)}</td>
+                      {!hideCost && <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>${brandData.reduce((s, b) => s + b.total_cost, 0).toFixed(2)}</td>}
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>${brandData.reduce((s, b) => s + b.total_price, 0).toFixed(2)}</td>
+                      {!hideCost && (
+                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: brandData.reduce((s, b) => s + (b.total_price - b.total_cost), 0) >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                          {brandData.reduce((s, b) => s + (b.total_price - b.total_cost), 0) >= 0 ? '+' : '-'}${Math.abs(brandData.reduce((s, b) => s + (b.total_price - b.total_cost), 0)).toFixed(2)}
+                        </td>
+                      )}
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

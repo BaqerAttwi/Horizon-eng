@@ -50,10 +50,12 @@ export async function exportProjectPdf(projectId, type = 'owner') {
   doc.text(reportLabel, 18, y + 4);
   doc.setFontSize(13);
   doc.setTextColor(15, 23, 42);
-  doc.text(project.project_name || '', 18, y + 12);
+  doc.text(`project name: ${project.project_name || ''}`, 18, y + 12);
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
-  const infoLine = `ID: ${project.id}  |  Engineer: ${project.engineer_name || '—'}  |  Client: ${project.client_name || '—'}  |  ${project.deadline ? 'Deadline: ' + project.deadline.split('T')[0] : ''}`;
+  const infoLine = type === 'client'
+    ? `Engineer: ${project.engineer_id || '—'} | Client: ${project.client_name || '—'}`
+    : `ID: ${project.id}  |  Engineer: ${project.engineer_name || '—'}  |  Client: ${project.client_name || '—'}  |  ${project.deadline ? 'Deadline: ' + project.deadline.split('T')[0] : ''}`;
   doc.text(infoLine, 18, y + 18);
   y += 30;
 
@@ -69,12 +71,6 @@ export async function exportProjectPdf(projectId, type = 'owner') {
       doc.text(`Progress: ${project.completed_panels}/${project.total_panels} panels (${pct}%)`, 14, y);
       y += 6;
     }
-    doc.text(`Exchange Rate: 1 EUR = ${project.exchange_rate_eur_usd || 1.08} USD`, 14, y);
-    y += 8;
-  } else {
-    // Client: just exchange rate
-    doc.setFontSize(8);
-    doc.setTextColor(71, 85, 105);
     doc.text(`Exchange Rate: 1 EUR = ${project.exchange_rate_eur_usd || 1.08} USD`, 14, y);
     y += 8;
   }
@@ -138,7 +134,10 @@ export async function exportProjectPdf(projectId, type = 'owner') {
     if (y > 250) { doc.addPage(); y = 14; }
 
     const divisions = panel.divisions || [];
-    let hasItems = divisions.some(d => d.items?.length);
+    let hasItems = divisions.some(d => {
+      if (type === 'client') return (d.items || []).some(i => i.visible_in_client_pdf !== 0);
+      return d.items?.length;
+    });
     if (!hasItems) continue;
 
     // Panel header
@@ -156,7 +155,8 @@ export async function exportProjectPdf(projectId, type = 'owner') {
 
     for (const div of divisions) {
       const items = div.items || [];
-      if (!items.length) continue;
+      const visibleItems = type === 'client' ? items.filter(i => i.visible_in_client_pdf !== 0) : items;
+      if (!visibleItems.length) continue;
 
       if (y > 260) { doc.addPage(); y = 14; }
 
@@ -166,7 +166,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
       doc.roundedRect(16, y, pw - 32, 6, 1, 1, 'F');
       doc.setTextColor(30, 41, 59);
       doc.setFontSize(8);
-      doc.text(`${div.division_type}  (${items.length} items)`, 19, y + 4);
+      doc.text(`${div.division_type}  (${visibleItems.length} items)`, 19, y + 4);
       if (type === 'owner') {
         doc.setFontSize(7);
         doc.text(`mkP:${div.markupP}%  mkM:${div.markupM}%  Man:${div.manpower_pct}%`, pw - 19, y + 4, { align: 'right' });
@@ -174,7 +174,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
       y += 8;
 
       // Items table
-      const body = items.map(item => {
+      const body = visibleItems.map(item => {
         const base = parseFloat(item.base_price_usd) || 0;
         const qty = item.qty || 1;
         const baseTotal = base * qty;
@@ -257,6 +257,70 @@ export async function exportProjectPdf(projectId, type = 'owner') {
     doc.setFontSize(12);
     doc.text(`Net ${netProfit >= 0 ? 'Profit' : 'Loss'}: ${netProfit >= 0 ? '+' : '-'}$${Math.abs(netProfit).toFixed(2)}`, pw - 18, y + 7, { align: 'right' });
     y += 14;
+
+    // ── Brand Summary (owner) ──
+    if (y > 260) { doc.addPage(); y = 14; }
+    // Build brand aggregates
+    const brandMap = {};
+    for (const panel of panels) {
+      for (const div of panel.divisions || []) {
+        for (const item of div.items || []) {
+          const brand = item.is_manual ? (item.custom_brand || 'Unbranded') : (item.brand_name || 'Unbranded');
+          const base = parseFloat(item.base_price_usd) || 0;
+          const qty = item.qty || 1;
+          const baseTotal = base * qty;
+          const discAmt = baseTotal * (parseFloat(item.discount_pct) / 100);
+          const afterDisc = baseTotal - discAmt;
+          const mkPAmt = afterDisc * (parseFloat(item.markupP_pct) / 100);
+          const tPrice = afterDisc + mkPAmt;
+          const manAmt = afterDisc * (parseFloat(item.manpower_pct) / 100);
+          const mkMAmt = manAmt * (parseFloat(item.markupM_pct) / 100);
+          const finalPrice = tPrice + manAmt + mkMAmt;
+          const cost = parseFloat(item.cost || 0);
+          if (!brandMap[brand]) brandMap[brand] = { brand, total_cost: 0, total_price: 0, count: 0 };
+          brandMap[brand].total_cost += cost;
+          brandMap[brand].total_price += finalPrice;
+          brandMap[brand].count++;
+        }
+      }
+    }
+    const brandRows = Object.values(brandMap).sort((a, b) => b.total_price - a.total_price);
+    const brandGrandCost = brandRows.reduce((s, b) => s + b.total_cost, 0);
+    const brandGrandPrice = brandRows.reduce((s, b) => s + b.total_price, 0);
+
+    doc.setFontSize(12);
+    doc.setTextColor(26, 95, 168);
+    doc.text('Brand Cost / Price Breakdown', 14, y);
+    y += 6;
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Brand', 'Items', 'Total Cost', 'Total Price', 'Profit / Loss']],
+      body: brandRows.map(b => {
+        const profit = b.total_price - b.total_cost;
+        return [b.brand, `${b.count}`, `$${b.total_cost.toFixed(2)}`, `$${b.total_price.toFixed(2)}`, profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`];
+      }),
+      foot: [['TOTAL', `${brandRows.reduce((s, b) => s + b.count, 0)}`, `$${brandGrandCost.toFixed(2)}`, `$${brandGrandPrice.toFixed(2)}`,
+        (brandGrandPrice - brandGrandCost) >= 0 ? `+$${(brandGrandPrice - brandGrandCost).toFixed(2)}` : `-$${Math.abs(brandGrandPrice - brandGrandCost).toFixed(2)}`
+      ]],
+      theme: 'grid',
+      headStyles: { fontSize: 7, fillColor: [71, 85, 105], textColor: 255 },
+      bodyStyles: { fontSize: 7 },
+      footStyles: { fontSize: 7, fillColor: [240, 244, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
+      columnStyles: { 0: { cellWidth: 50 }, 3: { halign: 'right', fontStyle: 'bold' }, 4: { halign: 'right', fontStyle: 'bold' } },
+      margin: { left: 16, right: 16 },
+      tableWidth: pw - 32,
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 4) {
+          const val = data.cell.raw;
+          if (typeof val === 'string') {
+            if (val.startsWith('+')) data.cell.styles.textColor = [34, 197, 94];
+            else if (val.startsWith('-')) data.cell.styles.textColor = [239, 68, 68];
+          }
+        }
+      },
+    });
+    y = doc.lastAutoTable.finalY + 8;
 
     // Per-item profit breakdown for owner
     if (y > 270) { doc.addPage(); y = 14; }

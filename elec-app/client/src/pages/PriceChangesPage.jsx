@@ -179,7 +179,7 @@ export default function PriceChangesPage() {
                     <td>{r.project_name}</td>
                     <td>{r.requested_by_name}</td>
                     <td>
-                      <div style={{ minWidth: 200 }}>
+                      <div className="pchange-diff" style={{ minWidth: 200 }}>
                         <ChangeRow label="Base USD" oldVal={r.old_base_price_usd} newVal={r.new_base_price_usd} />
                         <ChangeRow label="Base EUR" oldVal={r.old_base_price_euro} newVal={r.new_base_price_euro} />
                         <ChangeRow label="Markup P%" oldVal={r.old_markupP_pct} newVal={r.new_markupP_pct} />

@@ -1,7 +1,7 @@
-import pool from '../db/connection.js';
+const pool = require('../db/connection');
 
 // ── Get notifications for current user ────────────────────────
-export async function getNotifications(req, res, next) {
+async function getNotifications(req, res, next) {
   try {
     const userId = req.worker.id;
     const { limit = 50, unread_only } = req.query;
@@ -34,7 +34,7 @@ export async function getNotifications(req, res, next) {
 }
 
 // ── Mark notification as read ─────────────────────────────────
-export async function markAsRead(req, res, next) {
+async function markAsRead(req, res, next) {
   try {
     const { notificationId } = req.params;
     const userId = req.worker.id;
@@ -51,7 +51,7 @@ export async function markAsRead(req, res, next) {
 }
 
 // ── Mark all as read ──────────────────────────────────────────
-export async function markAllAsRead(req, res, next) {
+async function markAllAsRead(req, res, next) {
   try {
     const userId = req.worker.id;
 
@@ -67,7 +67,7 @@ export async function markAllAsRead(req, res, next) {
 }
 
 // ── Delete notification ───────────────────────────────────────
-export async function deleteNotification(req, res, next) {
+async function deleteNotification(req, res, next) {
   try {
     const { notificationId } = req.params;
     const userId = req.worker.id;
@@ -84,7 +84,7 @@ export async function deleteNotification(req, res, next) {
 }
 
 // ── Helper: Create a notification ─────────────────────────────
-export async function createNotification(userId, type, title, message, link) {
+async function createNotification(userId, type, title, message, link) {
   try {
     await pool.query(
       `INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)`,
@@ -96,7 +96,7 @@ export async function createNotification(userId, type, title, message, link) {
 }
 
 // ── Helper: Notify all owners about something ─────────────────
-export async function notifyOwners(type, title, message, link) {
+async function notifyOwners(type, title, message, link) {
   try {
     const [owners] = await pool.query(`SELECT id FROM workers WHERE role = 'owner'`);
     for (const owner of owners) {
@@ -108,7 +108,7 @@ export async function notifyOwners(type, title, message, link) {
 }
 
 // ── Helper: Notify engineer about their project ───────────────
-export async function notifyEngineer(projectId, type, title, message, link) {
+async function notifyEngineer(projectId, type, title, message, link) {
   try {
     const [[project]] = await pool.query(
       `SELECT engineer_id FROM projects WHERE id = ?`,
@@ -123,7 +123,7 @@ export async function notifyEngineer(projectId, type, title, message, link) {
 }
 
 // ── Cron-like: Generate deadline warnings (call on server start + periodically) ──
-export async function checkDeadlineWarnings() {
+async function checkDeadlineWarnings() {
   try {
     const threeDaysFromNow = new Date();
     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
@@ -171,7 +171,7 @@ export async function checkDeadlineWarnings() {
 }
 
 // ── Cron-like: Notify about pending approvals ─────────────────
-export async function checkPendingApprovals() {
+async function checkPendingApprovals() {
   try {
     // Projects waiting for admin approval
     const [pendingAdmin] = await pool.query(`
@@ -221,7 +221,7 @@ export async function checkPendingApprovals() {
 }
 
 // ── Cron-like: Low stock warnings ─────────────────────────────
-export async function checkLowStock() {
+async function checkLowStock() {
   try {
     const [lowStock] = await pool.query(`
       SELECT id, reference, description, stock_qty, reserved_qty
@@ -248,8 +248,14 @@ export async function checkLowStock() {
 }
 
 // ── Run all periodic checks ───────────────────────────────────
-export async function runNotificationChecks() {
+async function runNotificationChecks() {
   await checkDeadlineWarnings();
   await checkPendingApprovals();
   await checkLowStock();
 }
+
+module.exports = {
+  getNotifications, markAsRead, markAllAsRead, deleteNotification,
+  createNotification, notifyOwners, notifyEngineer,
+  checkDeadlineWarnings, checkPendingApprovals, checkLowStock, runNotificationChecks
+};

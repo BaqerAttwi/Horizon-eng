@@ -162,7 +162,7 @@ export default function NotificationBell() {
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
             style={{
-              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+              position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
               width: 360, maxHeight: 480,
               background: 'var(--panel)', border: '1px solid var(--border)',
               borderRadius: 12, overflow: 'hidden',

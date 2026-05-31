@@ -29,6 +29,7 @@ function DemandRow({ item, onExpand, expanded }) {
         <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12 }} title={item.description}>
           {item.description || '—'}
         </td>
+        <td className="mono" style={{ fontSize: 11, color: 'var(--badge-yellow)' }}>{item.smart_code || '—'}</td>
         <td><span className="badge badge-purple">{item.brand_name || '—'}</span></td>
         <td className="mono">{item.stock_qty}</td>
         <td className="mono" style={{ color: item.available_qty > 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 700 }}>
@@ -46,7 +47,7 @@ function DemandRow({ item, onExpand, expanded }) {
       {/* Expanded demands */}
       {expanded && (
         <tr>
-          <td colSpan={9} style={{ padding: 0 }}>
+          <td colSpan={10} style={{ padding: 0 }}>
             <div style={{ background: 'var(--panel2)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
               <table style={{ width: '100%', fontSize: 12 }}>
                 <thead>
@@ -207,6 +208,7 @@ export default function ReservationsPage() {
                 <th>Status</th>
                 <th>Reference</th>
                 <th>Description</th>
+                <th>Smart Code</th>
                 <th>Brand</th>
                 <th>Stock</th>
                 <th>Available</th>
@@ -217,12 +219,12 @@ export default function ReservationsPage() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 32 }}>
+                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 32 }}>
                   <span className="spinner" /> Loading...
                 </td></tr>
               )}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={9}>
+                <tr><td colSpan={10}>
                   <div className="empty">
                     <div className="empty-icon">✅</div>
                     <p>{filter === 'all' ? 'No active project demands found.' : `No items with status: ${filter}`}</p>

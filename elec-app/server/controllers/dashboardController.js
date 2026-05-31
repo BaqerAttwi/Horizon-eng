@@ -1,7 +1,7 @@
-import pool from '../db/connection.js';
+const pool = require('../db/connection');
 
 // ── Dashboard Data ────────────────────────────────────────────
-export async function getDashboard(req, res, next) {
+async function getDashboard(req, res, next) {
   try {
     const userId = req.worker.id;
     const userRole = req.worker.role;
@@ -63,7 +63,7 @@ export async function getDashboard(req, res, next) {
         'panel_completed' as action,
         pcp.id,
         CONCAT('Panel completed: ', pcp.panel_name) as title,
-        pcp.updated_at as ts,
+        pcp.created_at as ts,
         w.name as actor,
         CONCAT('/projects/', pcp.project_id, '/crm') as link
       FROM project_crm_panels pcp
@@ -72,7 +72,7 @@ export async function getDashboard(req, res, next) {
       WHERE pcp.is_completed = TRUE
         AND p.deleted_at IS NULL
         ${engFilter.replace(/p\./g, 'p.')}
-      ORDER BY pcp.updated_at DESC
+      ORDER BY pcp.created_at DESC
       LIMIT 10)
       ORDER BY ts DESC
       LIMIT 20
@@ -146,3 +146,5 @@ export async function getDashboard(req, res, next) {
     next(err);
   }
 }
+
+module.exports = { getDashboard };

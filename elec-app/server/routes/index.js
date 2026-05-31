@@ -35,6 +35,10 @@ const {
 const {
   createPriceChangeRequest, getPendingRequests, approveRequest, rejectRequest, getMyRequests, getPendingForProject,
 } = require('../controllers/priceChangeController');
+const {
+  getGroups, getGroup, createGroup, updateGroup, deleteGroup,
+  getGroupItems, addGroupItem, removeGroupItem,
+} = require('../controllers/itemGroupController');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -149,5 +153,33 @@ router.get('/price-changes/my',             requireAuth, getMyRequests);
 router.get('/price-changes/project/:projectId', requireAuth, getPendingForProject);
 router.patch('/price-changes/:requestId/approve', requireAuth, requireRole('owner'), approveRequest);
 router.patch('/price-changes/:requestId/reject',  requireAuth, requireRole('owner'), rejectRequest);
+
+// ── Item Groups (reusable product sets) ────────────────────
+router.get('/item-groups',              requireAuth, getGroups);
+router.get('/item-groups/:id',          requireAuth, getGroup);
+router.post('/item-groups',             requireAuth, requireRole('owner','engineer'), createGroup);
+router.patch('/item-groups/:id',        requireAuth, requireRole('owner','engineer'), updateGroup);
+router.delete('/item-groups/:id',       requireAuth, requireRole('owner','engineer'), deleteGroup);
+router.get('/item-groups/:id/items',    requireAuth, getGroupItems);
+router.post('/item-groups/:id/items',   requireAuth, requireRole('owner','engineer'), addGroupItem);
+router.delete('/item-groups/:id/items/:itemId', requireAuth, requireRole('owner','engineer'), removeGroupItem);
+
+// ── Manual Product Requests (engineer adds → owner approves) ─
+const {
+  createManualProductRequest, getManualProductRequests,
+  approveManualProductRequest, rejectManualProductRequest,
+} = require('../controllers/manualProductRequestController');
+
+router.post('/manual-product-requests',          requireAuth, requireRole('owner','engineer'), createManualProductRequest);
+router.get('/manual-product-requests',            requireAuth, getManualProductRequests);
+router.patch('/manual-product-requests/:id/approve', requireAuth, requireRole('owner'), approveManualProductRequest);
+router.patch('/manual-product-requests/:id/reject',  requireAuth, requireRole('owner'), rejectManualProductRequest);
+
+// ── Messages / Announcements ────────────────────────────────
+const { getMessages, createMessage, deleteMessage } = require('../controllers/messageController');
+
+router.get('/messages',    requireAuth, getMessages);
+router.post('/messages',   requireAuth, requireRole('owner','secretary'), createMessage);
+router.delete('/messages/:id', requireAuth, deleteMessage);
 
 module.exports = router;

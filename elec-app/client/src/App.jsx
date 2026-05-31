@@ -18,6 +18,8 @@ import AnalyticsPage   from './pages/AnalyticsPage';
 import DashboardPage   from './pages/DashboardPage';
 import NotificationsPage from './pages/NotificationsPage';
 import PriceChangesPage from './pages/PriceChangesPage';
+import GroupsPage from './pages/GroupsPage';
+import MessagesPage from './pages/MessagesPage';
 import NotificationBell from './components/NotificationBell';
 import Logo            from './components/Logo';
 
@@ -27,18 +29,26 @@ const ROLE_ICONS  = { owner:'👑', accounting:'💼', engineer:'⚙️', secret
 
 // Nav items with permission check
 const NAV = [
-  { to: '/dashboard',   icon: '🏠', label: 'Dashboard',      perm: null },
-  { to: '/products',     icon: '📦', label: 'Products',       perm: 'products' },
-  { to: '/reservations', icon: '📊', label: 'Demand Tracker',  perm: 'reservations' },
-  { to: '/upload',       icon: '⬆️', label: 'Import Excel',    perm: 'upload' },
-  { to: '/projects',     icon: '🔧', label: 'Projects',       perm: 'projects' },
-  { to: '/requests',     icon: '🤝', label: 'Requests',       perm: 'requests' },
-  { to: '/price-changes', icon: '💰', label: 'Price Changes',  perm: 'price-changes' },
-  { to: '/discounts',    icon: '🏷️', label: 'Brand Discounts', perm: 'discounts' },
-  { to: '/workers',      icon: '👷', label: 'Workers',        perm: 'workers' },
-  { to: '/clients',      icon: '🏢', label: 'Clients',        perm: 'clients' },
-  { to: '/analytics',    icon: '📈', label: 'Analytics',      perm: 'analytics' },
+  { to: '/dashboard',   icon: '🏠', label: 'Dashboard',      perm: null,       group: 'main' },
+  { to: '/projects',     icon: '🔧', label: 'Projects',       perm: 'projects', group: 'main' },
+  { to: '/products',     icon: '📦', label: 'Products',       perm: 'products', group: 'crm' },
+  { to: '/reservations', icon: '📊', label: 'Demand Tracker',  perm: 'reservations', group: 'crm' },
+  { to: '/price-changes', icon: '💰', label: 'Price Changes',  perm: 'price-changes', group: 'crm' },
+  { to: '/groups',       icon: '📋', label: 'Item Groups',     perm: 'item-groups',   group: 'crm' },
+  { to: '/messages',     icon: '📢', label: 'Announcements', perm: 'messages',       group: 'crm' },
+  { to: '/requests',     icon: '🤝', label: 'Requests',       perm: 'requests', group: 'admin' },
+  { to: '/upload',       icon: '⬆️', label: 'Import Excel',    perm: 'upload',   group: 'admin' },
+  { to: '/discounts',    icon: '🏷️', label: 'Brand Discounts', perm: 'discounts', group: 'admin' },
+  { to: '/analytics',    icon: '📈', label: 'Analytics',      perm: 'analytics', group: 'admin' },
+  { to: '/workers',      icon: '👷', label: 'Workers',        perm: 'workers',  group: 'admin' },
+  { to: '/clients',      icon: '🏢', label: 'Clients',        perm: 'clients',  group: 'admin' },
 ];
+
+const GROUP_LABELS = {
+  main: 'General',
+  crm: 'CRM & Products',
+  admin: 'Administration',
+};
 
 // Protected route wrapper
 function ProtectedRoute({ children, perm }) {
@@ -75,17 +85,29 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
       </div>
 
       <nav className="sidebar-nav">
-        {NAV.filter(n => !n.perm || can(n.perm)).map(n => (
-          <NavLink
-            key={n.to} to={n.to}
-            className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-            onClick={() => setMobileOpen(false)}
-          >
-            <span className="nav-icon">{n.icon}</span>
-            {n.label}
-          </NavLink>
-        ))}
+        {(() => {
+          const visible = NAV.filter(n => !n.perm || can(n.perm));
+          const groups = [...new Set(visible.map(n => n.group))];
+          return groups.flatMap((g, gi) => [
+            <div key={`h-${g}`} className="nav-group-label">{GROUP_LABELS[g]}</div>,
+            ...visible.filter(n => n.group === g).map(n => (
+              <NavLink
+                key={n.to} to={n.to}
+                className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                <span className="nav-icon">{n.icon}</span>
+                {n.label}
+              </NavLink>
+            )),
+          ]);
+        })()}
       </nav>
+
+      {/* Notification bell for desktop */}
+      <div style={{ padding: '8px 12px' }}>
+        <NotificationBell />
+      </div>
 
       {/* Theme toggle */}
       <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
@@ -152,7 +174,7 @@ function AppLayout() {
             <button className="btn-icon" onClick={() => setMobileOpen(true)} aria-label="Open menu">☰</button>
             <span style={{ fontWeight: 800, color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Logo size={24} /></span>
             <div style={{ flex: 1 }} />
-            <NotificationBell />
+        <NotificationBell />
           </div>
         )}
 
@@ -168,6 +190,8 @@ function AppLayout() {
             <Route path="/projects/:id/crm" element={<AnimatedPage><ProtectedRoute perm="projects"><CrmProjectPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/requests"  element={<AnimatedPage><ProtectedRoute perm="requests"><RequestsPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/price-changes" element={<AnimatedPage><ProtectedRoute perm="price-changes"><PriceChangesPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/groups" element={<AnimatedPage><ProtectedRoute perm="item-groups"><GroupsPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/messages" element={<AnimatedPage><ProtectedRoute perm="messages"><MessagesPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/discounts"  element={<AnimatedPage><ProtectedRoute perm="discounts"><DiscountsPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/workers"   element={<AnimatedPage><ProtectedRoute perm="workers"><WorkersPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/clients"   element={<AnimatedPage><ProtectedRoute perm="clients"><ClientsPage /></ProtectedRoute></AnimatedPage>} />

@@ -9,8 +9,8 @@ async function getProducts(req, res, next) {
     let where = 'WHERE 1=1';
 
     if (search) {
-      where += ' AND (p.reference LIKE ? OR p.description LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
+      where += ' AND (p.reference LIKE ? OR p.description LIKE ? OR p.smart_code LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
     if (brand) {
       where += ' AND b.name = ?';
@@ -69,7 +69,7 @@ async function getProduct(req, res, next) {
 // PATCH /api/products/:id
 async function updateProduct(req, res, next) {
   try {
-    const { stock_qty, price_cost, price_euro, price_usd, description } = req.body;
+    const { stock_qty, price_cost, price_euro, price_usd, description, smart_code } = req.body;
     const fields = [], params = [];
 
     if (stock_qty  !== undefined) { fields.push('stock_qty=?');   params.push(parseInt(stock_qty)); }
@@ -77,6 +77,7 @@ async function updateProduct(req, res, next) {
     if (price_euro !== undefined) { fields.push('price_euro=?');  params.push(price_euro === '' ? null : parseFloat(price_euro)); }
     if (price_usd  !== undefined) { fields.push('price_usd=?');   params.push(price_usd  === '' ? null : parseFloat(price_usd)); }
     if (description!== undefined) { fields.push('description=?'); params.push(description); }
+    if (smart_code !== undefined) { fields.push('smart_code=?'); params.push(smart_code || null); }
 
     if (!fields.length) return res.status(400).json({ error: 'Nothing to update' });
 
