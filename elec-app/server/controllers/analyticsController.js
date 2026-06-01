@@ -1,5 +1,8 @@
 const pool = require('../db/connection');
 
+// Only count projects fully approved by both admin and client in financial KPIs
+const APPROVED_FILTER = ` AND p.admin_approval = 'approved' AND p.client_approval = 'approved'`;
+
 // ── Helper: Build date filter clause ───────────────────────────
 function dateFilter(field, dateFrom, dateTo) {
   let clause = '';
@@ -35,7 +38,7 @@ async function getEngineerStats(req, res, next) {
         COALESCE(AVG(p.total_price - p.total_cost), 0) AS avg_profit_per_project,
         MAX(p.deadline) AS latest_deadline
       FROM workers w
-      LEFT JOIN projects p ON p.engineer_id = w.id AND p.deleted_at IS NULL ${df}
+      LEFT JOIN projects p ON p.engineer_id = w.id AND p.deleted_at IS NULL ${df}${APPROVED_FILTER}
       WHERE w.role = 'engineer'
       GROUP BY w.id, w.name, w.email
       ORDER BY total_profit DESC
@@ -47,7 +50,7 @@ async function getEngineerStats(req, res, next) {
       FROM projects p
       JOIN project_engineer_requests per ON per.project_id = p.id AND per.status = 'accepted'
       JOIN workers ew ON ew.id = per.target_engineer_id
-      WHERE p.deleted_at IS NULL ${df}
+      WHERE p.deleted_at IS NULL ${df}${APPROVED_FILTER}
     `, dp);
 
     const enriched = engineers.map(e => {
@@ -86,7 +89,7 @@ async function getClientStats(req, res, next) {
         MAX(p.deadline) AS latest_deadline,
         GROUP_CONCAT(DISTINCT w.name SEPARATOR ', ') AS engineers_involved
       FROM clients c
-      LEFT JOIN projects p ON p.client_id = c.id AND p.deleted_at IS NULL ${df}
+      LEFT JOIN projects p ON p.client_id = c.id AND p.deleted_at IS NULL ${df}${APPROVED_FILTER}
       LEFT JOIN workers w ON w.id = p.engineer_id
       GROUP BY c.id, c.name, c.type
       HAVING total_projects > 0
@@ -118,20 +121,20 @@ async function getSummary(req, res, next) {
         COUNT(DISTINCT p.client_id) AS total_clients,
         COUNT(DISTINCT p.engineer_id) AS total_engineers
       FROM projects p
-      WHERE p.deleted_at IS NULL ${df}
+      WHERE p.deleted_at IS NULL ${df}${APPROVED_FILTER}
     `, dp);
 
     const [[topEngineer]] = await pool.query(`
       SELECT w.name, SUM(p.total_price - p.total_cost) AS profit
       FROM projects p JOIN workers w ON w.id = p.engineer_id
-      WHERE p.deleted_at IS NULL ${df}
+      WHERE p.deleted_at IS NULL ${df}${APPROVED_FILTER}
       GROUP BY w.id, w.name ORDER BY profit DESC LIMIT 1
     `, dp);
 
     const [[topClient]] = await pool.query(`
       SELECT c.name, SUM(p.total_price - p.total_cost) AS profit
       FROM projects p JOIN clients c ON c.id = p.client_id
-      WHERE p.deleted_at IS NULL ${df}
+      WHERE p.deleted_at IS NULL ${df}${APPROVED_FILTER}
       GROUP BY c.id, c.name ORDER BY profit DESC LIMIT 1
     `, dp);
 
@@ -143,7 +146,7 @@ async function getSummary(req, res, next) {
         COALESCE(SUM(p.total_price), 0) AS revenue,
         COALESCE(SUM(p.total_price - p.total_cost), 0) AS profit
       FROM projects p
-      WHERE p.deleted_at IS NULL ${df}
+      WHERE p.deleted_at IS NULL ${df}${APPROVED_FILTER}
       GROUP BY DATE_FORMAT(p.created_at, '%Y-%m')
       ORDER BY month ASC
     `, dp);
@@ -154,7 +157,7 @@ async function getSummary(req, res, next) {
              COUNT(DISTINCT p.id) AS projects,
              COALESCE(SUM(p.total_price - p.total_cost), 0) AS profit
       FROM workers w
-      LEFT JOIN projects p ON p.engineer_id = w.id AND p.deleted_at IS NULL ${df}
+      LEFT JOIN projects p ON p.engineer_id = w.id AND p.deleted_at IS NULL ${df}${APPROVED_FILTER}
       WHERE w.role = 'engineer'
       GROUP BY w.id, w.name
       ORDER BY profit DESC

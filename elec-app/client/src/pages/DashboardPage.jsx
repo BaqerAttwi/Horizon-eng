@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { FadeIn, StaggerContainer, StaggerItem } from '../components/AnimatedPage';
+import { FadeIn } from '../components/AnimatedPage';
 
 const STATUS_COLORS = {
   completed: 'var(--success)',
@@ -204,10 +204,10 @@ export default function DashboardPage() {
                   <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)' }}>📅 Upcoming Deadlines</h3>
                   <Link to="/projects" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>View all →</Link>
                 </div>
-                {data?.deadlines?.length === 0 ? (
+                {(data?.deadlines ?? []).length === 0 ? (
                   <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>No upcoming deadlines 🎉</div>
                 ) : (
-                  data?.deadlines?.map(d => <DeadlineItem key={d.id} d={d} />)
+                  (data?.deadlines ?? []).map(d => <DeadlineItem key={d.id} d={d} />)
                 )}
               </div>
             </div>
@@ -218,10 +218,10 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)' }}>🕐 Recent Activity</h3>
                 </div>
-                {data?.activity?.length === 0 ? (
+                {(data?.activity ?? []).length === 0 ? (
                   <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>No recent activity</div>
                 ) : (
-                  data?.activity?.map((a, i) => <ActivityItem key={i} item={a} />)
+                  (data?.activity ?? []).map((a, i) => <ActivityItem key={i} item={a} />)
                 )}
               </div>
             </div>
@@ -239,7 +239,7 @@ export default function DashboardPage() {
                   <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)' }}>👷 Engineer Performance</h3>
                   <Link to="/analytics" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>Full report →</Link>
                 </div>
-                {data?.engineer_summary?.map(e => <EngineerSummaryRow key={e.id} e={e} />)}
+                {(data?.engineer_summary ?? []).map(e => <EngineerSummaryRow key={e.id} e={e} />)}
               </div>
             </div>
           </FadeIn>
@@ -256,10 +256,10 @@ export default function DashboardPage() {
                   <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--danger)' }}>⚠️ Low Stock Alerts</h3>
                   <Link to="/products" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>Manage →</Link>
                 </div>
-                {data?.low_stock?.length === 0 ? (
+                {(data?.low_stock ?? []).length === 0 ? (
                   <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>All stocked up ✅</div>
                 ) : (
-                  data?.low_stock?.map(s => <StockAlert key={s.id} item={s} />)
+                  (data?.low_stock ?? []).map(s => <StockAlert key={s.id} item={s} />)
                 )}
               </div>
             </div>

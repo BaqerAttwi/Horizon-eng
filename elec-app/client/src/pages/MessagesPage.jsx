@@ -64,7 +64,7 @@ export default function MessagesPage() {
       <div className="page-header">
         <div>
           <h1>📢 Announcements</h1>
-          <p className="page-desc" style={{ color: 'var(--text)' }}>Messages for all team members</p>
+          <p className="page-subtitle">Messages for all team members</p>
         </div>
       </div>
 

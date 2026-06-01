@@ -29,9 +29,9 @@ async function getDashboard(req, res, next) {
         COUNT(DISTINCT CASE WHEN p.deleted_at IS NULL ${engWhere} THEN p.id END) AS total_projects,
         COUNT(DISTINCT CASE WHEN p.status = 'active' AND p.deleted_at IS NULL ${engWhere} THEN p.id END) AS active_projects,
         COUNT(DISTINCT CASE WHEN p.status = 'completed' AND p.deleted_at IS NULL ${engWhere} THEN p.id END) AS completed_projects,
-        COUNT(DISTINCT CASE WHEN p.admin_approval = 'pending' AND p.deleted_at IS NULL ${engWhere} THEN p.id END) AS pending_approvals,
-        COALESCE(SUM(CASE WHEN p.deleted_at IS NULL ${engWhere} THEN p.total_price ELSE 0 END), 0) AS total_revenue,
-        COALESCE(SUM(CASE WHEN p.deleted_at IS NULL ${engWhere} THEN p.total_price - p.total_cost ELSE 0 END), 0) AS total_profit
+        COUNT(DISTINCT CASE WHEN p.deleted_at IS NULL ${engWhere} AND (p.admin_approval = 'pending' OR (p.admin_approval = 'approved' AND p.client_approval = 'pending')) THEN p.id END) AS pending_approvals,
+        COALESCE(SUM(CASE WHEN p.deleted_at IS NULL AND p.admin_approval = 'approved' AND p.client_approval = 'approved' ${engWhere} THEN p.total_price ELSE 0 END), 0) AS total_revenue,
+        COALESCE(SUM(CASE WHEN p.deleted_at IS NULL AND p.admin_approval = 'approved' AND p.client_approval = 'approved' ${engWhere} THEN p.total_price - p.total_cost ELSE 0 END), 0) AS total_profit
       FROM projects p
     `;
     const kpiArgs = engArgs.length ? [].concat(...Array(6).fill(engArgs)) : [];
@@ -137,7 +137,7 @@ async function getDashboard(req, res, next) {
                COUNT(DISTINCT CASE WHEN p.status = 'completed' THEN p.id END) as completed,
                COALESCE(SUM(p.total_price - p.total_cost), 0) as total_profit
         FROM workers w
-        LEFT JOIN projects p ON p.engineer_id = w.id AND p.deleted_at IS NULL
+        LEFT JOIN projects p ON p.engineer_id = w.id AND p.deleted_at IS NULL AND p.admin_approval = 'approved' AND p.client_approval = 'approved'
         WHERE w.role = 'engineer'
         GROUP BY w.id, w.name
         ORDER BY total_profit DESC
