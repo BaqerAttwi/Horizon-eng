@@ -1,8 +1,10 @@
 const express  = require('express');
 const multer   = require('multer');
+const rateLimit = require('express-rate-limit');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { validate } = require('../middleware/validate');
 
-const { login, register, changePassword, setPassword, me } = require('../controllers/authController');
+const { login, register, changePassword, setPassword, logout, me } = require('../controllers/authController');
 const { handleUpload }         = require('../controllers/uploadController');
 const { getProducts, getProduct, updateProduct, getBrands } = require('../controllers/productController');
 const { getWorkers, createWorker, updateWorker, deleteWorker } = require('../controllers/workerController');
@@ -46,12 +48,22 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 
 // ── Health (public) ──────────────────────────────────────────
 router.get('/health', (req, res) => res.json({ status: 'ok', ts: new Date() }));
 
+// ── Rate Limiter ──────────────────────────────────────────────
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,                   // 10 attempts per window per IP
+  message: { error: 'Too many login attempts — try again in 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // ── Auth (public) ────────────────────────────────────────────
-router.post('/auth/login',           login);
-router.post('/auth/register',        requireAuth, requireRole('owner'), register);
+router.post('/auth/login',           loginLimiter, validate('login'), login);
+router.post('/auth/register',        requireAuth, requireRole('owner'), validate('register'), register);
 router.post('/auth/change-password', requireAuth, changePassword);
 router.post('/auth/set-password',    requireAuth, requireRole('owner'), setPassword);
 router.get('/auth/me',               requireAuth, me);
+router.post('/auth/logout',          requireAuth, logout);
 
 // ── Upload (owner + accounting) ──────────────────────────────
 router.post('/upload', requireAuth, requireRole('owner','accounting'), upload.single('file'), handleUpload);
@@ -64,7 +76,7 @@ router.get('/brands',         requireAuth, getBrands);
 
 // ── Discounts ────────────────────────────────────────────────
 router.get('/discounts',                      requireAuth, getDiscounts);
-router.post('/discounts',                     requireAuth, requireRole('owner','accounting'), createDiscount);
+router.post('/discounts',                     requireAuth, requireRole('owner','accounting'), validate('createDiscount'), createDiscount);
 router.patch('/discounts/:id',                requireAuth, requireRole('owner','accounting'), updateDiscount);
 router.delete('/discounts/:id',               requireAuth, requireRole('owner'), deleteDiscount);
 
@@ -74,13 +86,13 @@ router.get('/reservations/product/:productId', requireAuth, getProductDemand);
 
 // ── Workers (owner only for write) ──────────────────────────
 router.get('/workers',          requireAuth, getWorkers);
-router.post('/workers',         requireAuth, requireRole('owner'), createWorker);
+router.post('/workers',         requireAuth, requireRole('owner'), validate('createWorker'), createWorker);
 router.patch('/workers/:id',    requireAuth, requireRole('owner'), updateWorker);
 router.delete('/workers/:id',   requireAuth, requireRole('owner'), deleteWorker);
 
 // ── Clients (owner + accounting + secretary) ─────────────────
 router.get('/clients',          requireAuth, getClients);
-router.post('/clients',         requireAuth, requireRole('owner','accounting','secretary'), createClient);
+router.post('/clients',         requireAuth, requireRole('owner','accounting','secretary'), validate('createClient'), createClient);
 router.patch('/clients/:id',    requireAuth, requireRole('owner','accounting','secretary'), updateClient);
 router.delete('/clients/:id',   requireAuth, requireRole('owner'), deleteClient);
 
@@ -88,7 +100,7 @@ router.delete('/clients/:id',   requireAuth, requireRole('owner'), deleteClient)
 router.get('/projects',                      requireAuth, getProjects);
 router.get('/projects/draft-notifications', requireAuth, getDraftNotifications);
 router.get('/projects/:id',                  requireAuth, getProject);
-router.post('/projects',                     requireAuth, requireRole('owner','engineer'), createProject);
+router.post('/projects',                     requireAuth, requireRole('owner','engineer'), validate('createProject'), createProject);
 router.post('/projects/import-pdf/preview',  requireAuth, requireRole('owner','engineer'), upload.single('file'), previewImport);
 router.post('/projects/import-pdf/create',   requireAuth, requireRole('owner','engineer'), createFromImport);
 router.patch('/projects/:id',                requireAuth, requireRole('owner','engineer'), updateProject);

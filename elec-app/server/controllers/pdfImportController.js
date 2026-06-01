@@ -1,6 +1,7 @@
 const { PDFParse } = require('pdf-parse');
 const db = require('../db/connection');
 const { recalcReservedQty } = require('./projectController');
+const { calcItemPricing, recalcDivisionTotals, recalcPanelTotals } = require('../utils/pricing');
 
 // ── Parse PDF text into structured data ──
 
@@ -130,11 +131,14 @@ async function createFromImport(req, res, next) {
     if (!project_name) return res.status(400).json({ error: 'project_name required' });
     if (!panels?.length) return res.status(400).json({ error: 'No panel data provided' });
 
+    // Auto-assign engineer to themselves
+    const assignedEngineer = req.worker.role === 'engineer' ? req.worker.id : (engineer_id || null);
+
     // 1. Create the project
     const [projResult] = await db.execute(
       `INSERT INTO projects(project_name,engineer_id,client_id,exchange_rate_eur_usd,deadline,total_panels)
        VALUES(?,?,?,?,?,?)`,
-      [project_name, engineer_id||null, client_id||null, exchange_rate_eur_usd||1.08, deadline||null, total_panels||panels.length]
+      [project_name, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.08, deadline||null, total_panels||panels.length]
     );
     const projectId = projResult.insertId;
 
@@ -216,63 +220,11 @@ async function createFromImport(req, res, next) {
       await recalcPanelTotals(panelId);
     }
 
-    // 3. Recalc project totals
-    await recalcProjectTotals(projectId);
+    // 3. Recalc reserved quantities
     await recalcReservedQty();
 
     res.status(201).json({ message: 'Project created from PDF', project_id: projectId });
   } catch (err) { next(err); }
-}
-
-// ── Helper functions (adapted from crmController) ──
-
-function calcItemPricing(item) {
-  const base = parseFloat(item.base_price_usd) || 0;
-  const qty = parseInt(item.qty) || 1;
-  const baseTotal = base * qty;
-  const disc = baseTotal * (parseFloat(item.discount_pct) / 100);
-  const afterDisc = baseTotal - disc;
-  const mkP = afterDisc * (parseFloat(item.markupP_pct) / 100);
-  const totalT = afterDisc + mkP;
-  const man = afterDisc * (parseFloat(item.manpower_pct) / 100);
-  const mkM = man * (parseFloat(item.markupM_pct) / 100);
-  const final = totalT + man + mkM;
-  return {
-    markupP_amt: mkP, discount_amt: disc, totalpriceT: totalT,
-    manpower_amt: man, markupM_amt: mkM, totalfinalProduct: final,
-  };
-}
-
-async function recalcDivisionTotals(divisionId) {
-  const [items] = await db.execute(
-    'SELECT id, base_price_usd, markupP_pct, discount_pct, manpower_pct, markupM_pct, qty FROM panel_crm_items WHERE division_id=?',
-    [divisionId]
-  );
-  let divTotal = 0;
-  for (const item of items) {
-    const calc = calcItemPricing(item);
-    await db.execute(
-      `UPDATE panel_crm_items SET markupP_amt=?,discount_amt=?,totalpriceT=?,manpower_amt=?,markupM_amt=?,totalfinalProduct=? WHERE id=?`,
-      [calc.markupP_amt, calc.discount_amt, calc.totalpriceT, calc.manpower_amt, calc.markupM_amt, calc.totalfinalProduct, item.id]
-    );
-    divTotal += calc.totalfinalProduct;
-  }
-  return divTotal;
-}
-
-async function recalcPanelTotals(panelId) {
-  const [divisions] = await db.execute('SELECT id FROM panel_divisions WHERE panel_id=?', [panelId]);
-  let panelTotal = 0;
-  for (const div of divisions) {
-    panelTotal += await recalcDivisionTotals(div.id);
-  }
-  await db.execute('UPDATE project_crm_panels SET total_price=? WHERE id=?', [panelTotal, panelId]);
-}
-
-async function recalcProjectTotals(projectId) {
-  const [panels] = await db.execute('SELECT id, total_price FROM project_crm_panels WHERE project_id=?', [projectId]);
-  const total = panels.reduce((s, p) => s + (parseFloat(p.total_price) || 0), 0);
-  await db.execute('UPDATE projects SET total_price=? WHERE id=?', [total, projectId]);
 }
 
 module.exports = { previewImport, createFromImport };

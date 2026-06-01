@@ -19,7 +19,7 @@ export default function DiscountsPage() {
         api.get('/discounts'),
         api.get('/brands'),
       ]);
-      setDiscounts(dRes.data);
+      setDiscounts(dRes.data.data || []);
       setBrands(bRes.data);
     } catch (e) { toast.error(e.message); }
     finally { setLoading(false); }

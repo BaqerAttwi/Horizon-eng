@@ -16,7 +16,7 @@ export default function MessagesPage() {
   const load = async () => {
     try {
       const r = await api.get('/messages');
-      setMessages(r.data || []);
+      setMessages(r.data.data || []);
     } catch (e) {
       toast.error('❌ ' + e.message);
     } finally {
@@ -64,7 +64,7 @@ export default function MessagesPage() {
       <div className="page-header">
         <div>
           <h1>📢 Announcements</h1>
-          <p className="page-desc">Messages for all team members</p>
+          <p className="page-desc" style={{ color: 'var(--text)' }}>Messages for all team members</p>
         </div>
       </div>
 
@@ -121,7 +121,7 @@ export default function MessagesPage() {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                  <div style={{ flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 14, lineHeight: 1.5 }}>{msg.content}</div>
+                  <div style={{ flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 14, lineHeight: 1.5, color: 'var(--text)' }}>{msg.content}</div>
                   {(worker?.role === 'owner' || msg.created_by === worker?.id) && (
                     <button className="btn-icon" title="Delete" style={{ color: 'var(--danger)', flexShrink: 0, fontSize: 13 }}
                       onClick={() => del(msg.id)}>✕</button>

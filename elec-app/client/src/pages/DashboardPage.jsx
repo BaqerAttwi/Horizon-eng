@@ -185,8 +185,8 @@ export default function DashboardPage() {
           sub={`${kpis.active_projects || 0} active`} color="var(--accent)" delay={0} />
         <KpiCard icon="✅" label="Completed" value={kpis.completed_projects || 0}
           color="var(--success)" delay={1} />
-        <KpiCard icon="💰" label="Total Revenue" value={`$${parseFloat(kpis.total_revenue || 0).toFixed(0)}`}
-          color="var(--primary)" delay={2} />
+        {!(isRole('engineer') || isRole('secretary')) && <KpiCard icon="💰" label="Total Revenue" value={`$${parseFloat(kpis.total_revenue || 0).toFixed(0)}`}
+          color="var(--primary)" delay={2} />}
         {!isRole('engineer') && <KpiCard icon="📈" label="Net Profit" value={`$${profit.toFixed(0)}`}
           sub={profit >= 0 ? 'Positive' : 'Negative'} color={profitColor} delay={3} />}
         <KpiCard icon="⏳" label="Pending Approvals" value={kpis.pending_approvals || 0}

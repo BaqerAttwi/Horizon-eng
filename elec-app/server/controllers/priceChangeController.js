@@ -1,5 +1,5 @@
 const db = require('../db/connection');
-const { recalcDivisionTotals, recalcPanelTotals } = require('./crmController');
+const { recalcDivisionTotals, recalcPanelTotals } = require('../utils/pricing');
 
 async function createPriceChangeRequest(req, res, next) {
   try {
@@ -69,10 +69,20 @@ async function createPriceChangeRequest(req, res, next) {
     );
 
     const [owners] = await db.execute('SELECT id FROM workers WHERE role=\'owner\'');
+    const oldUsd = parseFloat(item.base_price_usd) || 0;
+    const oldEur = parseFloat(item.base_price_euro) || 0;
+    const newUsd = new_base_price_usd !== undefined ? parseFloat(new_base_price_usd) : oldUsd;
+    const newEur = new_base_price_euro !== undefined ? parseFloat(new_base_price_euro) : oldEur;
+    let priceMsg;
+    if (newUsd !== oldUsd) priceMsg = `base $${oldUsd.toFixed(2)} → $${newUsd.toFixed(2)}`;
+    else if (newEur !== oldEur) priceMsg = `base €${oldEur.toFixed(2)} → €${newEur.toFixed(2)}`;
+    else priceMsg = `item #${item_id}`;
     for (const owner of owners) {
       await db.execute(
         `INSERT INTO notifications(user_id, type, title, message, link) VALUES(?,?,?,?,?)`,
-        [owner.id, 'approval', 'Price Change Request', `Engineer ${req.worker.name} requested a price change for item #${item_id}`, `/crm/${projectId}`]
+        [owner.id, 'approval', 'Price Change Request',
+         `Engineer ${req.worker.name}: ${priceMsg}`,
+         `/crm/${projectId}`]
       );
     }
 
@@ -146,7 +156,7 @@ async function approveRequest(req, res, next) {
       [req.worker.id, requestId]
     );
 
-    const { calcItemPricing } = require('./crmController');
+    const { calcItemPricing } = require('../utils/pricing');
     const [updatedItem] = await db.execute('SELECT * FROM panel_crm_items WHERE id=?', [request.item_id]);
     if (updatedItem.length) {
       const pricing = calcItemPricing(updatedItem[0]);
@@ -159,9 +169,14 @@ async function approveRequest(req, res, next) {
     await recalcDivisionTotals(request.division_id);
     await recalcPanelTotals(request.panel_id);
 
+    const approvedUsd = parseFloat(request.new_base_price_usd) || 0;
+    const approvedEur = parseFloat(request.new_base_price_euro) || 0;
+    const approvedMsg = approvedUsd ? `$${approvedUsd.toFixed(2)}` : `€${approvedEur.toFixed(2)}`;
     await db.execute(
       `INSERT INTO notifications(user_id, type, title, message, link) VALUES(?,?,?,?,?)`,
-      [request.requested_by, 'approval', 'Price Change Approved', `Your price change request for item #${request.item_id} has been approved`, `/crm/${request.project_id}`]
+      [request.requested_by, 'approval', 'Price Change Approved',
+       `Item #${request.item_id} price changed to ${approvedMsg}`,
+       `/crm/${request.project_id}`]
     );
 
     res.json({ message: 'Price change approved and applied' });
@@ -186,9 +201,14 @@ async function rejectRequest(req, res, next) {
       [req.worker.id, rejection_reason || null, requestId]
     );
 
+    const rejectedUsd = parseFloat(request.new_base_price_usd) || 0;
+    const rejectedEur = parseFloat(request.new_base_price_euro) || 0;
+    const rejectedMsg = rejectedUsd ? `$${rejectedUsd.toFixed(2)}` : `€${rejectedEur.toFixed(2)}`;
     await db.execute(
       `INSERT INTO notifications(user_id, type, title, message, link) VALUES(?,?,?,?,?)`,
-      [request.requested_by, 'approval', 'Price Change Rejected', `Your price change request for item #${request.item_id} was rejected${rejection_reason ? ': ' + rejection_reason : ''}`, `/crm/${request.project_id}`]
+      [request.requested_by, 'approval', 'Price Change Rejected',
+       `Item #${request.item_id} price ${rejectedMsg} was rejected${rejection_reason ? ': ' + rejection_reason : ''}`,
+       `/crm/${request.project_id}`]
     );
 
     res.json({ message: 'Price change rejected' });

@@ -1,4 +1,5 @@
 const db = require('../db/connection');
+const { createNotification } = require('./notificationController');
 
 async function getMyPendingRequests(req, res, next) {
   try {
@@ -57,6 +58,12 @@ async function createRequest(req, res, next) {
       'INSERT INTO project_engineer_requests(project_id,requested_by,target_engineer_id) VALUES(?,?,?)',
       [project_id, req.worker.id, target_engineer_id]
     );
+    const [project] = await db.execute('SELECT project_name FROM projects WHERE id=?', [project_id]);
+    const pname = project.length ? project[0].project_name : `project #${project_id}`;
+    await createNotification(target_engineer_id, 'request', `Collaboration invite: ${pname}`,
+      `${req.worker.name} invited you to collaborate on ${pname}`,
+      `/requests`
+    );
     const [row] = await db.execute('SELECT * FROM project_engineer_requests WHERE id=?', [r.insertId]);
     res.status(201).json(row[0]);
   } catch (err) { next(err); }
@@ -85,6 +92,16 @@ async function respondToRequest(req, res, next) {
       [status, action === 'reject' ? rejection_reason : null, req.params.requestId]
     );
     const [row] = await db.execute('SELECT * FROM project_engineer_requests WHERE id=?', [req.params.requestId]);
+
+    // Notify requester
+    const actionLabel = action === 'accept' ? 'accepted' : 'rejected';
+    const [project] = await db.execute('SELECT project_name FROM projects WHERE id=?', [row[0].project_id]);
+    const pname = project.length ? project[0].project_name : `project #${row[0].project_id}`;
+    await createNotification(row[0].requested_by, 'request', `Invitation ${actionLabel}: ${pname}`,
+      `${req.worker.name} ${actionLabel} your invitation to ${pname}${action === 'reject' ? ` (reason: ${rejection_reason})` : ''}`,
+      `/requests`
+    );
+
     res.json(row[0]);
   } catch (err) { next(err); }
 }

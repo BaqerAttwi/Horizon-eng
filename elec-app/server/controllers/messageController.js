@@ -2,13 +2,20 @@ const pool = require('../db/connection');
 
 async function getMessages(req, res, next) {
   try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const offset = (page - 1) * limit;
+
+    const [[{ total }]] = await pool.query('SELECT COUNT(*) as total FROM messages');
     const [rows] = await pool.query(
       `SELECT m.*, w.name as creator_name, w.role as creator_role
        FROM messages m
        LEFT JOIN workers w ON m.created_by = w.id
-       ORDER BY m.created_at DESC`
+       ORDER BY m.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
     );
-    res.json(rows);
+    res.json({ data: rows, total, page, limit });
   } catch (err) {
     console.error('[Messages] ❌ getMessages:', err.message);
     next(err);

@@ -1,11 +1,14 @@
 const db = require('../db/connection');
 
-// Engineer access filter: only projects they lead or collaborate on
+// Engineer access filter: returns { clause, params } for parameterized queries
 function engineerProjectFilter(userId) {
-  return `AND (p.engineer_id = ${userId} OR p.id IN (
-    SELECT per.project_id FROM project_engineer_requests per
-    WHERE per.target_engineer_id = ${userId} AND per.status = 'accepted'
-  ))`;
+  return {
+    clause: `AND (p.engineer_id = ? OR p.id IN (
+      SELECT per.project_id FROM project_engineer_requests per
+      WHERE per.target_engineer_id = ? AND per.status = 'accepted'
+    ))`,
+    params: [userId, userId]
+  };
 }
 
 /**
@@ -16,7 +19,7 @@ function engineerProjectFilter(userId) {
 async function getAllReservations(req, res, next) {
   try {
     const user = req.worker;
-    const engFilter = user.role === 'engineer' ? engineerProjectFilter(user.id) : '';
+    const engFilter = user.role === 'engineer' ? engineerProjectFilter(user.id) : null;
 
     console.log('[Reservations] Loading demand overview (role:', user.role + ')...');
 
@@ -50,9 +53,9 @@ async function getAllReservations(req, res, next) {
       LEFT JOIN clients c ON p.client_id = c.id
       WHERE p.status NOT IN ('completed','cancelled')
         AND pci.product_id IS NOT NULL
-        ${engFilter}
+        ${engFilter ? engFilter.clause : ''}
       ORDER BY pr.reference, p.id
-    `);
+    `, engFilter ? engFilter.params : []);
 
     console.log('[Reservations] Project demands:', projectDemands.length, 'rows');
 
@@ -135,7 +138,7 @@ async function getProductDemand(req, res, next) {
   try {
     const user = req.worker;
     const { productId } = req.params;
-    const engFilter = user.role === 'engineer' ? engineerProjectFilter(user.id) : '';
+    const engFilter = user.role === 'engineer' ? engineerProjectFilter(user.id) : null;
 
     console.log('[Reservations] Product demand for id:', productId, '(role:', user.role + ')');
 
@@ -164,9 +167,9 @@ async function getProductDemand(req, res, next) {
       LEFT JOIN workers w ON p.engineer_id = w.id
       LEFT JOIN clients c ON p.client_id   = c.id
       WHERE pci.product_id = ? AND p.status NOT IN ('completed','cancelled')
-        ${engFilter}
+        ${engFilter ? engFilter.clause : ''}
       ORDER BY p.deadline ASC
-    `, [productId]);
+    `, engFilter ? [productId, ...engFilter.params] : [productId]);
 
     const totalDemanded = demands.reduce((s, d) => s + d.qty, 0);
     const stock = product[0].stock_qty;

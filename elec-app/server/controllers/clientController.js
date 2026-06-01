@@ -42,7 +42,13 @@ async function updateClient(req, res, next) {
 
 async function deleteClient(req, res, next) {
   try {
-    await db.execute('DELETE FROM clients WHERE id=?', [req.params.id]);
+    try {
+      await db.execute('UPDATE clients SET deleted_at = NOW() WHERE id=?', [req.params.id]);
+    } catch (e) {
+      if (e.code === 'ER_BAD_FIELD_ERROR') {
+        await db.execute('DELETE FROM clients WHERE id=?', [req.params.id]);
+      } else { throw e; }
+    }
     res.json({ message: 'Deleted' });
   } catch (err) { next(err); }
 }

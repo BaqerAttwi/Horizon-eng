@@ -83,9 +83,16 @@ async function deleteNotification(req, res, next) {
   }
 }
 
-// ── Helper: Create a notification ─────────────────────────────
+// ── Helper: Create a notification (with dedup check) ──────────
 async function createNotification(userId, type, title, message, link) {
   try {
+    // Don't create duplicate unread notifications for same type + link
+    const [existing] = await pool.query(
+      `SELECT id FROM notifications WHERE user_id = ? AND type = ? AND link = ? AND is_read = FALSE LIMIT 1`,
+      [userId, type, link]
+    );
+    if (existing.length) return; // already exists unread
+
     await pool.query(
       `INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)`,
       [userId, type, title, message, link]

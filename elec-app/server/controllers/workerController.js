@@ -48,7 +48,14 @@ async function updateWorker(req, res, next) {
 
 async function deleteWorker(req, res, next) {
   try {
-    await db.execute('DELETE FROM workers WHERE id=?', [req.params.id]);
+    // Soft delete with hard-delete fallback for backward compat
+    try {
+      await db.execute('UPDATE workers SET deleted_at = NOW() WHERE id=?', [req.params.id]);
+    } catch (e) {
+      if (e.code === 'ER_BAD_FIELD_ERROR') {
+        await db.execute('DELETE FROM workers WHERE id=?', [req.params.id]);
+      } else { throw e; }
+    }
     console.log(`[Workers] Deleted id:${req.params.id}`);
     res.json({ message: 'Deleted' });
   } catch (err) { console.error('[Workers] ❌ delete:', err.message); next(err); }

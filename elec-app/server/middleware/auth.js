@@ -2,8 +2,8 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'elec-app-secret-change-in-production';
 
 function requireAuth(req, res, next) {
-  const header = req.headers['authorization'];
-  const token  = header && header.startsWith('Bearer ') ? header.slice(7) : null;
+  // Check HttpOnly cookie first, then Authorization header
+  const token = req.cookies?.token || (req.headers['authorization']?.startsWith('Bearer ') ? req.headers['authorization'].slice(7) : null);
   if (!token) {
     console.log('[Auth] ❌ No token on', req.method, req.path);
     return res.status(401).json({ error: 'Authentication required — please log in' });

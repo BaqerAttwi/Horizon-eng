@@ -6,25 +6,36 @@ async function getDashboard(req, res, next) {
     const userId = req.worker.id;
     const userRole = req.worker.role;
 
-    // Engineer access filter: only their own + collaborated projects
-    const engFilter = userRole === 'engineer'
-      ? `AND (p.engineer_id = ${userId} OR p.id IN (
-           SELECT per.project_id FROM project_engineer_requests per
-           WHERE per.target_engineer_id = ${userId} AND per.status = 'accepted'
-         ))`
-      : '';
+    // Engineer access filter: pre-compute accessible project IDs (parameterized, no SQL injection)
+    let engWhere = '';
+    const engArgs = [];
+    if (userRole === 'engineer') {
+      const [rows] = await pool.query(
+        `SELECT id FROM projects WHERE engineer_id = ? OR id IN (SELECT project_id FROM project_engineer_requests WHERE target_engineer_id = ? AND status = 'accepted')`,
+        [userId, userId]
+      );
+      const ids = rows.map(r => r.id);
+      if (ids.length === 0) {
+        engWhere = 'AND 1=0';
+      } else {
+        engWhere = 'AND p.id IN (?)';
+        engArgs.push(ids);
+      }
+    }
 
-    // KPIs
-    const [[kpis]] = await pool.query(`
+    // ── KPIs ───────────────────────────────────────────────
+    const kpiSql = `
       SELECT
-        COUNT(DISTINCT CASE WHEN p.deleted_at IS NULL ${engFilter} THEN p.id END) AS total_projects,
-        COUNT(DISTINCT CASE WHEN p.status = 'active' AND p.deleted_at IS NULL ${engFilter} THEN p.id END) AS active_projects,
-        COUNT(DISTINCT CASE WHEN p.status = 'completed' AND p.deleted_at IS NULL ${engFilter} THEN p.id END) AS completed_projects,
-        COUNT(DISTINCT CASE WHEN p.admin_approval = 'pending' AND p.deleted_at IS NULL ${engFilter} THEN p.id END) AS pending_approvals,
-        COALESCE(SUM(CASE WHEN p.deleted_at IS NULL ${engFilter} THEN p.total_price ELSE 0 END), 0) AS total_revenue,
-        COALESCE(SUM(CASE WHEN p.deleted_at IS NULL ${engFilter} THEN p.total_price - p.total_cost ELSE 0 END), 0) AS total_profit
+        COUNT(DISTINCT CASE WHEN p.deleted_at IS NULL ${engWhere} THEN p.id END) AS total_projects,
+        COUNT(DISTINCT CASE WHEN p.status = 'active' AND p.deleted_at IS NULL ${engWhere} THEN p.id END) AS active_projects,
+        COUNT(DISTINCT CASE WHEN p.status = 'completed' AND p.deleted_at IS NULL ${engWhere} THEN p.id END) AS completed_projects,
+        COUNT(DISTINCT CASE WHEN p.admin_approval = 'pending' AND p.deleted_at IS NULL ${engWhere} THEN p.id END) AS pending_approvals,
+        COALESCE(SUM(CASE WHEN p.deleted_at IS NULL ${engWhere} THEN p.total_price ELSE 0 END), 0) AS total_revenue,
+        COALESCE(SUM(CASE WHEN p.deleted_at IS NULL ${engWhere} THEN p.total_price - p.total_cost ELSE 0 END), 0) AS total_profit
       FROM projects p
-    `);
+    `;
+    const kpiArgs = engArgs.length ? [].concat(...Array(6).fill(engArgs)) : [];
+    const [[kpis]] = await pool.query(kpiSql, kpiArgs);
 
     // Upcoming deadlines (next 7 days) — filtered for engineers
     const [deadlines] = await pool.query(`
@@ -39,10 +50,10 @@ async function getDashboard(req, res, next) {
         AND p.deadline <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
         AND p.status NOT IN ('completed', 'cancelled')
         AND p.deleted_at IS NULL
-        ${engFilter}
+        ${engWhere}
       ORDER BY p.deadline ASC
       LIMIT 10
-    `);
+    `, engArgs);
 
     // Recent activity — filtered for engineers
     const [activity] = await pool.query(`
@@ -55,7 +66,7 @@ async function getDashboard(req, res, next) {
         CONCAT('/projects/', p.id) as link
       FROM projects p
       JOIN workers w ON w.id = p.engineer_id
-      WHERE p.deleted_at IS NULL ${engFilter}
+      WHERE p.deleted_at IS NULL ${engWhere}
       ORDER BY p.created_at DESC
       LIMIT 10)
       UNION ALL
@@ -71,12 +82,12 @@ async function getDashboard(req, res, next) {
       JOIN workers w ON w.id = pcp.updated_by
       WHERE pcp.is_completed = TRUE
         AND p.deleted_at IS NULL
-        ${engFilter.replace(/p\./g, 'p.')}
+        ${engWhere}
       ORDER BY pcp.created_at DESC
       LIMIT 10)
       ORDER BY ts DESC
       LIMIT 20
-    `);
+    `, [...engArgs, ...engArgs]);
 
     // Low stock alerts (for owner/accounting)
     let lowStock = [];

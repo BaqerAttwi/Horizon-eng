@@ -15,16 +15,25 @@ async function getDiscounts(req, res, next) {
       params.push(parseInt(brandId));
     }
 
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 50));
+    const offset = (page - 1) * limit;
+
+    const [[{ total }]] = await db.execute(
+      `SELECT COUNT(*) as total FROM product_discounts pd ${where}`, params
+    );
+
     const [discounts] = await db.execute(
       `SELECT pd.*, b.name as brand_name, pr.reference, pr.description
        FROM product_discounts pd
        LEFT JOIN products pr ON pd.product_id = pr.id
        LEFT JOIN brands b ON pd.brand_id = b.id
        ${where}
-       ORDER BY pd.created_at DESC`,
-      params
+       ORDER BY pd.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
     );
-    res.json(discounts);
+    res.json({ data: discounts, total, page, limit });
   } catch (err) { console.error('[Discounts] ❌', err.message); next(err); }
 }
 
@@ -62,7 +71,13 @@ async function updateDiscount(req, res, next) {
 
 async function deleteDiscount(req, res, next) {
   try {
-    await db.execute('DELETE FROM product_discounts WHERE id=?', [req.params.id]);
+    try {
+      await db.execute('UPDATE product_discounts SET deleted_at = NOW() WHERE id=?', [req.params.id]);
+    } catch (e) {
+      if (e.code === 'ER_BAD_FIELD_ERROR') {
+        await db.execute('DELETE FROM product_discounts WHERE id=?', [req.params.id]);
+      } else { throw e; }
+    }
     res.json({ message: 'Discount deleted' });
   } catch (err) { console.error('[Discounts] ❌', err.message); next(err); }
 }

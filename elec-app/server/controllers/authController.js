@@ -58,6 +58,14 @@ async function login(req, res, next) {
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 
+    // Set HttpOnly cookie (secure in production)
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.COOKIE_SECURE === 'true',
+      sameSite: 'lax',
+      maxAge: 12 * 60 * 60 * 1000, // 12 hours
+    });
+
     console.log(`[Auth] ✅ Login success: "${worker.name}" role:${worker.role}`);
     res.json({
       token,
@@ -182,13 +190,23 @@ async function setPassword(req, res, next) {
 /**
  * GET /api/auth/me  — verify token and return current worker info
  */
+async function logout(req, res) {
+  res.clearCookie('token', { httpOnly: true, sameSite: 'lax' });
+  res.json({ message: 'Logged out' });
+}
+
 async function me(req, res) {
+  // Get email from DB (not in JWT payload)
+  const [rows] = await db.execute('SELECT id, name, email, role, created_at FROM workers WHERE id=?', [req.worker.id]);
+  if (!rows.length) return res.status(404).json({ error: 'Worker not found' });
+  const w = rows[0];
   res.json({
-    id:          req.worker.id,
-    name:        req.worker.name,
-    role:        req.worker.role,
+    id:          w.id,
+    name:        w.name,
+    email:       w.email,
+    role:        w.role,
     permissions: req.worker.permissions,
   });
 }
 
-module.exports = { login, register, changePassword, setPassword, me, ROLE_PERMISSIONS };
+module.exports = { login, register, changePassword, setPassword, logout, me, ROLE_PERMISSIONS };

@@ -110,12 +110,15 @@ async function createProject(req, res, next) {
     const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, items = [], total_panels = 0 } = req.body;
     if (!project_name) return res.status(400).json({ error: 'project_name is required' });
 
-    console.log('[Projects] Creating:', project_name, 'engineer:', engineer_id, 'items:', items.length);
+    // Auto-assign engineer to themselves
+    const assignedEngineer = req.worker.role === 'engineer' ? req.worker.id : (engineer_id || null);
+
+    console.log('[Projects] Creating:', project_name, 'engineer:', assignedEngineer, 'items:', items.length);
 
     const [result] = await db.execute(
       `INSERT INTO projects(project_name,engineer_id,client_id,exchange_rate_eur_usd,deadline,notes,total_panels)
        VALUES(?,?,?,?,?,?,?)`,
-      [project_name, engineer_id||null, client_id||null, exchange_rate_eur_usd||1.08, deadline||null, notes||null, total_panels||0]
+      [project_name, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.08, deadline||null, notes||null, total_panels||0]
     );
     const projectId = result.insertId;
 

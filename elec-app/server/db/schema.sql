@@ -394,3 +394,8 @@ CREATE TABLE IF NOT EXISTS messages (
 -- NOTE: Run this in MySQL after importing schema to set real password:
 -- UPDATE workers SET password_hash = '$2b$10$...' WHERE id=1;
 -- Or use the /api/auth/register endpoint to create workers with proper hashed passwords.
+
+-- ── Soft-delete migrations (run once) ─────────────────────────
+-- ALTER TABLE workers ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER created_at;
+-- ALTER TABLE clients ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER updated_at;
+-- ALTER TABLE product_discounts ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER updated_at;

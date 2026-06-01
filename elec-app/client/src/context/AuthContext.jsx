@@ -7,23 +7,32 @@ export function AuthProvider({ children }) {
   const [worker, setWorker]   = useState(null);   // logged-in worker object
   const [loading, setLoading] = useState(true);   // checking stored token on boot
 
-  // On app start — restore session from localStorage
+  // On app start — restore session from HttpOnly cookie (preferred) or localStorage fallback
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const saved = localStorage.getItem('worker');
-    if (token && saved) {
-      try {
-        const w = JSON.parse(saved);
+    // Try cookie-based auth first (set on login by server, sent automatically)
+    api.get('/auth/me')
+      .then(r => {
+        const w = r.data;
         setWorker(w);
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        console.log('[Auth] Session restored for:', w.name, 'role:', w.role);
-      } catch {
-        console.log('[Auth] Stored session invalid — clearing');
-        localStorage.removeItem('token');
-        localStorage.removeItem('worker');
-      }
-    }
-    setLoading(false);
+      })
+      .catch(() => {
+        // Fallback: try localStorage token
+        const token = localStorage.getItem('token');
+        const saved = localStorage.getItem('worker');
+        if (token && saved) {
+          try {
+            const w = JSON.parse(saved);
+            setWorker(w);
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            console.log('[Auth] Session restored from localStorage for:', w.name);
+          } catch {
+            console.log('[Auth] Stored session invalid — clearing');
+            localStorage.removeItem('token');
+            localStorage.removeItem('worker');
+          }
+        }
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (email, password) => {
@@ -40,7 +49,8 @@ export function AuthProvider({ children }) {
     return w;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try { await api.post('/auth/logout'); } catch {}
     localStorage.removeItem('token');
     localStorage.removeItem('worker');
     delete api.defaults.headers.common['Authorization'];
