@@ -1,6 +1,7 @@
 const db = require('../db/connection');
 const { recalcReservedQty } = require('./projectController');
 const { calcItemPricing, recalcDivisionTotals, recalcPanelTotals } = require('../utils/pricing');
+const { logActivity } = require('./activityController');
 
 // One-time recalculation on startup to fix existing data
 recalcReservedQty().catch(err => console.error('[CRM] init recalcReservedQty error:', err.message));
@@ -68,6 +69,7 @@ async function createPanel(req, res, next) {
 
     const [rows] = await db.execute('SELECT * FROM project_crm_panels WHERE id=?', [result.insertId]);
     console.log(`[CRM] Panel created: project:${req.params.projectId} panel #${panel_number}`);
+    logActivity({ project_id: req.params.projectId, panel_id: result.insertId, action: 'panel_created', field_name: 'panel', new_value: panel_name || `Panel #${panel_number}`, performed_by: req.worker.id });
     res.status(201).json(rows[0]);
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Panel number already exists' });
@@ -101,6 +103,8 @@ async function updatePanel(req, res, next) {
     }
     await recalcPanelTotals(req.params.panelId);
 
+    logActivity({ project_id: req.params.projectId, panel_id: req.params.panelId, action: 'panel_updated', field_name: 'panel_markup', new_value: `markupP:${markupP||0} markupM:${markupM||0} man%:${manpower_pct||0}`, performed_by: req.worker.id });
+
     const [rows] = await db.execute(
       `SELECT pcp.*, w.name as updated_by_name
        FROM project_crm_panels pcp
@@ -117,9 +121,11 @@ async function deletePanel(req, res, next) {
     const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
     if (!hasAccess) return;
 
+    const [[deletedPanel]] = await db.execute('SELECT panel_name FROM project_crm_panels WHERE id=?', [req.params.panelId]);
     await db.execute('DELETE FROM project_crm_panels WHERE id=? AND project_id=?', [req.params.panelId, req.params.projectId]);
     await recalcPanelTotals(req.params.panelId);
     await recalcReservedQty();
+    logActivity({ project_id: req.params.projectId, panel_id: req.params.panelId, action: 'panel_deleted', field_name: 'panel_name', old_value: deletedPanel?.panel_name, performed_by: req.worker.id });
     res.json({ message: 'Panel deleted' });
   } catch (err) { console.error('[CRM] ❌ deletePanel:', err.message); next(err); }
 }
@@ -129,10 +135,11 @@ async function togglePanelComplete(req, res, next) {
     const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
     if (!hasAccess) return;
 
-    const [panels] = await db.execute('SELECT is_completed FROM project_crm_panels WHERE id=? AND project_id=?', [req.params.panelId, req.params.projectId]);
+    const [panels] = await db.execute('SELECT is_completed, panel_name FROM project_crm_panels WHERE id=? AND project_id=?', [req.params.panelId, req.params.projectId]);
     if (!panels.length) return res.status(404).json({ error: 'Panel not found' });
     const newVal = panels[0].is_completed ? 0 : 1;
     await db.execute('UPDATE project_crm_panels SET is_completed=?, updated_by=? WHERE id=?', [newVal, req.worker.id, req.params.panelId]);
+    logActivity({ project_id: req.params.projectId, panel_id: req.params.panelId, action: 'panel_toggled', field_name: 'is_completed', old_value: panels[0].is_completed ? '1' : '0', new_value: newVal ? '1' : '0', performed_by: req.worker.id });
     await recalcPanelTotals(req.params.panelId);
     const [rows] = await db.execute(
       `SELECT pcp.*, w.name as updated_by_name
@@ -177,6 +184,8 @@ async function createDivision(req, res, next) {
 
     const [rows] = await db.execute('SELECT * FROM panel_divisions WHERE id=?', [result.insertId]);
     console.log(`[CRM] Division created: panel:${req.params.panelId} type:${division_type}`);
+    const [[p]] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [req.params.panelId]);
+    if (p) logActivity({ project_id: p.project_id, panel_id: req.params.panelId, division_id: result.insertId, action: 'division_created', field_name: 'division_type', new_value: division_type, performed_by: req.worker.id });
     res.status(201).json(rows[0]);
   } catch (err) { console.error('[CRM] ❌ createDivision:', err.message); next(err); }
 }
@@ -200,6 +209,9 @@ async function updateDivision(req, res, next) {
     await recalcDivisionTotals(req.params.divisionId);
     await recalcPanelTotals(req.params.panelId);
 
+    const [[divP]] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [req.params.panelId]);
+    if (divP) logActivity({ project_id: divP.project_id, panel_id: req.params.panelId, division_id: req.params.divisionId, action: 'division_updated', field_name: 'division_type', new_value: division_type, performed_by: req.worker.id });
+
     const [rows] = await db.execute('SELECT * FROM panel_divisions WHERE id=?', [req.params.divisionId]);
     res.json(rows[0]);
   } catch (err) { console.error('[CRM] ❌ updateDivision:', err.message); next(err); }
@@ -210,8 +222,11 @@ async function deleteDivision(req, res, next) {
     const hasAccess = await checkPanelAccess(req, res, req.params.panelId);
     if (!hasAccess) return;
 
+    const [[oldDiv]] = await db.execute('SELECT division_type FROM panel_divisions WHERE id=?', [req.params.divisionId]);
     await db.execute('DELETE FROM panel_divisions WHERE id=? AND panel_id=?', [req.params.divisionId, req.params.panelId]);
     await recalcPanelTotals(req.params.panelId);
+    const [[divPDel]] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [req.params.panelId]);
+    if (divPDel) logActivity({ project_id: divPDel.project_id, panel_id: req.params.panelId, division_id: req.params.divisionId, action: 'division_deleted', field_name: 'division_type', old_value: oldDiv?.division_type, performed_by: req.worker.id });
     res.json({ message: 'Division deleted' });
   } catch (err) { console.error('[CRM] ❌ deleteDivision:', err.message); next(err); }
 }
@@ -379,6 +394,7 @@ async function createCrmItem(req, res, next) {
 
     const [rows] = await db.execute('SELECT * FROM panel_crm_items WHERE id=?', [result.insertId]);
     console.log(`[CRM] Item created in division:${req.params.divisionId}`);
+    logActivity({ project_id: req.params.projectId, panel_id: req.params.panelId, division_id: req.params.divisionId, item_id: result.insertId, action: 'item_created', field_name: 'base_price_usd', new_value: usd, performed_by: req.worker.id });
     await recalcReservedQty();
     res.status(201).json(rows[0]);
   } catch (err) { console.error('[CRM] ❌ createCrmItem:', err.message); next(err); }
@@ -465,6 +481,23 @@ async function updateCrmItem(req, res, next) {
     await recalcPanelTotals(req.params.panelId);
     await recalcReservedQty();
 
+    // Log changed fields
+    const changedFields = [];
+    if (qty !== undefined && parseFloat(qty) !== parseFloat(existing[0].qty)) changedFields.push(`qty: ${existing[0].qty}→${qty}`);
+    if (base_price_usd !== undefined && parseFloat(base_price_usd) !== parseFloat(existing[0].base_price_usd)) changedFields.push(`base_price_usd: ${existing[0].base_price_usd}→${base_price_usd}`);
+    if (base_price_euro !== undefined && parseFloat(base_price_euro) !== parseFloat(existing[0].base_price_euro)) changedFields.push(`base_price_euro: ${existing[0].base_price_euro}→${base_price_euro}`);
+    if (markupP_pct !== undefined && parseFloat(markupP_pct) !== parseFloat(existing[0].markupP_pct)) changedFields.push(`markupP_pct: ${existing[0].markupP_pct}→${markupP_pct}`);
+    if (discount_pct !== undefined && parseFloat(discount_pct) !== parseFloat(existing[0].discount_pct)) changedFields.push(`discount_pct: ${existing[0].discount_pct}→${discount_pct}`);
+    if (manpower_pct !== undefined && parseFloat(manpower_pct) !== parseFloat(existing[0].manpower_pct)) changedFields.push(`manpower_pct: ${existing[0].manpower_pct}→${manpower_pct}`);
+    if (markupM_pct !== undefined && parseFloat(markupM_pct) !== parseFloat(existing[0].markupM_pct)) changedFields.push(`markupM_pct: ${existing[0].markupM_pct}→${markupM_pct}`);
+    if (cost !== undefined && parseFloat(cost) !== parseFloat(existing[0].cost)) changedFields.push(`cost: ${existing[0].cost}→${cost}`);
+    if (notes !== undefined && notes !== existing[0].notes) changedFields.push('notes updated');
+    if (changedFields.length) {
+      logActivity({ project_id: req.params.projectId, panel_id: req.params.panelId, division_id: req.params.divisionId, item_id: req.params.itemId, action: 'item_updated', field_name: 'multiple', old_value: existing[0].base_price_usd, new_value: changedFields.join('; '), performed_by: req.worker.id });
+    } else {
+      logActivity({ project_id: req.params.projectId, panel_id: req.params.panelId, division_id: req.params.divisionId, item_id: req.params.itemId, action: 'item_updated', field_name: 'visible_in_client_pdf', new_value: String(visible_in_client_pdf), performed_by: req.worker.id });
+    }
+
     const [rows] = await db.execute('SELECT * FROM panel_crm_items WHERE id=?', [req.params.itemId]);
     res.json(rows[0]);
   } catch (err) { console.error('[CRM] ❌ updateCrmItem:', err.message); next(err); }
@@ -475,9 +508,11 @@ async function deleteCrmItem(req, res, next) {
     const hasAccess = await checkDivisionAccess(req, res, req.params.divisionId);
     if (!hasAccess) return;
 
+    const [[deletedItem]] = await db.execute('SELECT base_price_usd, qty FROM panel_crm_items WHERE id=?', [req.params.itemId]);
     await db.execute('DELETE FROM panel_crm_items WHERE id=? AND division_id=?', [req.params.itemId, req.params.divisionId]);
     await recalcPanelTotals(req.params.panelId);
     await recalcReservedQty();
+    logActivity({ project_id: req.params.projectId, panel_id: req.params.panelId, division_id: req.params.divisionId, item_id: req.params.itemId, action: 'item_deleted', field_name: 'base_price_usd', old_value: deletedItem?.base_price_usd, performed_by: req.worker.id });
     res.json({ message: 'Item deleted' });
   } catch (err) { console.error('[CRM] ❌ deleteCrmItem:', err.message); next(err); }
 }
@@ -658,6 +693,7 @@ async function copyPanelFromProject(req, res, next) {
     }
 
     await recalcReservedQty();
+    logActivity({ project_id: targetProjectId, panel_id: newPanelId, action: 'panel_copied', field_name: 'source_panel_id', old_value: String(sourcePanelId), new_value: sourcePanel.panel_name, performed_by: req.worker.id });
     res.status(201).json(newPanel);
   } catch (err) { console.error('[CRM] ❌ copyPanelFromProject:', err.message); next(err); }
 }

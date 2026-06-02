@@ -4,6 +4,7 @@ const cors    = require('cors');
 const cookieParser = require('cookie-parser');
 const routes  = require('./routes');
 const { runNotificationChecks } = require('./controllers/notificationController');
+const { initMailer } = require('./utils/emailService');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -30,6 +31,9 @@ app.use((err, req, res, _next) => {
 
 const server = app.listen(PORT, () => {
   console.log(`[Server] ✅ Running on http://localhost:${PORT}`);
+
+  // Initialize email service
+  initMailer();
 
   // Run notification checks on startup
   runNotificationChecks();

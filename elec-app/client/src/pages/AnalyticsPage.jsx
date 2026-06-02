@@ -208,6 +208,7 @@ export default function AnalyticsPage() {
           <div className="page-title">📊 Analytics Dashboard</div>
           <div className="page-subtitle">Owner overview — engineer performance, client profitability & project insights</div>
         </div>
+        <a href="/api/export/analytics" className="btn btn-secondary" style={{ textDecoration: 'none' }}>📥 Export CSV</a>
       </div>
 
       {/* Date Filter */}

@@ -255,6 +255,9 @@ export default function ProductsPage() {
           <button className="btn btn-secondary" onClick={() => setShowManualForm(!showManualForm)}>
             {showManualForm ? '✕ Close' : '➕ Manual Product'}
           </button>
+          <a href="/api/export/products" className="btn btn-secondary" style={{ textDecoration: 'none' }}>
+            📥 CSV
+          </a>
         </div>
       </div>
 

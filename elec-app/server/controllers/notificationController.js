@@ -1,4 +1,5 @@
 const pool = require('../db/connection');
+const { notifyByEmail } = require('../utils/emailService');
 
 // ── Get notifications for current user ────────────────────────
 async function getNotifications(req, res, next) {
@@ -84,19 +85,34 @@ async function deleteNotification(req, res, next) {
 }
 
 // ── Helper: Create a notification (with dedup check) ──────────
-async function createNotification(userId, type, title, message, link) {
+async function createNotification(userId, type, title, message, link, skipEmail = false) {
   try {
     // Don't create duplicate unread notifications for same type + link
     const [existing] = await pool.query(
       `SELECT id FROM notifications WHERE user_id = ? AND type = ? AND link = ? AND is_read = FALSE LIMIT 1`,
       [userId, type, link]
     );
-    if (existing.length) return; // already exists unread
+    if (existing.length) {
+      if (!skipEmail && type !== 'stock') {
+        const [[wk]] = await pool.query('SELECT id, name, email FROM workers WHERE id = ?', [userId]);
+        if (wk && wk.email) notifyByEmail(wk, type, title, message, link).catch(() => {});
+      }
+      return;
+    }
 
     await pool.query(
       `INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)`,
       [userId, type, title, message, link]
     );
+
+    if (!skipEmail && type !== 'stock') {
+      const [[worker]] = await pool.query('SELECT id, name, email FROM workers WHERE id = ?', [userId]);
+      if (worker && worker.email) {
+        notifyByEmail(worker, type, title, message, link).catch(e => console.error('[Email] async error:', e.message));
+      } else {
+        console.log(`[Email] ⏭️ Skipped — worker #${userId} has no email${worker ? ' (null field)' : ' (not found)'}`);
+      }
+    }
   } catch (err) {
     console.error('[Notification] Failed to create:', err.message);
   }
@@ -153,13 +169,13 @@ async function checkDeadlineWarnings() {
       const daysLeft = Math.ceil((new Date(p.deadline) - new Date()) / (1000 * 60 * 60 * 24));
       const urgency = daysLeft <= 1 ? '🔴 URGENT' : daysLeft <= 2 ? '🟡 Warning' : '🔵 Reminder';
 
-      // Notify engineer
       await createNotification(
         p.engineer_id,
         'deadline',
         `${urgency}: ${p.project_name}`,
         `Deadline in ${daysLeft} day${daysLeft !== 1 ? 's' : ''} (${p.deadline})`,
-        `/projects/${p.id}/crm`
+        `/projects/${p.id}/crm`,
+        true
       );
 
       // Notify owners
@@ -217,7 +233,8 @@ async function checkPendingApprovals() {
         'approval',
         `Client Approval Pending: ${p.project_name}`,
         `Waiting for client approval for over 48 hours`,
-        `/projects/${p.id}`
+        `/projects/${p.id}`,
+        true
       );
     }
 

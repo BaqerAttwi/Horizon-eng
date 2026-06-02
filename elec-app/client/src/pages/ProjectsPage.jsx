@@ -509,6 +509,7 @@ export default function ProjectsPage() {
         </div>
         <button className="btn btn-primary" onClick={() => setModal({})}>+ New Project</button>
         <button className="btn btn-secondary" onClick={() => setImportModal(true)}>📄 Import PDF</button>
+        <a href="/api/export/projects" className="btn btn-secondary" style={{ textDecoration: 'none' }}>📥 CSV</a>
       </div>
 
       <div style={{ marginBottom: 16 }}>

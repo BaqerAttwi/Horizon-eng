@@ -34,14 +34,21 @@ async function createMessage(req, res, next) {
       [content.trim(), req.worker.id]
     );
 
-    // Notify all users
-    const { notifyOwners, createNotification } = require('./notificationController');
-    const [allWorkers] = await pool.query('SELECT id FROM workers');
+    // Notify + email all users
+    const { createNotification } = require('./notificationController');
+    const { notifyByEmail } = require('../utils/emailService');
+    const [allWorkers] = await pool.query('SELECT id, name, email FROM workers');
+    const truncated = `${content.substring(0, 80)}${content.length > 80 ? '...' : ''}`;
     for (const w of allWorkers) {
       await createNotification(w.id, 'info', 'New Announcement',
-        `${req.worker.name} posted: ${content.substring(0, 80)}${content.length > 80 ? '...' : ''}`,
+        `${req.worker.name} posted: ${truncated}`,
         '/messages'
       );
+      if (w.email && w.id !== req.worker.id) {
+        notifyByEmail(w, 'info', `📢 New Announcement from ${req.worker.name}`,
+          truncated, '/messages', req.worker.name
+        ).catch(() => {});
+      }
     }
 
     const [rows] = await pool.query(

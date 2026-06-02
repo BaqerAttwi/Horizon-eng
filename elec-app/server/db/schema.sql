@@ -391,6 +391,40 @@ CREATE TABLE IF NOT EXISTS messages (
   FOREIGN KEY (created_by) REFERENCES workers(id) ON DELETE CASCADE
 );
 
+-- ── Activity Log / Audit Trail ─────────────────────────────────
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  project_id    INT NOT NULL,
+  panel_id      INT DEFAULT NULL,
+  division_id   INT DEFAULT NULL,
+  item_id       INT DEFAULT NULL,
+  action        VARCHAR(50) NOT NULL,
+  field_name    VARCHAR(100) DEFAULT NULL,
+  old_value     TEXT DEFAULT NULL,
+  new_value     TEXT DEFAULT NULL,
+  performed_by  INT NOT NULL,
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (performed_by) REFERENCES workers(id) ON DELETE CASCADE
+);
+
+-- ── File Attachments ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS attachments (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  project_id    INT NOT NULL,
+  panel_id      INT DEFAULT NULL,
+  file_name     VARCHAR(255) NOT NULL,
+  stored_name   VARCHAR(255) NOT NULL,
+  file_size     INT NOT NULL DEFAULT 0,
+  mime_type     VARCHAR(100) DEFAULT NULL,
+  uploaded_by   INT NOT NULL,
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (uploaded_by) REFERENCES workers(id) ON DELETE CASCADE
+);
+
+ALTER TABLE projects ADD COLUMN ready_for_review BOOLEAN DEFAULT FALSE AFTER deleted_at;
+
 -- NOTE: Run this in MySQL after importing schema to set real password:
 -- UPDATE workers SET password_hash = '$2b$10$...' WHERE id=1;
 -- Or use the /api/auth/register endpoint to create workers with proper hashed passwords.

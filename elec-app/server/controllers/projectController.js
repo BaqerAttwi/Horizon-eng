@@ -1,4 +1,6 @@
 const db = require('../db/connection');
+const { logActivity } = require('./activityController');
+const { createNotification, notifyOwners } = require('./notificationController');
 
 async function recalcReservedQty() {
   await db.execute(`
@@ -175,12 +177,18 @@ async function updateProject(req, res, next) {
     if (rejection_note     !== undefined) { fields.push('rejection_note=?');  params.push(rejection_note); }
     if (total_panels       !== undefined) { fields.push('total_panels=?');    params.push(total_panels||0); }
     if (completed_panels   !== undefined) { fields.push('completed_panels=?'); params.push(completed_panels||0); }
+    if (req.body.ready_for_review !== undefined) { fields.push('ready_for_review=?'); params.push(req.body.ready_for_review ? 1 : 0); }
     if (!fields.length) return res.status(400).json({ error: 'Nothing to update' });
     params.push(req.params.id);
     await db.execute(`UPDATE projects SET ${fields.join(',')} WHERE id=?`, params);
 
     if (status !== undefined) {
       await recalcReservedQty();
+    }
+
+    // Log approval changes
+    if (client_approval !== undefined) {
+      logActivity({ project_id: req.params.id, action: 'client_approval', field_name: 'client_approval', old_value: status, new_value: client_approval, performed_by: req.worker.id });
     }
 
     console.log(`[Projects] Updated id:${req.params.id}`, req.body);
@@ -254,6 +262,17 @@ async function deleteProject(req, res, next) {
   } catch (err) { console.error('[Projects] ❌ delete:', err.message); next(err); }
 }
 
+async function markReadyForReview(req, res, next) {
+  try {
+    const { id } = req.params;
+    await db.execute('UPDATE projects SET ready_for_review=TRUE WHERE id=?', [id]);
+    logActivity({ project_id: id, action: 'ready_for_review', field_name: 'ready_for_review', new_value: 'true', performed_by: req.worker.id });
+    await notifyOwners('status', `Ready for Review: Project #${id}`, `${req.worker.name} marked project as ready for review`, `/projects/${id}`);
+    console.log(`[Projects] Marked ready_for_review id:${id} by worker:${req.worker.id}`);
+    res.json({ message: 'Project marked as ready for review' });
+  } catch (err) { console.error('[Projects] ❌ markReadyForReview:', err.message); next(err); }
+}
+
 async function adminApproval(req, res, next) {
   try {
     const { admin_approval, rejection_note } = req.body;
@@ -263,6 +282,7 @@ async function adminApproval(req, res, next) {
     await db.execute('UPDATE projects SET admin_approval=?, rejection_note=? WHERE id=?',
       [admin_approval, rejection_note||null, req.params.id]);
     await recalcReservedQty();
+    logActivity({ project_id: req.params.id, action: 'admin_approval', field_name: 'admin_approval', old_value: 'pending', new_value: admin_approval, performed_by: req.worker.id });
     console.log(`[Projects] Admin approval id:${req.params.id} → ${admin_approval}`);
     const [rows] = await db.execute('SELECT * FROM projects WHERE id=?', [req.params.id]);
     res.json(rows[0]);
@@ -307,4 +327,4 @@ async function getDraftNotifications(req, res, next) {
   } catch (err) { console.error('[Projects] ❌ getDraftNotifications:', err.message); next(err); }
 }
 
-module.exports = { getProjects, getProject, createProject, updateProject, addProjectItem, removeProjectItem, deleteProject, adminApproval, getDraftNotifications, recalcReservedQty };
+module.exports = { getProjects, getProject, createProject, updateProject, addProjectItem, removeProjectItem, deleteProject, adminApproval, markReadyForReview, getDraftNotifications, recalcReservedQty };

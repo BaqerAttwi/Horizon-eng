@@ -20,6 +20,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import PriceChangesPage from './pages/PriceChangesPage';
 import GroupsPage from './pages/GroupsPage';
 import MessagesPage from './pages/MessagesPage';
+import CalendarPage from './pages/CalendarPage';
 import NotificationBell from './components/NotificationBell';
 import Logo            from './components/Logo';
 
@@ -30,6 +31,7 @@ const ROLE_ICONS  = { owner:'👑', accounting:'💼', engineer:'⚙️', secret
 // Nav items with permission check
 const NAV = [
   { to: '/dashboard',   icon: '🏠', label: 'Dashboard',      perm: null,       group: 'main' },
+  { to: '/calendar',     icon: '📅', label: 'Calendar',       perm: null,       group: 'main' },
   { to: '/projects',     icon: '🔧', label: 'Projects',       perm: 'projects', group: 'main' },
   { to: '/products',     icon: '📦', label: 'Products',       perm: 'products', group: 'crm' },
   { to: '/reservations', icon: '📊', label: 'Demand Tracker',  perm: 'reservations', group: 'crm' },
@@ -183,6 +185,7 @@ function AppLayout() {
             <Route path="/login" element={<AnimatedPage><LoginPage /></AnimatedPage>} />
             <Route path="/"          element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<AnimatedPage><ProtectedRoute><DashboardPage /></ProtectedRoute></AnimatedPage>} />
+            <Route path="/calendar"  element={<AnimatedPage><ProtectedRoute><CalendarPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/products"  element={<AnimatedPage><ProtectedRoute perm="products"><ProductsPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/reservations" element={<AnimatedPage><ProtectedRoute perm="reservations"><ReservationsPage /></ProtectedRoute></AnimatedPage>} />
             <Route path="/upload"    element={<AnimatedPage><ProtectedRoute perm="upload"><UploadPage /></ProtectedRoute></AnimatedPage>} />

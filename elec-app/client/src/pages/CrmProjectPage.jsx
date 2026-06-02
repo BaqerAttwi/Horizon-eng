@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../context/AuthContext';
+import ActivityLog from '../components/ActivityLog';
+import FileAttachments from '../components/FileAttachments';
 
 const DIVISION_TYPES = ['INCOMING', 'OUTGOING', 'Enclosure', 'Accessories', 'Measurement'];
 const DIVISION_COLORS = { INCOMING: '#1a5fa8', OUTGOING: '#4a8fc4', Enclosure: '#8b5cf6', Accessories: '#f59e0b', Measurement: '#6aaed6' };
@@ -816,6 +818,13 @@ export default function CrmProjectPage() {
     } catch (e) { toast.error(e.message); }
   };
 
+  const handleReadyForReview = async () => {
+    try {
+      await api.patch(`/projects/${id}/ready-for-review`);
+      toast.success('✅ Project marked ready for review — admin notified');
+    } catch (e) { toast.error(e.message); }
+  };
+
   const [activeTab, setActiveTab] = useState('items');
 
   if (loading) return <div className="page"><div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /> Loading CRM...</div></div>;
@@ -883,6 +892,10 @@ export default function CrmProjectPage() {
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-primary" onClick={() => setShowAddPanel(true)}>+ Add Panel</button>
           <button className="btn btn-secondary" onClick={openCopyPanel}>📋 Copy from existing</button>
+          <button className="btn btn-success" onClick={handleReadyForReview}
+            style={{ background: 'var(--success)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+            ✅ Ready for Review
+          </button>
         </div>
       </div>
 
@@ -895,6 +908,14 @@ export default function CrmProjectPage() {
         <button onClick={() => setActiveTab('brands')}
           style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'brands' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'brands' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
           🏷️ Brand Summary
+        </button>
+        <button onClick={() => setActiveTab('activity')}
+          style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'activity' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'activity' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
+          📜 Activity
+        </button>
+        <button onClick={() => setActiveTab('files')}
+          style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'files' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'files' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
+          📎 Files
         </button>
       </div>
 
@@ -1002,46 +1023,43 @@ export default function CrmProjectPage() {
 
       {activeTab === 'brands' && (
         <div className="card">
-          <div className="card-body">
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--white)', marginBottom: 12 }}>🏷️ Brand Cost / Price Breakdown</h3>
+          <div className="card-body" style={{ overflowX: 'auto' }}>
             {brandData.length === 0 ? (
-              <div style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>No items in this project</div>
+              <div className="empty"><p>No items with brands found.</p></div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                      <th style={{ textAlign: 'left', padding: '8px 10px', color: 'var(--muted)', fontWeight: 600 }}>Brand</th>
-                      <th style={{ textAlign: 'center', padding: '8px 10px', color: 'var(--muted)', fontWeight: 600 }}>Items</th>
-                      {!hideCost && <th style={{ textAlign: 'right', padding: '8px 10px', color: 'var(--muted)', fontWeight: 600 }}>Total Cost</th>}
-                      <th style={{ textAlign: 'right', padding: '8px 10px', color: 'var(--muted)', fontWeight: 600 }}>Total Price</th>
-                      {!hideCost && (
-                        <th style={{ textAlign: 'right', padding: '8px 10px', color: 'var(--muted)', fontWeight: 600 }}>Profit / Loss</th>
-                      )}
+                      <th style={{ textAlign: 'left', padding: '8px 10px' }}>Brand</th>
+                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Items</th>
+                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Total Qty</th>
+                      {!hideCost && <th style={{ textAlign: 'right', padding: '8px 10px' }}>Total Cost</th>}
+                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Total Price</th>
+                      {!hideCost && <th style={{ textAlign: 'right', padding: '8px 10px' }}>Profit</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {brandData.map(b => {
-                      const profit = b.total_price - b.total_cost;
-                      return (
-                        <tr key={b.brand} style={{ borderBottom: '1px solid var(--border)' }}>
-                          <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--accent)' }}>{b.brand}</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'center', color: 'var(--muted)' }}>{b.count}</td>
-                          {!hideCost && <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>${b.total_cost.toFixed(2)}</td>}
-                          <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--success)', fontWeight: 700 }}>${b.total_price.toFixed(2)}</td>
-                          {!hideCost && (
-                            <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                              {profit >= 0 ? '+' : '-'}${Math.abs(profit).toFixed(2)}
-                            </td>
-                          )}
-                        </tr>
-                      );
-                    })}
+                    {brandData.map(b => (
+                      <tr key={b.brand} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--accent)' }}>{b.brand}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{b.count}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{b.total_qty}</td>
+                        {!hideCost && <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>${b.total_cost.toFixed(2)}</td>}
+                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>${b.total_price.toFixed(2)}</td>
+                        {!hideCost && (
+                          <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: b.profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                            {b.profit >= 0 ? '+' : '-'}${Math.abs(b.profit).toFixed(2)}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
                   </tbody>
                   <tfoot>
                     <tr style={{ borderTop: '2px solid var(--border)', fontWeight: 700 }}>
-                      <td style={{ padding: '8px 10px', color: 'var(--white)' }}>Total</td>
-                      <td style={{ padding: '8px 10px', textAlign: 'center', color: 'var(--white)' }}>{brandData.reduce((s, b) => s + b.count, 0)}</td>
+                      <td style={{ padding: '8px 10px' }}>Total</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right' }}>{brandData.reduce((s, b) => s + b.count, 0)}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>{brandData.reduce((s, b) => s + b.total_qty, 0)}</td>
                       {!hideCost && <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>${brandData.reduce((s, b) => s + b.total_cost, 0).toFixed(2)}</td>}
                       <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>${brandData.reduce((s, b) => s + b.total_price, 0).toFixed(2)}</td>
                       {!hideCost && (
@@ -1052,8 +1070,26 @@ export default function CrmProjectPage() {
                     </tr>
                   </tfoot>
                 </table>
-              </div>
+              </>
             )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'activity' && (
+        <div className="card">
+          <div className="card-body">
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)', marginBottom: 12 }}>📜 Activity Log</h3>
+            <ActivityLog projectId={id} />
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'files' && (
+        <div className="card">
+          <div className="card-body">
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)', marginBottom: 12 }}>📎 File Attachments</h3>
+            <FileAttachments projectId={id} panels={panels} />
           </div>
         </div>
       )}

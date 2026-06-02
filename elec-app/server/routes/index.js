@@ -11,7 +11,7 @@ const { getWorkers, createWorker, updateWorker, deleteWorker } = require('../con
 const { getClients, createClient, updateClient, deleteClient } = require('../controllers/clientController');
 const { getProjects, getProject, createProject, updateProject,
         addProjectItem, removeProjectItem, deleteProject, adminApproval,
-        getDraftNotifications } = require('../controllers/projectController');
+        getDraftNotifications, markReadyForReview } = require('../controllers/projectController');
 const { getAllReservations, getProductDemand } = require('../controllers/reservationController');
 const { getDiscounts, createDiscount, updateDiscount, deleteDiscount } = require('../controllers/discountController');
 const { previewImport, createFromImport } = require('../controllers/pdfImportController');
@@ -31,6 +31,9 @@ const {
   getEngineerStats, getClientStats, getSummary, getProjectTeam,
 } = require('../controllers/analyticsController');
 const { getDashboard } = require('../controllers/dashboardController');
+const { getActivityLogs } = require('../controllers/activityController');
+const { uploadAttachment, getAttachments, downloadAttachment, deleteAttachment } = require('../controllers/attachmentController');
+const { exportProducts, exportProjects, exportAnalytics } = require('../controllers/exportController');
 const {
   getNotifications, markAsRead, markAllAsRead, deleteNotification,
 } = require('../controllers/notificationController');
@@ -104,7 +107,8 @@ router.post('/projects',                     requireAuth, requireRole('owner','e
 router.post('/projects/import-pdf/preview',  requireAuth, requireRole('owner','engineer'), upload.single('file'), previewImport);
 router.post('/projects/import-pdf/create',   requireAuth, requireRole('owner','engineer'), createFromImport);
 router.patch('/projects/:id',                requireAuth, requireRole('owner','engineer'), updateProject);
-router.patch('/projects/:id/admin-approval', requireAuth, requireRole('owner'), adminApproval);
+router.patch('/projects/:id/admin-approval',   requireAuth, requireRole('owner'), adminApproval);
+router.patch('/projects/:id/ready-for-review', requireAuth, requireRole('engineer','owner'), markReadyForReview);
 router.delete('/projects/:id',               requireAuth, requireRole('owner'), deleteProject);
 router.post('/projects/:id/items',           requireAuth, requireRole('owner','engineer'), addProjectItem);
 router.delete('/projects/:id/items/:itemId', requireAuth, requireRole('owner','engineer'), removeProjectItem);
@@ -186,6 +190,20 @@ router.post('/manual-product-requests',          requireAuth, requireRole('owner
 router.get('/manual-product-requests',            requireAuth, getManualProductRequests);
 router.patch('/manual-product-requests/:id/approve', requireAuth, requireRole('owner'), approveManualProductRequest);
 router.patch('/manual-product-requests/:id/reject',  requireAuth, requireRole('owner'), rejectManualProductRequest);
+
+// ── Activity Logs ───────────────────────────────────────────
+router.get('/projects/:projectId/activity', requireAuth, getActivityLogs);
+
+// ── File Attachments ────────────────────────────────────────
+router.get('/projects/:projectId/attachments',            requireAuth, getAttachments);
+router.post('/projects/:projectId/attachments',           requireAuth, requireRole('owner','engineer'), upload.single('file'), uploadAttachment);
+router.get('/attachments/:attachmentId/download',         requireAuth, downloadAttachment);
+router.delete('/projects/:projectId/attachments/:attachmentId', requireAuth, requireRole('owner','engineer'), deleteAttachment);
+
+// ── CSV/Excel Export ───────────────────────────────────────
+router.get('/export/products',  requireAuth, exportProducts);
+router.get('/export/projects',  requireAuth, exportProjects);
+router.get('/export/analytics', requireAuth, requireRole('owner'), exportAnalytics);
 
 // ── Messages / Announcements ────────────────────────────────
 const { getMessages, createMessage, deleteMessage } = require('../controllers/messageController');
