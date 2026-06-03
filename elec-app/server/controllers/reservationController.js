@@ -12,6 +12,55 @@ function engineerProjectFilter(userId) {
 }
 
 /**
+ * PATCH /api/reservations/product/:productId/reserved-qty
+ * Adjust reserved_qty for a product (reserve or release).
+ */
+async function updateReservedQty(req, res, next) {
+  try {
+    const { productId } = req.params;
+    const { action, qty } = req.body;
+
+    if (!['reserve', 'release'].includes(action)) {
+      return res.status(400).json({ error: 'Action must be "reserve" or "release"' });
+    }
+    if (!Number.isInteger(qty) || qty < 1) {
+      return res.status(400).json({ error: 'Qty must be a positive integer' });
+    }
+
+    const [products] = await db.execute(
+      'SELECT id, stock_qty, reserved_qty FROM products WHERE id = ?',
+      [productId]
+    );
+    if (!products.length) return res.status(404).json({ error: 'Product not found' });
+
+    const product = products[0];
+    let newReserved = product.reserved_qty;
+
+    if (action === 'reserve') {
+      newReserved += qty;
+      if (newReserved > product.stock_qty) {
+        return res.status(400).json({
+          error: `Cannot reserve ${qty} more — only ${Math.max(0, product.stock_qty - product.reserved_qty)} available`
+        });
+      }
+    } else {
+      newReserved = Math.max(0, newReserved - qty);
+    }
+
+    await db.execute('UPDATE products SET reserved_qty = ? WHERE id = ?', [newReserved, productId]);
+
+    res.json({
+      product_id: parseInt(productId),
+      reserved_qty: newReserved,
+      available_qty: product.stock_qty - newReserved,
+    });
+  } catch (err) {
+    console.error('[Reservations] ❌ updateReservedQty:', err.message);
+    next(err);
+  }
+}
+
+/**
  * GET /api/reservations
  * Returns ALL active reservations across all projects and orders.
  * Engineers only see demand for their own + collaborated projects.
@@ -29,6 +78,7 @@ async function getAllReservations(req, res, next) {
         pci.product_id,
         pr.reference,
         pr.description,
+        pr.smart_code,
         b.name         AS brand_name,
         pr.stock_qty,
         pr.reserved_qty,
@@ -68,6 +118,7 @@ async function getAllReservations(req, res, next) {
           product_id:    pid,
           reference:     row.reference,
           description:   row.description,
+          smart_code:    row.smart_code,
           brand_name:    row.brand_name,
           stock_qty:     row.stock_qty,
           reserved_qty:  row.reserved_qty,
@@ -189,4 +240,4 @@ async function getProductDemand(req, res, next) {
   }
 }
 
-module.exports = { getAllReservations, getProductDemand };
+module.exports = { getAllReservations, getProductDemand, updateReservedQty };

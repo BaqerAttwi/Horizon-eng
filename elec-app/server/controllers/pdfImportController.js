@@ -172,7 +172,7 @@ async function createFromImport(req, res, next) {
           } else if (basePriceEur && !basePriceUsd) {
             basePriceUsd = (basePriceEur * rate);
           }
-          const qty = item.qty || 1;
+          const qty = item.qty ?? 1;
           const discount = parseFloat(item.discount) || 0;
           const markupP_pct = parseFloat(item.markupP_pct) || 0;
           const manpower_pct = parseFloat(item.manpower_pct) || 0;

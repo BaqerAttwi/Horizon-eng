@@ -109,4 +109,24 @@ async function getBrands(req, res, next) {
   }
 }
 
-module.exports = { getProducts, getProduct, updateProduct, getBrands };
+// POST /api/products/provision — quick-add by smart_code + qty (owner only)
+async function provisionProduct(req, res, next) {
+  try {
+    const { smart_code, qty } = req.body;
+    if (!smart_code || !smart_code.trim()) return res.status(400).json({ error: 'Smart code is required' });
+    const quantity = parseInt(qty) || 0;
+    const cleanCode = smart_code.trim().toUpperCase();
+    const ref = `PROV-${cleanCode}-${Date.now() % 10000}`;
+    const [result] = await db.execute(
+      'INSERT INTO products (reference, description, smart_code, stock_qty, reserved_qty) VALUES (?, ?, ?, ?, 0)',
+      [ref, `Provisioned: ${cleanCode}`, cleanCode, quantity]
+    );
+    const [product] = await db.execute(
+      'SELECT p.*, (p.stock_qty - p.reserved_qty) as available_qty FROM products p WHERE p.id=?',
+      [result.insertId]
+    );
+    res.status(201).json(product[0]);
+  } catch (err) { next(err); }
+}
+
+module.exports = { getProducts, getProduct, updateProduct, getBrands, provisionProduct };

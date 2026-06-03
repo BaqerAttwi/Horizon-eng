@@ -25,8 +25,10 @@ app.use('/api', routes);
 app.use((req, res) => res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` }));
 
 app.use((err, req, res, _next) => {
-  console.error('[Server] 💥', err.message);
-  res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
+  console.error('[Server] 💥', err.message, err.stack);
+  const status = err.status || 500;
+  const message = status >= 500 ? 'Internal server error' : err.message;
+  res.status(status).json({ error: message });
 });
 
 const server = app.listen(PORT, () => {

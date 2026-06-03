@@ -1,5 +1,8 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'elec-app-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
+  console.warn('\x1b[33m[SECURITY] ⚠️ JWT_SECRET not set in .env — using insecure fallback. Set JWT_SECRET in .env for production.\x1b[0m');
+  return 'elec-app-secret-change-in-production';
+})();
 
 function requireAuth(req, res, next) {
   // Check HttpOnly cookie first, then Authorization header

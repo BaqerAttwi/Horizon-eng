@@ -6,13 +6,13 @@ const { validate } = require('../middleware/validate');
 
 const { login, register, changePassword, setPassword, logout, me } = require('../controllers/authController');
 const { handleUpload }         = require('../controllers/uploadController');
-const { getProducts, getProduct, updateProduct, getBrands } = require('../controllers/productController');
+const { getProducts, getProduct, updateProduct, getBrands, provisionProduct } = require('../controllers/productController');
 const { getWorkers, createWorker, updateWorker, deleteWorker } = require('../controllers/workerController');
 const { getClients, createClient, updateClient, deleteClient } = require('../controllers/clientController');
 const { getProjects, getProject, createProject, updateProject,
         addProjectItem, removeProjectItem, deleteProject, adminApproval,
         getDraftNotifications, markReadyForReview } = require('../controllers/projectController');
-const { getAllReservations, getProductDemand } = require('../controllers/reservationController');
+const { getAllReservations, getProductDemand, updateReservedQty } = require('../controllers/reservationController');
 const { getDiscounts, createDiscount, updateDiscount, deleteDiscount } = require('../controllers/discountController');
 const { previewImport, createFromImport } = require('../controllers/pdfImportController');
 const {
@@ -25,7 +25,7 @@ const {
   getDivisions, createDivision, updateDivision, deleteDivision,
   getManualProducts, createManualProduct, deleteManualProduct,
   getCrmItems, createCrmItem, updateCrmItem, deleteCrmItem,
-  getProjectCrm, copyPanelFromProject,
+  getProjectCrm, copyPanelFromProject, bulkUpdateItems,
 } = require('../controllers/crmController');
 const {
   getEngineerStats, getClientStats, getSummary, getProjectTeam,
@@ -33,7 +33,7 @@ const {
 const { getDashboard } = require('../controllers/dashboardController');
 const { getActivityLogs } = require('../controllers/activityController');
 const { uploadAttachment, getAttachments, downloadAttachment, deleteAttachment } = require('../controllers/attachmentController');
-const { exportProducts, exportProjects, exportAnalytics } = require('../controllers/exportController');
+const { exportProducts, exportProjects, exportAnalytics, exportReservations, exportCrm } = require('../controllers/exportController');
 const {
   getNotifications, markAsRead, markAllAsRead, deleteNotification,
 } = require('../controllers/notificationController');
@@ -72,10 +72,11 @@ router.post('/auth/logout',          requireAuth, logout);
 router.post('/upload', requireAuth, requireRole('owner','accounting'), upload.single('file'), handleUpload);
 
 // ── Products (all roles) ─────────────────────────────────────
-router.get('/products',       requireAuth, getProducts);
-router.get('/products/:id',   requireAuth, getProduct);
-router.patch('/products/:id', requireAuth, requireRole('owner','accounting'), updateProduct);
-router.get('/brands',         requireAuth, getBrands);
+router.get('/products',                   requireAuth, getProducts);
+router.post('/products/provision',        requireAuth, requireRole('owner'), provisionProduct);
+router.get('/products/:id',               requireAuth, getProduct);
+router.patch('/products/:id',             requireAuth, requireRole('owner','accounting'), updateProduct);
+router.get('/brands',                     requireAuth, getBrands);
 
 // ── Discounts ────────────────────────────────────────────────
 router.get('/discounts',                      requireAuth, getDiscounts);
@@ -86,6 +87,7 @@ router.delete('/discounts/:id',               requireAuth, requireRole('owner'),
 // ── Reservations tracker (all roles) ────────────────────────
 router.get('/reservations',                    requireAuth, getAllReservations);
 router.get('/reservations/product/:productId', requireAuth, getProductDemand);
+router.patch('/reservations/product/:productId/reserved-qty', requireAuth, requireRole('owner','accounting','engineer'), updateReservedQty);
 
 // ── Workers (owner only for write) ──────────────────────────
 router.get('/workers',          requireAuth, getWorkers);
@@ -138,6 +140,7 @@ router.get('/projects/:projectId/panels/:panelId/divisions/:divisionId/items',  
 router.post('/projects/:projectId/panels/:panelId/divisions/:divisionId/items',       requireAuth, requireRole('owner','engineer'), createCrmItem);
 router.patch('/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId', requireAuth, requireRole('owner','engineer'), updateCrmItem);
 router.delete('/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId', requireAuth, requireRole('owner','engineer'), deleteCrmItem);
+router.post('/projects/:projectId/items/bulk-update', requireAuth, requireRole('owner','engineer'), bulkUpdateItems);
 
 // ── Engineer Collaboration Requests ──────────────────────────
 router.get('/engineer-requests/pending',   requireAuth, getMyPendingRequests);
@@ -180,6 +183,23 @@ router.get('/item-groups/:id/items',    requireAuth, getGroupItems);
 router.post('/item-groups/:id/items',   requireAuth, requireRole('owner','engineer'), addGroupItem);
 router.delete('/item-groups/:id/items/:itemId', requireAuth, requireRole('owner','engineer'), removeGroupItem);
 
+// ── Execution Phase ──────────────────────────────────────────
+const { getExecutionStatus, togglePanelExecution, toggleItemExecution } = require('../controllers/executionController');
+
+router.get('/projects/:projectId/execution',                                 requireAuth, getExecutionStatus);
+router.patch('/projects/:projectId/execution/panels/:panelId',               requireAuth, requireRole('owner','engineer'), togglePanelExecution);
+router.patch('/projects/:projectId/execution/items/:itemId',                 requireAuth, requireRole('owner','engineer'), toggleItemExecution);
+
+// ── Division Item Group Instances ──────────────────────────────
+const {
+  addGroupToDivision, updateGroupInstanceQuantity, removeGroupInstance, getDivisionGroupInstances
+} = require('../controllers/divisionItemGroupController');
+
+router.post('/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances',   requireAuth, requireRole('owner','engineer'), addGroupToDivision);
+router.patch('/group-instances/:instanceId', requireAuth, requireRole('owner','engineer'), updateGroupInstanceQuantity);
+router.delete('/group-instances/:instanceId', requireAuth, requireRole('owner','engineer'), removeGroupInstance);
+router.get('/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances',    requireAuth, getDivisionGroupInstances);
+
 // ── Manual Product Requests (engineer adds → owner approves) ─
 const {
   createManualProductRequest, getManualProductRequests,
@@ -201,9 +221,11 @@ router.get('/attachments/:attachmentId/download',         requireAuth, downloadA
 router.delete('/projects/:projectId/attachments/:attachmentId', requireAuth, requireRole('owner','engineer'), deleteAttachment);
 
 // ── CSV/Excel Export ───────────────────────────────────────
-router.get('/export/products',  requireAuth, exportProducts);
-router.get('/export/projects',  requireAuth, exportProjects);
-router.get('/export/analytics', requireAuth, requireRole('owner'), exportAnalytics);
+router.get('/export/products',    requireAuth, exportProducts);
+router.get('/export/projects',    requireAuth, exportProjects);
+router.get('/export/analytics',   requireAuth, requireRole('owner'), exportAnalytics);
+router.get('/export/reservations', requireAuth, exportReservations);
+router.get('/export/crm/:projectId', requireAuth, exportCrm);
 
 // ── Messages / Announcements ────────────────────────────────
 const { getMessages, createMessage, deleteMessage } = require('../controllers/messageController');

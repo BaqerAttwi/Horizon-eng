@@ -424,6 +424,51 @@ CREATE TABLE IF NOT EXISTS attachments (
 );
 
 ALTER TABLE projects ADD COLUMN ready_for_review BOOLEAN DEFAULT FALSE AFTER deleted_at;
+ALTER TABLE projects ADD COLUMN execution_deadline DATE NULL AFTER deadline;
+
+-- ── Execution Phase: Panel Completion ──────────────────────────
+CREATE TABLE IF NOT EXISTS panel_completion (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  project_id    INT NOT NULL,
+  panel_id      INT NOT NULL,
+  is_completed  BOOLEAN DEFAULT FALSE,
+  description   TEXT,
+  completed_by  INT DEFAULT NULL,
+  completed_at  DATETIME DEFAULT NULL,
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (panel_id) REFERENCES project_crm_panels(id) ON DELETE CASCADE,
+  FOREIGN KEY (completed_by) REFERENCES workers(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_panel_project (project_id, panel_id)
+);
+
+-- ── Execution Phase: Item Completion ───────────────────────────
+CREATE TABLE IF NOT EXISTS item_completion (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  project_id    INT NOT NULL,
+  item_id       INT NOT NULL,
+  is_completed  BOOLEAN DEFAULT FALSE,
+  completed_by  INT DEFAULT NULL,
+  completed_at  DATETIME DEFAULT NULL,
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_id) REFERENCES panel_crm_items(id) ON DELETE CASCADE,
+  FOREIGN KEY (completed_by) REFERENCES workers(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_item_project (project_id, item_id)
+);
+
+-- ── Division Item Group Instances (template placement) ─────────
+CREATE TABLE IF NOT EXISTS division_item_group_instances (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  division_id   INT NOT NULL,
+  item_group_id INT NOT NULL,
+  quantity      INT DEFAULT 1,
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (division_id) REFERENCES panel_divisions(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_group_id) REFERENCES item_groups(id) ON DELETE CASCADE
+);
+
+ALTER TABLE panel_crm_items ADD COLUMN source_group_instance_id INT DEFAULT NULL AFTER visible_in_client_pdf;
 
 -- NOTE: Run this in MySQL after importing schema to set real password:
 -- UPDATE workers SET password_hash = '$2b$10$...' WHERE id=1;

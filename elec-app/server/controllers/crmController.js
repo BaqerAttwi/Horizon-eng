@@ -587,6 +587,19 @@ async function getProjectCrm(req, res, next) {
            WHERE i.division_id=? ORDER BY i.id`,
           [div.id]
         );
+        // Fetch group instances and attach their items
+        const [groupInstances] = await db.execute(
+          `SELECT dig.*, ig.name as group_name
+           FROM division_item_group_instances dig
+           JOIN item_groups ig ON dig.item_group_id = ig.id
+           WHERE dig.division_id = ?
+           ORDER BY dig.created_at`,
+          [div.id]
+        );
+        for (const gi of groupInstances) {
+          gi.items = items.filter(i => i.source_group_instance_id === gi.id);
+        }
+        div.group_instances = groupInstances;
         div.items = items;
       }
     }
@@ -698,12 +711,82 @@ async function copyPanelFromProject(req, res, next) {
   } catch (err) { console.error('[CRM] ❌ copyPanelFromProject:', err.message); next(err); }
 }
 
+// ── Bulk Update Items ─────────────────────────────────────────
+async function bulkUpdateItems(req, res, next) {
+  try {
+    const { projectId } = req.params;
+    const { item_ids, changes } = req.body;
+    if (!item_ids?.length || !changes) {
+      return res.status(400).json({ error: 'item_ids array and changes object required' });
+    }
+
+    const markupChanged = changes.markupP_pct !== undefined || changes.manpower_pct !== undefined || changes.markupM_pct !== undefined;
+    const updatedIds = new Set();
+
+    for (const itemId of item_ids) {
+      const [[item]] = await db.execute('SELECT * FROM panel_crm_items WHERE id = ?', [itemId]);
+      if (!item) continue;
+
+      const fields = [];
+      const params = [];
+      if (changes.markupP_pct !== undefined) { fields.push('markupP_pct=?'); params.push(changes.markupP_pct); }
+      if (changes.manpower_pct !== undefined) { fields.push('manpower_pct=?'); params.push(changes.manpower_pct); }
+      if (changes.markupM_pct !== undefined) { fields.push('markupM_pct=?'); params.push(changes.markupM_pct); }
+      if (changes.discount_pct !== undefined) { fields.push('discount_pct=?'); params.push(changes.discount_pct); }
+      if (markupChanged) fields.push('override_markup=1');
+
+      if (!fields.length) continue;
+
+      params.push(itemId);
+      await db.execute(`UPDATE panel_crm_items SET ${fields.join(',')} WHERE id=?`, params);
+
+      // Recalc pricing
+      const [updated] = await db.execute('SELECT * FROM panel_crm_items WHERE id=?', [itemId]);
+      const pricing = calcItemPricing(updated[0]);
+      await db.execute(
+        'UPDATE panel_crm_items SET markupP_amt=?,discount_amt=?,totalpriceT=?,manpower_amt=?,markupM_amt=?,totalfinalProduct=? WHERE id=?',
+        [pricing.markupP_amt, pricing.discount_amt, pricing.totalpriceT, pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct, itemId]
+      );
+
+      updatedIds.add(itemId);
+    }
+
+    // Recalc totals for affected divisions/panels
+    const [affected] = await db.execute(
+      `SELECT DISTINCT pci.division_id, pd.panel_id
+       FROM panel_crm_items pci
+       JOIN panel_divisions pd ON pci.division_id = pd.id
+       WHERE pci.id IN (${item_ids.map(() => '?').join(',')})`,
+      item_ids
+    );
+    for (const a of affected) {
+      await recalcDivisionTotals(a.division_id);
+      await recalcPanelTotals(a.panel_id);
+    }
+
+    logActivity({
+      project_id: projectId,
+      action: 'items_bulk_updated',
+      field_name: 'bulk_changes',
+      old_value: null,
+      new_value: JSON.stringify({ item_ids: item_ids.length, changes }),
+      performed_by: req.worker.id
+    });
+
+    console.log(`[CRM] ✅ Bulk updated ${updatedIds.size} items — project:${projectId}`, changes);
+    res.json({ updated: updatedIds.size, fields: Object.keys(changes) });
+  } catch (err) {
+    console.error('[CRM] ❌ bulkUpdateItems:', err.message);
+    next(err);
+  }
+}
+
 module.exports = {
   getPanels, createPanel, updatePanel, deletePanel, togglePanelComplete,
   getDivisions, createDivision, updateDivision, deleteDivision,
   getManualProducts, createManualProduct, deleteManualProduct,
   getCrmItems, createCrmItem, updateCrmItem, deleteCrmItem,
-  getProjectCrm, copyPanelFromProject,
+  getProjectCrm, copyPanelFromProject, bulkUpdateItems,
   recalcDivisionTotals, recalcPanelTotals,
   calcItemPricing,
 };

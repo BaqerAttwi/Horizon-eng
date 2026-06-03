@@ -183,10 +183,11 @@ function ManualProductModal({ project, onClose, onSaved, prefill }) {
 }
 
 // ── Group Select Modal ─────────────────────────────────────────
-function GroupSelectModal({ project, division, panel, onAddItem, onClose }) {
+function GroupSelectModal({ project, division, panel, onClose, onGroupAdded }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [instanceQty, setInstanceQty] = useState(1);
 
   useEffect(() => {
     api.get('/item-groups')
@@ -195,34 +196,18 @@ function GroupSelectModal({ project, division, panel, onAddItem, onClose }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const addGroup = async (group) => {
+  const addGroupAsInstance = async (group) => {
     setAdding(true);
     try {
-      const r = await api.get(`/item-groups/${group.id}/items`);
-      const items = r.data || [];
-      if (!items.length) { toast.error('Group has no items'); setAdding(false); return; }
-
-      for (const grpItem of items) {
-        const basePriceUsd = parseFloat(grpItem.price_usd) || 0;
-        const basePriceEur = parseFloat(grpItem.price_euro) || (basePriceUsd / (project.exchange_rate_eur_usd || 1.08));
-
-        await onAddItem(division.id, {
-          product_id: grpItem.product_id || null,
-          is_manual: grpItem.is_manual || false,
-          custom_name: grpItem.custom_name || null,
-          custom_desc: grpItem.description || null,
-          base_price_usd: basePriceUsd,
-          base_price_euro: basePriceEur,
-          qty: grpItem.qty || 1,
-          markupP_pct: division.markupP || panel.markupP || 0,
-          markupM_pct: division.markupM || panel.markupM || 0,
-          manpower_pct: division.manpower_pct || panel.manpower_pct || 0,
-        });
-      }
-      toast.success(`✅ Group "${group.name}" added (${items.length} items)`);
+      await api.post(
+        `/projects/${project.id}/panels/${panel.id}/divisions/${division.id}/group-instances`,
+        { item_group_id: group.id, quantity: instanceQty }
+      );
+      toast.success(`✅ Group "${group.name}" added as sub-division (×${instanceQty})`);
+      if (onGroupAdded) onGroupAdded();
       onClose();
     } catch (e) {
-      toast.error('❌ ' + e.message);
+      toast.error('❌ ' + (e.response?.data?.error || e.message));
     } finally {
       setAdding(false);
     }
@@ -236,6 +221,12 @@ function GroupSelectModal({ project, division, panel, onAddItem, onClose }) {
           <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
+          <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Group multiplier:</label>
+            <input type="number" min={1} className="form-input" style={{ width: 70 }}
+              value={instanceQty} onChange={e => setInstanceQty(Math.max(1, parseInt(e.target.value) || 1))} />
+            <span style={{ fontSize: 11, color: 'var(--muted)' }}>(each item qty × multiplier)</span>
+          </div>
           {loading ? (
             <div style={{display:'flex',justifyContent:'center',padding:20}}><span className="spinner" /></div>
           ) : groups.length === 0 ? (
@@ -244,7 +235,7 @@ function GroupSelectModal({ project, division, panel, onAddItem, onClose }) {
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:8}}>
               {groups.map(g => (
                 <div key={g.id} className="card" style={{cursor:'pointer',padding:12,margin:0}}
-                  onClick={() => !adding && addGroup(g)}>
+                  onClick={() => !adding && addGroupAsInstance(g)}>
                   <div style={{fontWeight:700,fontSize:13,color:'var(--white)'}}>{g.name}</div>
                   <div style={{fontSize:11,color:'var(--muted)',marginTop:4}}>
                     by {g.created_by_name} • {g.item_count} items
@@ -265,7 +256,7 @@ function GroupSelectModal({ project, division, panel, onAddItem, onClose }) {
 }
 
 // ── CRM Item Row ──────────────────────────────────────────────
-function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCost, pendingPriceChange }) {
+function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCost, pendingPriceChange, isSelected, onToggleSelect }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...item });
 
@@ -302,6 +293,11 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
   if (editing) {
     return (
       <tr className="crm-item-row" style={{ background: 'var(--panel2)' }}>
+        <td style={{ textAlign: 'center', verticalAlign: 'middle', width: 28 }}>
+          <input type="checkbox" checked={!!isSelected}
+            onChange={() => onToggleSelect?.(item.id)}
+            style={{ width: 15, height: 15, cursor: 'pointer' }} />
+        </td>
         <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
           <input type="checkbox" checked={!!form.visible_in_client_pdf}
             onChange={e => setForm(f => ({ ...f, visible_in_client_pdf: e.target.checked ? 1 : 0 }))} />
@@ -359,6 +355,11 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
 
   return (
     <tr className="crm-item-row" style={pendingPriceChange ? { background: 'rgba(245,158,11,0.06)' } : {}}>
+      <td style={{ textAlign: 'center', verticalAlign: 'middle', width: 28 }}>
+        <input type="checkbox" checked={!!isSelected}
+          onChange={() => onToggleSelect?.(item.id)}
+          style={{ width: 15, height: 15, cursor: 'pointer' }} />
+      </td>
       <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
         <span style={{ cursor: 'pointer', fontSize: 14, opacity: item.visible_in_client_pdf ? 1 : 0.35, userSelect: 'none' }}
           onClick={async () => {
@@ -399,7 +400,8 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
 }
 
 // ── Division Section ──────────────────────────────────────────
-function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, hideCost, pendingPriceChanges }) {
+function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, hideCost, pendingPriceChanges,
+  onGroupInstanceQtyChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll }) {
   const [showAdd, setShowAdd] = useState(false);
   const [showGroup, setShowGroup] = useState(false);
   const [manualModal, setManualModal] = useState(null);
@@ -503,6 +505,13 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
           <table style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             <thead>
               <tr>
+                <th style={{ width: 28, textAlign: 'center' }}>
+                  <input type="checkbox"
+                    checked={division.items.filter(i => !i.source_group_instance_id).length > 0 &&
+                      division.items.filter(i => !i.source_group_instance_id).every(i => selectedItems?.has(i.id))}
+                    onChange={e => onSelectAll?.(division.id, e.target.checked)}
+                    style={{ width: 15, height: 15, cursor: 'pointer' }} />
+                </th>
                 <th style={{ width: 32 }}><span style={{ fontSize: 11 }}>👁</span></th>
                 <th>Name</th><th>Qty</th><th>Price for 1 $ / €</th><th>Price $ / €</th><th>Description</th><th>Brand</th>
                 <th>Disc%</th><th>After Disc $</th><th>mkP%</th><th>T.PriceT $</th>
@@ -512,15 +521,31 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
               </tr>
             </thead>
             <tbody>
-              {division.items.map(item => (
+              {division.items
+                .filter(i => !i.source_group_instance_id)
+                .map(item => (
                 <CrmItemRow key={item.id} item={item} division={division} panel={panel} project={project}
                   onUpdate={onItemUpdate} onDelete={onItemDelete} hideCost={hideCost}
-                  pendingPriceChange={pendingPriceChanges?.[item.id] || null} />
+                  pendingPriceChange={pendingPriceChanges?.[item.id] || null}
+                  isSelected={selectedItems?.has(item.id)}
+                  onToggleSelect={onToggleItem} />
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Render group instances (sub-divisions) */}
+      {division.group_instances?.map(inst => (
+        <GroupInstanceSection key={inst.id} instance={inst} division={division} panel={panel} project={project}
+          onInstanceQtyChange={onGroupInstanceQtyChange}
+          onInstanceRemove={onGroupInstanceRemove}
+          onItemUpdate={onItemUpdate}
+          onItemDelete={onItemDelete}
+          hideCost={hideCost}
+          selectedItems={selectedItems}
+          onToggleItem={onToggleItem} />
+      ))}
 
       {pendingProduct && (
         <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'rgba(26,95,168,0.06)' }}>
@@ -566,8 +591,8 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
       )}
 
       {showGroup && (
-        <GroupSelectModal project={project} division={division} panel={panel} onDone={() => setShowGroup(false)}
-          onAddItem={onItemAdd} onClose={() => setShowGroup(false)} />
+        <GroupSelectModal project={project} division={division} panel={panel}
+          onClose={() => setShowGroup(false)} onGroupAdded={onGroupAdded} />
       )}
 
       {manualModal && (
@@ -580,7 +605,8 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
 
 // ── Panel Section ─────────────────────────────────────────────
 function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleComplete,
-  onAddDivision, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, onPanelTotalUpdate, hideCost, pendingPriceChanges }) {
+  onAddDivision, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, onPanelTotalUpdate, hideCost, pendingPriceChanges,
+  onGroupInstanceQtyChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll }) {
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct });
@@ -652,7 +678,13 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
         <DivisionSection key={div.id} division={div} panel={panel} project={project}
           onItemAdd={onItemAdd} onItemUpdate={onItemUpdate} onItemDelete={onItemDelete}
           onDivisionDelete={onDivisionDelete} hideCost={hideCost}
-          pendingPriceChanges={pendingPriceChanges} />
+          pendingPriceChanges={pendingPriceChanges}
+          onGroupInstanceQtyChange={onGroupInstanceQtyChange}
+          onGroupInstanceRemove={onGroupInstanceRemove}
+          onGroupAdded={onGroupAdded}
+          selectedItems={selectedItems}
+          onToggleItem={onToggleItem}
+          onSelectAll={onSelectAll} />
       ))}
 
       <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
@@ -662,6 +694,190 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
             + {type}
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Group Instance Section (sub-division) ─────────────────────
+function GroupInstanceSection({ instance, division, panel, project, onInstanceQtyChange, onInstanceRemove, onItemUpdate, onItemDelete, hideCost, selectedItems, onToggleItem }) {
+  const [localQty, setLocalQty] = useState(instance.quantity);
+
+  useEffect(() => { setLocalQty(instance.quantity); }, [instance.quantity]);
+
+  return (
+    <div style={{ margin: '8px 12px', border: '1px dashed var(--accent2)', borderRadius: 6, background: 'rgba(245,158,11,0.04)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', borderBottom: '1px dashed var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent2)' }}>📦 {instance.group_name}</span>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>×</span>
+          <input type="number" min={1} className="form-input" style={{ width: 50, padding: '2px 4px', fontSize: 11 }}
+            value={localQty}
+            onChange={e => setLocalQty(Math.max(1, parseInt(e.target.value) || 1))}
+            onBlur={() => { if (localQty !== instance.quantity) onInstanceQtyChange(instance.id, localQty); }} />
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>= {instance.quantity} × group</span>
+        </div>
+        <button className="btn-icon" style={{ color: 'var(--danger)', fontSize: 12 }}
+          onClick={() => onInstanceRemove(instance.id)}>✕</button>
+      </div>
+      {instance.items?.length > 0 && (
+        <div className="table-wrap" style={{ overflowX: 'auto' }}>
+          <table style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+            <thead>
+              <tr>
+                <th style={{ width: 28, textAlign: 'center' }}>
+                  <input type="checkbox"
+                    checked={instance.items?.length > 0 && instance.items.every(i => selectedItems?.has(i.id))}
+                    onChange={e => {
+                      const checked = e.target.checked;
+                      instance.items?.forEach(i => {
+                        if (checked && !selectedItems?.has(i.id)) onToggleItem(i.id);
+                        else if (!checked && selectedItems?.has(i.id)) onToggleItem(i.id);
+                      });
+                    }}
+                    style={{ width: 15, height: 15, cursor: 'pointer' }} />
+                </th>
+                <th style={{ width: 32 }}><span style={{ fontSize: 11 }}>👁</span></th>
+                <th>Name</th><th>Qty</th><th>Price for 1 $ / €</th><th>Price $ / €</th><th>Description</th><th>Brand</th>
+                <th>Disc%</th><th>After Disc $</th><th>mkP%</th><th>T.PriceT $</th>
+                <th>Man%</th><th>mkM%</th><th>Final $ / €</th>
+                {!hideCost && <><th>Cost $</th><th>Profit $</th></>}
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {instance.items.map(item => (
+                <CrmItemRow key={item.id} item={item} division={division} panel={panel} project={project}
+                  onUpdate={onItemUpdate} onDelete={onItemDelete} hideCost={hideCost}
+                  isSelected={selectedItems?.has(item.id)}
+                  onToggleSelect={onToggleItem} />
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{ borderTop: '2px solid var(--accent2)', fontWeight: 700, background: 'rgba(245,158,11,0.06)' }}>
+                <td colSpan={14} style={{ padding: '6px 10px', fontSize: 12, color: 'var(--accent2)', textAlign: 'right' }}>
+                  Group Total:
+                </td>
+                <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--success)', fontWeight: 800 }}>
+                  ${instance.items.reduce((s, i) => s + (parseFloat(i.totalfinalProduct) || 0), 0).toFixed(2)}
+                </td>
+                {!hideCost && (
+                  <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
+                    ${instance.items.reduce((s, i) => s + (parseFloat(i.cost) || 0), 0).toFixed(2)}
+                  </td>
+                )}
+                {!hideCost && (
+                  <td style={{ padding: '6px 10px' }}></td>
+                )}
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Execution Panel (checklist for field completion) ──────────
+function ExecutionPanel({ panel, project, executionPanelData, executionItemData, onTogglePanel, onToggleItem }) {
+  const [expanded, setExpanded] = useState(false);
+  const [desc, setDesc] = useState(executionPanelData?.description || '');
+
+  const panelDone = executionPanelData?.is_completed ? true : false;
+  const allItems = panel.divisions?.flatMap(d => d.items || []) || [];
+  const totalItems = allItems.length;
+  const doneItems = allItems.filter(i => executionItemData?.[i.id]?.is_completed).length;
+
+  return (
+    <div style={{ marginBottom: 12, border: panelDone ? '2px solid var(--success)' : '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: panelDone ? 'rgba(34,197,94,0.08)' : 'var(--panel2)', cursor: 'pointer' }}
+        onClick={() => setExpanded(!expanded)}>
+        <input type="checkbox" checked={panelDone}
+          onChange={e => { e.stopPropagation(); onTogglePanel(panel.id, e.target.checked, desc); }}
+          style={{ width: 18, height: 18, cursor: 'pointer' }} />
+        <div style={{ flex: 1 }}>
+          <span style={{ fontWeight: 700, fontSize: 13, color: panelDone ? 'var(--success)' : 'var(--white)' }}>
+            Panel #{panel.panel_number}{panel.panel_name ? ` — ${panel.panel_name}` : ''}
+          </span>
+          <span style={{ marginLeft: 10, fontSize: 11, color: 'var(--muted)' }}>
+            {doneItems}/{totalItems} items {expanded ? '▲' : '▼'}
+          </span>
+        </div>
+        {panelDone && <span style={{ fontSize: 20 }}>✅</span>}
+      </div>
+
+      {expanded && (
+        <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border)' }}>
+          <div className="form-group" style={{ marginBottom: 8 }}>
+            <label className="form-label" style={{ fontSize: 11 }}>Field Description / Notes</label>
+            <textarea className="form-textarea" rows={2} style={{ fontSize: 11 }}
+              value={desc} onChange={e => setDesc(e.target.value)}
+              onBlur={() => onTogglePanel(panel.id, panelDone, desc)}
+              placeholder="Add field notes about this panel's installation status..." />
+          </div>
+
+          {totalItems > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {allItems.map(item => {
+                const itemDone = executionItemData?.[item.id]?.is_completed ? true : false;
+                const name = item.is_manual ? (item.custom_name || 'Manual') : (item.reference || '—');
+                return (
+                  <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer', fontSize: 12 }}>
+                    <input type="checkbox" checked={itemDone}
+                      onChange={() => onToggleItem(item.id, !itemDone)}
+                      style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', flex: 1 }}>{name}</span>
+                    <span style={{ color: 'var(--muted)', fontSize: 10 }}>×{item.qty}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: itemDone ? 'var(--success)' : 'var(--muted)' }}>
+                      {itemDone ? '✅ Done' : '⬜ Pending'}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+          {totalItems === 0 && <div style={{ fontSize: 11, color: 'var(--muted)', padding: 8 }}>No items in this panel</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BulkEditModal({ onClose, onApply, count }) {
+  const [form, setForm] = useState({ markupP_pct: '', manpower_pct: '', markupM_pct: '', discount_pct: '' });
+
+  const hasAny = Object.values(form).some(v => v !== '');
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-title">✏️ Bulk Edit ({count} items)</span>
+          <button className="btn-icon" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
+            Leave blank to keep current values.
+          </div>
+          {['markupP_pct', 'manpower_pct', 'markupM_pct', 'discount_pct'].map(key => (
+            <div className="form-group" key={key}>
+              <label className="form-label">{key.replace(/_/g, ' ').toUpperCase()} %</label>
+              <input type="number" step="0.1" className="form-input" value={form[key]}
+                onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                placeholder="Leave empty = keep current" />
+            </div>
+          ))}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" disabled={!hasAny} onClick={() => {
+            const changes = {};
+            for (const [k, v] of Object.entries(form)) {
+              if (v !== '') changes[k] = parseFloat(v);
+            }
+            onApply(changes);
+          }}>Apply to {count} items</button>
+        </div>
       </div>
     </div>
   );
@@ -683,6 +899,9 @@ export default function CrmProjectPage() {
   const [selectedSourceProject, setSelectedSourceProject] = useState(null);
   const [selectedSourcePanel, setSelectedSourcePanel] = useState(null);
   const [copying, setCopying] = useState(false);
+  const [executionData, setExecutionData] = useState({ panelCompletion: {}, itemCompletion: {} });
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
 
   const hideCost = isRole('engineer');
 
@@ -696,6 +915,9 @@ export default function CrmProjectPage() {
       const map = {};
       pc.data.forEach(req => { map[req.item_id] = req; });
       setPendingPriceChanges(map);
+
+      const ex = await api.get(`/projects/${id}/execution`);
+      setExecutionData(ex.data);
     } catch (e) { toast.error(e.message); }
     finally { setLoading(false); }
   }, [id]);
@@ -818,12 +1040,84 @@ export default function CrmProjectPage() {
     } catch (e) { toast.error(e.message); }
   };
 
+  const toggleExecutionPanel = async (panelId, is_completed, description) => {
+    try {
+      const r = await api.patch(`/projects/${id}/execution/panels/${panelId}`, { is_completed: is_completed ? 1 : 0, description });
+      setExecutionData(prev => ({
+        ...prev,
+        panelCompletion: { ...prev.panelCompletion, [panelId]: r.data }
+      }));
+    } catch (e) { toast.error(e.message); }
+  };
+
+  const toggleExecutionItem = async (itemId, is_completed) => {
+    try {
+      const r = await api.patch(`/projects/${id}/execution/items/${itemId}`, { is_completed: is_completed ? 1 : 0 });
+      setExecutionData(prev => ({
+        ...prev,
+        itemCompletion: { ...prev.itemCompletion, [itemId]: r.data }
+      }));
+    } catch (e) { toast.error(e.message); }
+  };
+
+  const handleGroupInstanceQtyChange = async (instanceId, newQty) => {
+    try {
+      await api.patch(`/group-instances/${instanceId}`, { quantity: newQty });
+      load();
+      toast.success('Quantity updated');
+    } catch (e) { toast.error(e.message); }
+  };
+
+  const handleGroupInstanceRemove = async (instanceId) => {
+    if (!confirm('Remove this group instance and all its items?')) return;
+    try {
+      await api.delete(`/group-instances/${instanceId}`);
+      load();
+      toast.success('Group instance removed');
+    } catch (e) { toast.error(e.message); }
+  };
+
   const handleReadyForReview = async () => {
     try {
       await api.patch(`/projects/${id}/ready-for-review`);
       toast.success('✅ Project marked ready for review — admin notified');
     } catch (e) { toast.error(e.message); }
   };
+
+  const toggleSelectItem = (itemId) => {
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId); else next.add(itemId);
+      return next;
+    });
+  };
+
+  const selectAllForDivision = (divisionId, selectAll) => {
+    const div = panels.flatMap(p => p.divisions || []).find(d => d.id === divisionId);
+    if (!div) return;
+    const ids = (div.items || []).filter(i => !i.source_group_instance_id).map(i => i.id);
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (selectAll) next.add(id); else next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkEdit = async (changes) => {
+    const item_ids = Array.from(selectedItems);
+    if (!item_ids.length) return;
+    try {
+      const r = await api.post(`/projects/${id}/items/bulk-update`, { item_ids, changes });
+      toast.success(`✅ Updated ${r.data.updated} items`);
+      setSelectedItems(new Set());
+      setShowBulkEdit(false);
+      load();
+    } catch (e) { toast.error(e.message); }
+  };
+
+  const clearSelection = () => setSelectedItems(new Set());
 
   const [activeTab, setActiveTab] = useState('items');
 
@@ -842,7 +1136,7 @@ export default function CrmProjectPage() {
             ? (item.custom_brand || 'Unbranded')
             : (item.brand_name || 'Unbranded');
           const base = parseFloat(item.base_price_usd) || 0;
-          const qty = item.qty || 1;
+          const qty = item.qty ?? 1;
           const baseTotal = base * qty;
           const discAmt = baseTotal * (parseFloat(item.discount_pct) / 100);
           const afterDisc = baseTotal - discAmt;
@@ -860,6 +1154,30 @@ export default function CrmProjectPage() {
       }
     }
     return Object.values(map).sort((a, b) => b.total_price - a.total_price);
+  })();
+
+  const reportItems = (() => {
+    const flat = [];
+    for (const panel of panels) {
+      for (const div of panel.divisions || []) {
+        for (const item of div.items || []) {
+          const ref = item.is_manual
+            ? (item.custom_name || 'Manual')
+            : (item.reference || 'Unknown');
+          flat.push({ panel_number: panel.panel_number, reference: ref, qty: item.qty ?? 1 });
+        }
+      }
+    }
+    return flat.sort((a, b) => a.panel_number - b.panel_number);
+  })();
+
+  const reportSummary = (() => {
+    const map = {};
+    for (const item of reportItems) {
+      if (!map[item.reference]) map[item.reference] = { reference: item.reference, total_qty: 0 };
+      map[item.reference].total_qty += item.qty;
+    }
+    return Object.values(map).sort((a, b) => b.total_qty - a.total_qty);
   })();
 
   return (
@@ -891,6 +1209,7 @@ export default function CrmProjectPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-primary" onClick={() => setShowAddPanel(true)}>+ Add Panel</button>
+          <a href={`/api/export/crm/${id}`} className="btn btn-secondary" style={{ textDecoration: 'none' }}>📥 CSV</a>
           <button className="btn btn-secondary" onClick={openCopyPanel}>📋 Copy from existing</button>
           <button className="btn btn-success" onClick={handleReadyForReview}
             style={{ background: 'var(--success)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
@@ -900,7 +1219,7 @@ export default function CrmProjectPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
         <button onClick={() => setActiveTab('items')}
           style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'items' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'items' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
           📋 Items
@@ -909,6 +1228,16 @@ export default function CrmProjectPage() {
           style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'brands' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'brands' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
           🏷️ Brand Summary
         </button>
+        <button onClick={() => setActiveTab('report')}
+          style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'report' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'report' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
+          📋 Final Report
+        </button>
+        {project.client_approval === 'approved' && (
+          <button onClick={() => setActiveTab('execution')}
+            style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'execution' ? 'var(--success)' : 'var(--muted)', borderBottom: activeTab === 'execution' ? '2px solid var(--success)' : '2px solid transparent', cursor: 'pointer' }}>
+            🔧 Execution
+          </button>
+        )}
         <button onClick={() => setActiveTab('activity')}
           style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'activity' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'activity' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
           📜 Activity
@@ -1018,8 +1347,65 @@ export default function CrmProjectPage() {
           onUpdatePanel={updatePanel} onDeletePanel={deletePanel} onToggleComplete={togglePanelComplete}
           onAddDivision={addDivision} onItemAdd={addItem} onItemUpdate={updateItem}
           onItemDelete={deleteItem} onDivisionDelete={deleteDivision} hideCost={hideCost}
-          pendingPriceChanges={pendingPriceChanges} />
+          pendingPriceChanges={pendingPriceChanges}
+          onGroupInstanceQtyChange={handleGroupInstanceQtyChange}
+          onGroupInstanceRemove={handleGroupInstanceRemove}
+          onGroupAdded={load}
+          selectedItems={selectedItems}
+          onToggleItem={toggleSelectItem}
+          onSelectAll={selectAllForDivision} />
       ))}
+
+      {/* Bulk Edit Toolbar */}
+      {selectedItems.size > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 1000,
+          background: 'var(--panel2)', border: '1px solid var(--accent)',
+          borderRadius: 12, padding: '10px 20px',
+          display: 'flex', alignItems: 'center', gap: 12,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--white)' }}>
+            {selectedItems.size} selected
+          </span>
+          <button className="btn btn-sm btn-primary" onClick={() => setShowBulkEdit(true)}>
+            ✏️ Edit Selected
+          </button>
+          <button className="btn btn-sm btn-secondary" onClick={clearSelection}>
+            Clear
+          </button>
+        </div>
+      )}
+
+      {showBulkEdit && (
+        <BulkEditModal count={selectedItems.size}
+          onClose={() => setShowBulkEdit(false)}
+          onApply={handleBulkEdit} />
+      )}
+
+      {activeTab === 'execution' && (
+        <div className="card">
+          <div className="card-body">
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)', marginBottom: 12 }}>🔧 Execution Phase</h3>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 16 }}>
+              {project.execution_deadline
+                ? `Execution Deadline: ${project.execution_deadline}`
+                : 'Set an execution deadline in the project details page.'}
+            </div>
+            {panels.length === 0 ? (
+              <div className="empty"><p>No panels to execute yet.</p></div>
+            ) : (
+              panels.map(panel => (
+                <ExecutionPanel key={panel.id} panel={panel} project={project}
+                  executionPanelData={executionData.panelCompletion?.[panel.id]}
+                  executionItemData={executionData.itemCompletion}
+                  onTogglePanel={toggleExecutionPanel}
+                  onToggleItem={toggleExecutionItem} />
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {activeTab === 'brands' && (
         <div className="card">
@@ -1069,6 +1455,56 @@ export default function CrmProjectPage() {
                       )}
                     </tr>
                   </tfoot>
+                </table>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'report' && (
+        <div className="card">
+          <div className="card-body" style={{ overflowX: 'auto' }}>
+            {reportItems.length === 0 ? (
+              <div className="empty"><p>No items found.</p></div>
+            ) : (
+              <>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)', marginBottom: 10 }}>📋 Items by Panel</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                      <th style={{ textAlign: 'left', padding: '8px 10px' }}>Panel #</th>
+                      <th style={{ textAlign: 'left', padding: '8px 10px' }}>Reference</th>
+                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportItems.map((r, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '8px 10px', fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>{r.panel_number}</td>
+                        <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--accent)' }}>{r.reference}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{r.qty}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)', margin: '24px 0 10px' }}>📊 Summary</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                      <th style={{ textAlign: 'left', padding: '8px 10px' }}>Reference</th>
+                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Total Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportSummary.map(r => (
+                      <tr key={r.reference} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--accent)' }}>{r.reference}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{r.total_qty}</td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </>
             )}

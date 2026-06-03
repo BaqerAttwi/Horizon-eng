@@ -176,7 +176,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
       // Items table
       const body = visibleItems.map(item => {
         const base = parseFloat(item.base_price_usd) || 0;
-        const qty = item.qty || 1;
+        const qty = item.qty ?? 1;
         const baseTotal = base * qty;
         const discAmt = baseTotal * (parseFloat(item.discount_pct) / 100);
         const afterDisc = baseTotal - discAmt;
@@ -267,7 +267,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
         for (const item of div.items || []) {
           const brand = item.is_manual ? (item.custom_brand || 'Unbranded') : (item.brand_name || 'Unbranded');
           const base = parseFloat(item.base_price_usd) || 0;
-          const qty = item.qty || 1;
+          const qty = item.qty ?? 1;
           const baseTotal = base * qty;
           const discAmt = baseTotal * (parseFloat(item.discount_pct) / 100);
           const afterDisc = baseTotal - discAmt;
@@ -329,7 +329,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
       for (const div of panel.divisions || []) {
         for (const item of div.items || []) {
           const base = parseFloat(item.base_price_usd) || 0;
-          const qty = item.qty || 1;
+          const qty = item.qty ?? 1;
           const baseTotal = base * qty;
           const discAmt = baseTotal * (parseFloat(item.discount_pct) / 100);
           const afterDisc = baseTotal - discAmt;

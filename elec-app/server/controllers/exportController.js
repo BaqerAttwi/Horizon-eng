@@ -3,7 +3,7 @@ const db = require('../db/connection');
 function escapeCsv(val) {
   if (val === null || val === undefined) return '';
   const s = String(val);
-  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+  if (s.includes(',') || s.includes('"') || s.includes('\n') || /^[=+\-@]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }
   return s;
@@ -24,9 +24,8 @@ async function exportProducts(req, res, next) {
               p.stock_qty, p.reserved_qty, p.smart_code, b.name as brand_name,
               p.created_at
        FROM products p
-       LEFT JOIN brands b ON b.id = p.brand_id
-       WHERE p.deleted_at IS NULL
-       ORDER BY p.reference`
+        LEFT JOIN brands b ON b.id = p.brand_id
+        ORDER BY p.reference`
     );
 
     const columns = [
@@ -59,10 +58,10 @@ async function exportProjects(req, res, next) {
               p.deadline, p.created_at,
               w.name as engineer_name, c.name as client_name
        FROM projects p
-       LEFT JOIN workers w ON w.id = p.engineer_id
-       LEFT JOIN clients c ON c.id = p.client_id
-       WHERE p.deleted_at IS NULL
-       ORDER BY p.created_at DESC`
+        LEFT JOIN workers w ON w.id = p.engineer_id
+        LEFT JOIN clients c ON c.id = p.client_id
+        WHERE p.deleted_at IS NULL
+        ORDER BY p.created_at DESC`
     );
 
     const columns = [
@@ -123,4 +122,137 @@ async function exportAnalytics(req, res, next) {
   }
 }
 
-module.exports = { exportProducts, exportProjects, exportAnalytics };
+// ── Reservations / Demand Tracker ──────────────────────────────
+function engineerProjectFilter(userId) {
+  return {
+    clause: `AND (p.engineer_id = ? OR p.id IN (
+      SELECT per.project_id FROM project_engineer_requests per
+      WHERE per.target_engineer_id = ? AND per.status = 'accepted'
+    ))`,
+    params: [userId, userId]
+  };
+}
+
+async function exportReservations(req, res, next) {
+  try {
+    const user = req.worker;
+    const engFilter = user.role === 'engineer' ? engineerProjectFilter(user.id) : null;
+
+    const [rows] = await db.execute(`
+      SELECT
+        pr.reference,
+        pr.description,
+        pr.smart_code,
+        b.name           AS brand_name,
+        pr.stock_qty,
+        pr.reserved_qty,
+        (pr.stock_qty - pr.reserved_qty) AS available_qty,
+        pci.qty          AS demanded_qty,
+        p.id             AS project_id,
+        p.project_name,
+        p.status         AS project_status,
+        p.admin_approval,
+        p.client_approval,
+        p.deadline,
+        w.name           AS engineer_name,
+        c.name           AS client_name
+      FROM panel_crm_items pci
+      JOIN panel_divisions pd ON pci.division_id = pd.id
+      JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+      JOIN projects p ON pcp.project_id = p.id
+      LEFT JOIN products pr ON pci.product_id = pr.id
+      LEFT JOIN brands b ON pr.brand_id = b.id
+      LEFT JOIN workers w ON p.engineer_id = w.id
+      LEFT JOIN clients c ON p.client_id = c.id
+      WHERE p.status NOT IN ('completed','cancelled')
+        AND pci.product_id IS NOT NULL
+        ${engFilter ? engFilter.clause : ''}
+      ORDER BY pr.reference, p.id
+    `, engFilter ? engFilter.params : []);
+
+    const columns = [
+      { key: 'reference',      label: 'Reference' },
+      { key: 'description',    label: 'Description' },
+      { key: 'smart_code',     label: 'Smart Code' },
+      { key: 'brand_name',     label: 'Brand' },
+      { key: 'stock_qty',      label: 'Stock Qty' },
+      { key: 'reserved_qty',   label: 'Reserved Qty' },
+      { key: 'available_qty',  label: 'Available Qty' },
+      { key: 'demanded_qty',   label: 'Demanded Qty' },
+      { key: 'project_id',     label: 'Project ID' },
+      { key: 'project_name',   label: 'Project Name' },
+      { key: 'project_status', label: 'Project Status' },
+      { key: 'admin_approval', label: 'Admin Approval' },
+      { key: 'client_approval',label: 'Client Approval' },
+      { key: 'deadline',       label: 'Deadline' },
+      { key: 'engineer_name',  label: 'Engineer' },
+      { key: 'client_name',    label: 'Client' },
+    ];
+
+    const csv = toCsv(rows, columns);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="demand_tracker_${new Date().toISOString().split('T')[0]}.csv"`);
+    res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── CRM Export (panels + divisions + items per project) ─────
+async function exportCrm(req, res, next) {
+  try {
+    const { projectId } = req.params;
+
+    const [rows] = await db.execute(`
+      SELECT
+        pcp.panel_number,
+        COALESCE(i.custom_name, pr.reference) AS reference,
+        COALESCE(i.custom_desc, pr.description) AS description,
+        i.qty
+      FROM panel_crm_items i
+      JOIN panel_divisions pd ON i.division_id = pd.id
+      JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+      LEFT JOIN products pr ON i.product_id = pr.id
+      WHERE pcp.project_id = ?
+      ORDER BY pcp.panel_number, pd.id, i.id
+    `, [projectId]);
+
+    // Build summary: group by reference, sum qty
+    const summaryMap = {};
+    for (const row of rows) {
+      const ref = row.reference || 'Unknown';
+      if (!summaryMap[ref]) summaryMap[ref] = { reference: ref, total_qty: 0 };
+      summaryMap[ref].total_qty += row.qty ?? 1;
+    }
+    const summary = Object.values(summaryMap).sort((a, b) => b.total_qty - a.total_qty);
+
+    // Section 1: Items by Panel
+    const flatCols = [
+      { key: 'panel_number', label: 'Panel #' },
+      { key: 'reference',    label: 'Reference' },
+      { key: 'description',  label: 'Description' },
+      { key: 'qty',          label: 'Qty' },
+    ];
+    let csv = toCsv(rows, flatCols);
+
+    // Blank row separator
+    csv += '\n\n';
+
+    // Section 2: Summary
+    const summaryCols = [
+      { key: 'reference', label: 'Reference' },
+      { key: 'total_qty', label: 'Total Qty' },
+    ];
+    csv += toCsv(summary, summaryCols);
+
+    res.setHeader('Content-Type', 'text/csv');
+    const safeId = String(projectId).replace(/[^a-zA-Z0-9_-]/g, '');
+    const filename = `crm_project_${safeId}_${new Date().toISOString().split('T')[0]}.csv`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { exportProducts, exportProjects, exportAnalytics, exportReservations, exportCrm };

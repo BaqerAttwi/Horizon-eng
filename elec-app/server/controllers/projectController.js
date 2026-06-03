@@ -178,6 +178,7 @@ async function updateProject(req, res, next) {
     if (total_panels       !== undefined) { fields.push('total_panels=?');    params.push(total_panels||0); }
     if (completed_panels   !== undefined) { fields.push('completed_panels=?'); params.push(completed_panels||0); }
     if (req.body.ready_for_review !== undefined) { fields.push('ready_for_review=?'); params.push(req.body.ready_for_review ? 1 : 0); }
+    if (req.body.execution_deadline !== undefined) { fields.push('execution_deadline=?'); params.push(req.body.execution_deadline || null); }
     if (!fields.length) return res.status(400).json({ error: 'Nothing to update' });
     params.push(req.params.id);
     await db.execute(`UPDATE projects SET ${fields.join(',')} WHERE id=?`, params);
