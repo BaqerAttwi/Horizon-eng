@@ -142,9 +142,14 @@ async function addGroupItem(req, res, next) {
 
     if (!product_id && !custom_name) return res.status(400).json({ error: 'product_id or custom_name required' });
 
+    let finalUsd = price_usd || null;
+    let finalEur = price_euro || null;
+    if (!finalUsd && finalEur) finalUsd = parseFloat(finalEur) * 1.08;
+    if (!finalEur && finalUsd) finalEur = parseFloat(finalUsd) / 1.08;
+
     const [result] = await db.execute(
       'INSERT INTO item_group_items (group_id, product_id, is_manual, custom_name, description, price_usd, price_euro, qty) VALUES (?,?,?,?,?,?,?,?)',
-      [id, product_id || null, is_manual ? 1 : 0, custom_name || null, description || null, price_usd || null, price_euro || null, qty ?? 1]
+      [id, product_id || null, is_manual ? 1 : 0, custom_name || null, description || null, finalUsd, finalEur, qty ?? 1]
     );
 
     const [rows] = await db.execute(

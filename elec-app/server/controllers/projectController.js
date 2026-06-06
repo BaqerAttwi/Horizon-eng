@@ -1,6 +1,7 @@
 const db = require('../db/connection');
 const { logActivity } = require('./activityController');
 const { createNotification, notifyOwners } = require('./notificationController');
+const { recalcPanelTotals } = require('../utils/pricing');
 
 async function recalcReservedQty() {
   await db.execute(`
@@ -109,7 +110,7 @@ async function getProject(req, res, next) {
 
 async function createProject(req, res, next) {
   try {
-    const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, items = [], total_panels = 0 } = req.body;
+    const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, items = [], total_panels = 0, vat_pct, project_discount_pct, payment_terms } = req.body;
     if (!project_name) return res.status(400).json({ error: 'project_name is required' });
 
     // Auto-assign engineer to themselves
@@ -118,9 +119,9 @@ async function createProject(req, res, next) {
     console.log('[Projects] Creating:', project_name, 'engineer:', assignedEngineer, 'items:', items.length);
 
     const [result] = await db.execute(
-      `INSERT INTO projects(project_name,engineer_id,client_id,exchange_rate_eur_usd,deadline,notes,total_panels)
-       VALUES(?,?,?,?,?,?,?)`,
-      [project_name, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.08, deadline||null, notes||null, total_panels||0]
+      `INSERT INTO projects(project_name,engineer_id,client_id,exchange_rate_eur_usd,deadline,notes,total_panels,vat_pct,project_discount_pct,payment_terms)
+       VALUES(?,?,?,?,?,?,?,?,?,?)`,
+      [project_name, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.08, deadline||null, notes||null, total_panels||0, vat_pct ?? 0, parseFloat(project_discount_pct) || 0, payment_terms || null]
     );
     const projectId = result.insertId;
 
@@ -147,9 +148,11 @@ async function createProject(req, res, next) {
       if (price !== null) totalPrice += (price * (item.qty||1));
     }
 
+    const pVatPct = parseFloat(req.body.vat_pct) || 0;
+    const pTotalVat = totalPrice * (pVatPct / 100);
     await db.execute(
-      'UPDATE projects SET total_cost=?, total_price=? WHERE id=?',
-      [totalCost, totalPrice, projectId]
+      'UPDATE projects SET total_cost=?, total_price=?, total_vat=?, total_with_vat=? WHERE id=?',
+      [totalCost, totalPrice, pTotalVat, totalPrice + pTotalVat, projectId]
     );
 
     await recalcReservedQty();
@@ -162,7 +165,7 @@ async function createProject(req, res, next) {
 
 async function updateProject(req, res, next) {
   try {
-    const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, status, client_approval, client_rejection_note, admin_approval, rejection_note, total_panels, completed_panels } = req.body;
+    const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, status, client_approval, client_rejection_note, admin_approval, rejection_note, total_panels, completed_panels, vat_pct, project_discount_pct, payment_terms } = req.body;
     const fields = [], params = [];
     if (project_name       !== undefined) { fields.push('project_name=?');    params.push(project_name); }
     if (engineer_id        !== undefined) { fields.push('engineer_id=?');     params.push(engineer_id||null); }
@@ -179,6 +182,13 @@ async function updateProject(req, res, next) {
     if (completed_panels   !== undefined) { fields.push('completed_panels=?'); params.push(completed_panels||0); }
     if (req.body.ready_for_review !== undefined) { fields.push('ready_for_review=?'); params.push(req.body.ready_for_review ? 1 : 0); }
     if (req.body.execution_deadline !== undefined) { fields.push('execution_deadline=?'); params.push(req.body.execution_deadline || null); }
+    if (vat_pct !== undefined) { fields.push('vat_pct=?'); params.push(parseFloat(vat_pct) || 0); }
+    if (project_discount_pct !== undefined) { fields.push('project_discount_pct=?'); params.push(parseFloat(project_discount_pct) || 0); }
+    if (payment_terms !== undefined) { fields.push('payment_terms=?'); params.push(payment_terms); }
+    // Fetch old values before update
+    const [oldProj] = await db.execute('SELECT client_approval, admin_approval, ready_for_review FROM projects WHERE id=?', [req.params.id]);
+    const oldClientApproval = oldProj.length ? oldProj[0].client_approval : null;
+
     if (!fields.length) return res.status(400).json({ error: 'Nothing to update' });
     params.push(req.params.id);
     await db.execute(`UPDATE projects SET ${fields.join(',')} WHERE id=?`, params);
@@ -187,9 +197,17 @@ async function updateProject(req, res, next) {
       await recalcReservedQty();
     }
 
+    // Recalc project totals when discount or VAT changes
+    if (project_discount_pct !== undefined || vat_pct !== undefined) {
+      const [panels] = await db.execute('SELECT id FROM project_crm_panels WHERE project_id=?', [req.params.id]);
+      for (const pa of panels) {
+        await recalcPanelTotals(pa.id);
+      }
+    }
+
     // Log approval changes
     if (client_approval !== undefined) {
-      logActivity({ project_id: req.params.id, action: 'client_approval', field_name: 'client_approval', old_value: status, new_value: client_approval, performed_by: req.worker.id });
+      logActivity({ project_id: req.params.id, action: 'client_approval', field_name: 'client_approval', old_value: oldClientApproval, new_value: client_approval, performed_by: req.worker.id });
     }
 
     console.log(`[Projects] Updated id:${req.params.id}`, req.body);

@@ -10,6 +10,12 @@ function fmt(val, sym='') {
   return `${sym}${Number(val).toFixed(2)}`;
 }
 
+function priceDisplay(usd, eur) {
+  if (usd !== null && usd !== undefined && parseFloat(usd) > 0) return `$${Number(usd).toFixed(2)}`;
+  if (eur !== null && eur !== undefined && parseFloat(eur) > 0) return `€${Number(eur).toFixed(2)}`;
+  return <span style={{color:'var(--muted)'}}>—</span>;
+}
+
 function GroupModal({ group, onClose, onSaved }) {
   const [form, setForm] = useState({
     name: group?.name || '',
@@ -130,7 +136,7 @@ function AddProductModal({ groupId, onClose, onAdded }) {
                       <div style={{fontSize:12,fontWeight:600,color:'var(--accent)'}}>{p.reference}</div>
                       <div style={{fontSize:10,color:'var(--muted)'}}>{p.description}</div>
                     </div>
-                    <div style={{fontSize:11,color:'var(--muted)'}}>{fmt(p.price_usd,'$')}</div>
+                    <div style={{fontSize:11,color:'var(--muted)'}}>{priceDisplay(p.price_usd, p.price_euro)}</div>
                   </div>
                 ))}
               </div>
@@ -266,7 +272,7 @@ function GroupCard({ group, onEdit, onDelete, onAddItem, onRemoveItem }) {
                       <td className="mono">{item.reference || '—'}</td>
                       <td className="mono">x{item.qty}</td>
                       <td style={{fontSize:11}}>{item.brand_name || '—'}</td>
-                      <td className="mono">{fmt(item.price_usd,'$')}</td>
+                      <td className="mono">{priceDisplay(item.price_usd, item.price_euro)}</td>
                       <td>
                         <button className="btn-icon" style={{color:'var(--danger)',fontSize:11}} onClick={() => removeItem(item.id)}>✕</button>
                       </td>

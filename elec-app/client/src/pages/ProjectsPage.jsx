@@ -47,7 +47,8 @@ function ProjectModal({ project, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     project_name: '', engineer_id: '', client_id: '',
-    exchange_rate_eur_usd: 1.08, deadline: '', notes: '', total_panels: 0,
+    exchange_rate_eur_usd: 1.08, deadline: '', notes: '', total_panels: 0, vat_pct: 0,
+    project_discount_pct: 0, payment_terms: '70% at order, 30% after inspection',
     ...(project ? {
       project_name: project.project_name,
       engineer_id: project.engineer_id || '',
@@ -56,6 +57,9 @@ function ProjectModal({ project, onClose, onSaved }) {
       deadline: project.deadline?.split('T')[0] || '',
       notes: project.notes || '',
       total_panels: project.total_panels || 0,
+      vat_pct: parseFloat(project.vat_pct) || 0,
+      project_discount_pct: parseFloat(project.project_discount_pct) || 0,
+      payment_terms: project.payment_terms || '70% at order, 30% after inspection',
     } : {}),
   });
 
@@ -134,6 +138,21 @@ function ProjectModal({ project, onClose, onSaved }) {
               <input type="number" step="0.0001" className="form-input" value={form.exchange_rate_eur_usd}
                 onChange={e => setForm(p => ({ ...p, exchange_rate_eur_usd: parseFloat(e.target.value) || 1.08 }))} />
             </div>
+            <div className="form-group">
+              <label className="form-label">VAT (%)</label>
+              <input type="number" step="0.01" min="0" max="100" className="form-input" value={form.vat_pct}
+                onChange={e => setForm(p => ({ ...p, vat_pct: parseFloat(e.target.value) || 0 }))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Project Discount (%)</label>
+              <input type="number" step="0.01" min="0" max="100" className="form-input" value={form.project_discount_pct}
+                onChange={e => setForm(p => ({ ...p, project_discount_pct: parseFloat(e.target.value) || 0 }))} />
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Payment Terms</label>
+            <textarea className="form-textarea" rows={2} value={form.payment_terms}
+              onChange={e => setForm(p => ({ ...p, payment_terms: e.target.value }))} />
           </div>
           <div className="form-group">
             <label className="form-label">Notes</label>
@@ -288,6 +307,18 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
                 <div className="stat-label">Total Price</div>
                 <div className="stat-value" style={{ fontSize: 16, color: 'var(--success)' }}>${parseFloat(project.total_price || 0).toFixed(0)}</div>
               </div>
+              {parseFloat(project.project_discount_pct) > 0 && (
+                <div className="stat-card">
+                  <div className="stat-label">Discount ({parseFloat(project.project_discount_pct)}%)</div>
+                  <div className="stat-value" style={{ fontSize: 16, color: 'var(--danger)' }}>-${parseFloat(project.project_discount_amount || 0).toFixed(0)}</div>
+                </div>
+              )}
+              {parseFloat(project.vat_pct) > 0 && (
+                <div className="stat-card">
+                  <div className="stat-label">VAT ({parseFloat(project.vat_pct)}%)</div>
+                  <div className="stat-value" style={{ fontSize: 16, color: 'var(--accent2)' }}>${parseFloat(project.total_vat || 0).toFixed(0)}</div>
+                </div>
+              )}
             </div>
 
             {/* Badges row */}
@@ -647,7 +678,7 @@ function ImportPdfModal({ onClose, onCreated }) {
         base_price_euro: 0,
       }));
 
-      await api.post('/projects/import-pdf/create', {
+      const res = await api.post('/projects/import-pdf/create', {
         project_name: form.project_name,
         engineer_id: parseInt(form.engineer_id) || null,
         client_id: parseInt(form.client_id) || null,
@@ -658,10 +689,9 @@ function ImportPdfModal({ onClose, onCreated }) {
         matched_items: preview.matched,
         unmatched_items: finalUnmatched,
       });
+      const newProjectId = res.data?.project_id;
       toast.success('Project created from PDF!');
-      const r = await api.get('/projects');
-      const created = r.data[0];
-      onCreated(created?.id);
+      onCreated(newProjectId);
       onClose();
     } catch (err) {
       const msg = err.response?.data?.error || err.message;

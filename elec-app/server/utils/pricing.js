@@ -57,8 +57,18 @@ async function recalcPanelTotals(panelId) {
     const [panels] = await db.execute('SELECT id, total_price, is_completed FROM project_crm_panels WHERE project_id=?', [projectRow[0].project_id]);
     let projectTotal = panels.reduce((s, p) => s + (parseFloat(p.total_price) || 0), 0);
     const completedCount = panels.filter(p => p.is_completed).length;
-    await db.execute('UPDATE projects SET total_price=?, completed_panels=? WHERE id=?',
-      [projectTotal, completedCount, projectRow[0].project_id]);
+
+    // Get vat_pct / discount_pct and calculate
+    const [[proj]] = await db.execute('SELECT vat_pct, project_discount_pct FROM projects WHERE id=?', [projectRow[0].project_id]);
+    const vatPct = parseFloat(proj?.vat_pct) || 0;
+    const discPct = parseFloat(proj?.project_discount_pct) || 0;
+    const discountAmount = projectTotal * (discPct / 100);
+    const netAfterDiscount = projectTotal - discountAmount;
+    const totalVat = netAfterDiscount * (vatPct / 100);
+    const totalWithVat = netAfterDiscount + totalVat;
+
+    await db.execute('UPDATE projects SET total_price=?, project_discount_amount=?, total_vat=?, total_with_vat=?, completed_panels=? WHERE id=?',
+      [projectTotal, discountAmount, totalVat, totalWithVat, completedCount, projectRow[0].project_id]);
   }
 }
 

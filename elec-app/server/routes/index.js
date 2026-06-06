@@ -13,7 +13,7 @@ const { getProjects, getProject, createProject, updateProject,
         addProjectItem, removeProjectItem, deleteProject, adminApproval,
         getDraftNotifications, markReadyForReview } = require('../controllers/projectController');
 const { getAllReservations, getProductDemand, updateReservedQty } = require('../controllers/reservationController');
-const { getDiscounts, createDiscount, updateDiscount, deleteDiscount } = require('../controllers/discountController');
+const { getDiscounts, createDiscount, updateDiscount, deleteDiscount, bulkUpdateBrandDiscounts } = require('../controllers/discountController');
 const { previewImport, createFromImport } = require('../controllers/pdfImportController');
 const {
   getMyPendingRequests, getMySentRequests,
@@ -83,6 +83,7 @@ router.get('/discounts',                      requireAuth, getDiscounts);
 router.post('/discounts',                     requireAuth, requireRole('owner','accounting'), validate('createDiscount'), createDiscount);
 router.patch('/discounts/:id',                requireAuth, requireRole('owner','accounting'), updateDiscount);
 router.delete('/discounts/:id',               requireAuth, requireRole('owner'), deleteDiscount);
+router.post('/discounts/bulk-brand',          requireAuth, requireRole('owner'), bulkUpdateBrandDiscounts);
 
 // ── Reservations tracker (all roles) ────────────────────────
 router.get('/reservations',                    requireAuth, getAllReservations);

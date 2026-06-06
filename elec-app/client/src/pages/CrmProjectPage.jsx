@@ -688,12 +688,16 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
       ))}
 
       <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
-        {DIVISION_TYPES.map(type => (
-          <button key={type} className="btn btn-sm btn-secondary" style={{ fontSize: 11, padding: '4px 10px' }}
-            onClick={() => onAddDivision(panel.id, { division_type: type, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct })}>
-            + {type}
-          </button>
-        ))}
+        {DIVISION_TYPES.map(type => {
+          const existingTypes = new Set((panel.divisions || []).map(d => d.division_type));
+          if (existingTypes.has(type)) return null;
+          return (
+            <button key={type} className="btn btn-sm btn-secondary" style={{ fontSize: 11, padding: '4px 10px' }}
+              onClick={() => onAddDivision(panel.id, { division_type: type, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct })}>
+              + {type}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -780,10 +784,9 @@ function GroupInstanceSection({ instance, division, panel, project, onInstanceQt
 }
 
 // ── Execution Panel (checklist for field completion) ──────────
-function ExecutionPanel({ panel, project, executionPanelData, executionItemData, onTogglePanel, onToggleItem }) {
+function ExecutionPanel({ panel, project, executionPanelData, executionItemData, onTogglePanel, onToggleItem, onSaveDesc }) {
   const [expanded, setExpanded] = useState(false);
   const [desc, setDesc] = useState(executionPanelData?.description || '');
-
   const panelDone = executionPanelData?.is_completed ? true : false;
   const allItems = panel.divisions?.flatMap(d => d.items || []) || [];
   const totalItems = allItems.length;
@@ -813,7 +816,7 @@ function ExecutionPanel({ panel, project, executionPanelData, executionItemData,
             <label className="form-label" style={{ fontSize: 11 }}>Field Description / Notes</label>
             <textarea className="form-textarea" rows={2} style={{ fontSize: 11 }}
               value={desc} onChange={e => setDesc(e.target.value)}
-              onBlur={() => onTogglePanel(panel.id, panelDone, desc)}
+              onBlur={() => onSaveDesc(panel.id, desc)}
               placeholder="Add field notes about this panel's installation status..." />
           </div>
 
@@ -1018,7 +1021,9 @@ export default function CrmProjectPage() {
   const updateItem = async (itemId, form) => {
     try {
       const div = panels.flatMap(p => p.divisions || []).find(d => d.items?.some(i => i.id === itemId));
-      const panel = panels.find(p => p.divisions?.some(d => d.id === div?.id));
+      if (!div) { toast.error('Item not found — page may be stale'); return; }
+      const panel = panels.find(p => p.divisions?.some(d => d.id === div.id));
+      if (!panel) { toast.error('Panel not found — page may be stale'); return; }
       const r = await api.patch(`/projects/${id}/panels/${panel.id}/divisions/${div.id}/items/${itemId}`, form);
       load();
       if (r.data && r.data.message && r.data.message.includes('request')) {
@@ -1033,7 +1038,8 @@ export default function CrmProjectPage() {
     if (!confirm('Remove this item?')) return;
     try {
       const div = panels.flatMap(p => p.divisions || []).find(d => d.items?.some(i => i.id === itemId));
-      const panel = panels.find(p => p.id === div?.panel_id);
+      if (!div) { toast.error('Item not found — page may be stale'); return; }
+      const panel = panels.find(p => p.id === div.panel_id);
       await api.delete(`/projects/${id}/panels/${panel.id}/divisions/${div.id}/items/${itemId}`);
       load();
       toast.success('Item removed');
@@ -1125,6 +1131,13 @@ export default function CrmProjectPage() {
   if (!project) return <div className="page"><div className="empty"><p>Project not found</p></div></div>;
 
   const projectTotal = panels.reduce((s, p) => s + (parseFloat(p.total_price) || 0), 0);
+  const baseTotal = parseFloat(project.total_price) || projectTotal;
+  const discPct = parseFloat(project.project_discount_pct) || 0;
+  const discAmt = baseTotal * (discPct / 100);
+  const netAfterDisc = baseTotal - discAmt;
+  const vatPct = parseFloat(project.vat_pct) || 0;
+  const vatAmt = netAfterDisc * (vatPct / 100);
+  const projectTotalWithVat = netAfterDisc + vatAmt;
 
   // ── Brand aggregation helper ──
   const brandData = (() => {
@@ -1136,7 +1149,7 @@ export default function CrmProjectPage() {
             ? (item.custom_brand || 'Unbranded')
             : (item.brand_name || 'Unbranded');
           const base = parseFloat(item.base_price_usd) || 0;
-          const qty = item.qty ?? 1;
+          const qty = parseFloat(item.qty) || 1;
           const baseTotal = base * qty;
           const discAmt = baseTotal * (parseFloat(item.discount_pct) / 100);
           const afterDisc = baseTotal - discAmt;
@@ -1146,9 +1159,11 @@ export default function CrmProjectPage() {
           const mkMAmt = manAmt * (parseFloat(item.markupM_pct) / 100);
           const finalPrice = tPrice + manAmt + mkMAmt;
           const cost = parseFloat(item.cost || 0);
-          if (!map[brand]) map[brand] = { brand, total_cost: 0, total_price: 0, count: 0 };
+          if (!map[brand]) map[brand] = { brand, total_cost: 0, total_price: 0, total_qty: 0, profit: 0, count: 0 };
           map[brand].total_cost += cost;
           map[brand].total_price += finalPrice;
+          map[brand].total_qty += qty;
+          map[brand].profit = map[brand].total_price - map[brand].total_cost;
           map[brand].count++;
         }
       }
@@ -1192,6 +1207,8 @@ export default function CrmProjectPage() {
             Engineer: {project.engineer_name || '—'} • Client: {project.client_name || '—'} •
             Rate: 1 EUR = {project.exchange_rate_eur_usd} USD •
             Panels: {panels.length} • Total: <strong style={{ color: 'var(--success)' }}>${projectTotal.toFixed(2)}</strong>
+            {discPct > 0 && <span> • Discount ({discPct}%): -<strong style={{ color: 'var(--danger)' }}>${discAmt.toFixed(2)}</strong></span>}
+            {vatPct > 0 && <span> • VAT ({vatPct}%): <strong style={{ color: 'var(--accent2)' }}>${vatAmt.toFixed(2)}</strong> • Total with VAT: <strong style={{ color: 'var(--success)' }}>${projectTotalWithVat.toFixed(2)}</strong></span>}
           </div>
           {project.total_panels > 0 && (() => {
             const progPct = Math.round((project.completed_panels / project.total_panels) * 100);
@@ -1400,7 +1417,10 @@ export default function CrmProjectPage() {
                   executionPanelData={executionData.panelCompletion?.[panel.id]}
                   executionItemData={executionData.itemCompletion}
                   onTogglePanel={toggleExecutionPanel}
-                  onToggleItem={toggleExecutionItem} />
+                  onToggleItem={toggleExecutionItem}
+                  onSaveDesc={(pid, description) => {
+                    api.patch(`/projects/${id}/execution/panels/${pid}`, { description });
+                  }} />
               ))
             )}
           </div>

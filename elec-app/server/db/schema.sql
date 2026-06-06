@@ -425,6 +425,12 @@ CREATE TABLE IF NOT EXISTS attachments (
 
 ALTER TABLE projects ADD COLUMN ready_for_review BOOLEAN DEFAULT FALSE AFTER deleted_at;
 ALTER TABLE projects ADD COLUMN execution_deadline DATE NULL AFTER deadline;
+ALTER TABLE projects ADD COLUMN vat_pct DECIMAL(5,2) DEFAULT 0 AFTER total_price;
+ALTER TABLE projects ADD COLUMN total_vat DECIMAL(12,2) DEFAULT 0 AFTER vat_pct;
+ALTER TABLE projects ADD COLUMN total_with_vat DECIMAL(12,2) DEFAULT 0 AFTER total_vat;
+ALTER TABLE projects ADD COLUMN project_discount_pct DECIMAL(5,2) DEFAULT 0 AFTER total_with_vat;
+ALTER TABLE projects ADD COLUMN project_discount_amount DECIMAL(12,2) DEFAULT 0 AFTER project_discount_pct;
+ALTER TABLE projects ADD COLUMN payment_terms TEXT AFTER project_discount_amount;
 
 -- ── Execution Phase: Panel Completion ──────────────────────────
 CREATE TABLE IF NOT EXISTS panel_completion (

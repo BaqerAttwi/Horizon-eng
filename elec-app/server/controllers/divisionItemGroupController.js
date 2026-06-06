@@ -55,6 +55,19 @@ async function addGroupToDivision(req, res, next) {
       if (!basePriceUsd && basePriceEur) basePriceUsd = basePriceEur * rate;
       if (!basePriceEur && basePriceUsd) basePriceEur = basePriceUsd / rate;
 
+      // Look up brand discount for this item's product
+      let discPct = 0;
+      if (grpItem.product_id) {
+        const [[bd]] = await db.execute(
+          `SELECT pd.discount_pct FROM product_discounts pd
+           JOIN products p ON p.brand_id = pd.brand_id
+           WHERE p.id = ? AND pd.product_id IS NULL
+           LIMIT 1`,
+          [grpItem.product_id]
+        );
+        discPct = parseFloat(bd?.discount_pct) || 0;
+      }
+
       await db.execute(
         `INSERT INTO panel_crm_items (
           division_id, product_id, is_manual, custom_name, custom_desc,
@@ -71,7 +84,7 @@ async function addGroupToDivision(req, res, next) {
           basePriceUsd,
           basePriceEur,
           itemQty,
-          markupP, manpower, markupM, 0,
+          markupP, manpower, markupM, discPct,
           instanceId
         ]
       );
@@ -134,8 +147,6 @@ async function updateGroupInstanceQuantity(req, res, next) {
       'SELECT * FROM item_group_items WHERE group_id = ?',
       [instance.item_group_id]
     );
-    const groupItemMap = {};
-    for (const gi of groupItems) groupItemMap[gi.id || gi.product_id] = gi;
 
     // Update each item's quantity
     for (const item of items) {

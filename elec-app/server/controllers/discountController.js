@@ -82,4 +82,28 @@ async function deleteDiscount(req, res, next) {
   } catch (err) { console.error('[Discounts] ❌', err.message); next(err); }
 }
 
-module.exports = { getDiscounts, createDiscount, updateDiscount, deleteDiscount };
+async function bulkUpdateBrandDiscounts(req, res, next) {
+  try {
+    const { discounts } = req.body;
+    if (!Array.isArray(discounts)) return res.status(400).json({ error: 'discounts array required' });
+
+    for (const d of discounts) {
+      const brandId = parseInt(d.brand_id);
+      const pct = parseFloat(d.discount_pct) || 0;
+      if (!brandId) continue;
+
+      // Upsert: check if brand discount exists
+      const [existing] = await db.execute('SELECT id FROM product_discounts WHERE brand_id=? AND product_id IS NULL', [brandId]);
+      if (existing.length) {
+        await db.execute('UPDATE product_discounts SET discount_pct=? WHERE id=?', [pct, existing[0].id]);
+      } else {
+        await db.execute('INSERT INTO product_discounts(brand_id,discount_pct) VALUES(?,?)', [brandId, pct]);
+      }
+    }
+
+    console.log(`[Discounts] ✅ Bulk updated ${discounts.length} brand discounts`);
+    res.json({ message: `Updated ${discounts.length} brand discounts` });
+  } catch (err) { console.error('[Discounts] ❌ bulkUpdate:', err.message); next(err); }
+}
+
+module.exports = { getDiscounts, createDiscount, updateDiscount, deleteDiscount, bulkUpdateBrandDiscounts };
