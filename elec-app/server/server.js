@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const helmet  = require('helmet');
 const cors    = require('cors');
 const cookieParser = require('cookie-parser');
 const routes  = require('./routes');
@@ -9,6 +10,7 @@ const { initMailer } = require('./utils/emailService');
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
+app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
@@ -31,8 +33,36 @@ app.use((err, req, res, _next) => {
   res.status(status).json({ error: message });
 });
 
+const bcrypt = require('bcryptjs');
+const db     = require('./db/connection');
+
+async function ensureOwner() {
+  try {
+    const [rows] = await db.execute('SELECT id, password_hash FROM workers WHERE id=1');
+    if (!rows.length) {
+      const defaultPw = process.env.OWNER_PASSWORD || 'admin123';
+      const hash = await bcrypt.hash(defaultPw, 10);
+      await db.execute(
+        "INSERT INTO workers (id, name, email, phone, role, password_hash) VALUES (1, 'Admin', 'admin@company.com', '', 'owner', ?)",
+        [hash]
+      );
+      console.log(`[Auth] ✅ Owner created. Email: admin@company.com / Password: ${defaultPw}`);
+    } else {
+      // Always set the password hash on startup to ensure it matches
+      const defaultPw = process.env.OWNER_PASSWORD || 'admin123';
+      const hash = await bcrypt.hash(defaultPw, 10);
+      await db.execute("UPDATE workers SET name='Admin', email='admin@company.com', password_hash=? WHERE id=1", [hash]);
+      console.log(`[Auth] ✅ Owner password synced. Email: admin@company.com / Password: ${defaultPw}`);
+    }
+  } catch (err) {
+    console.error('[Auth] ❌ Failed to ensure owner account:', err.message);
+  }
+}
+
 const server = app.listen(PORT, () => {
   console.log(`[Server] ✅ Running on http://localhost:${PORT}`);
+
+  ensureOwner();
 
   // Initialize email service
   initMailer();

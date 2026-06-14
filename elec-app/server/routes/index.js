@@ -98,7 +98,7 @@ router.delete('/workers/:id',   requireAuth, requireRole('owner'), deleteWorker)
 
 // ── Clients (owner + accounting + secretary) ─────────────────
 router.get('/clients',          requireAuth, getClients);
-router.post('/clients',         requireAuth, requireRole('owner','accounting','secretary'), validate('createClient'), createClient);
+router.post('/clients',         requireAuth, requireRole('owner','accounting','secretary','engineer'), validate('createClient'), createClient);
 router.patch('/clients/:id',    requireAuth, requireRole('owner','accounting','secretary'), updateClient);
 router.delete('/clients/:id',   requireAuth, requireRole('owner'), deleteClient);
 

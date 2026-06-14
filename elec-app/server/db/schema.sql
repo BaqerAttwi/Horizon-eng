@@ -363,10 +363,8 @@ CREATE TABLE IF NOT EXISTS item_group_items (
 -- GROUP BY pr.id, pr.reference, pr.description, b.name, pr.stock_qty
 -- ORDER BY has_shortage DESC, has_conflict DESC, pr.reference;
 
--- password_hash below = bcrypt of 'admin123'
-INSERT IGNORE INTO workers (id, name, email, role, password_hash)
-VALUES (1, 'Admin Owner', 'admin@company.com', 'owner',
-        '$2b$10$rOzHwG5k5h1Z5k5h1Z5k5uK5h1Z5k5h1Z5k5h1Z5k5h1Z5k5h1Z5');
+-- Owner account — password_hash is auto-set by server.js on first startup (env OWNER_PASSWORD or default 'admin123')
+INSERT IGNORE INTO workers (id, name, email, role) VALUES (1, 'Admin', 'admin@company.com', 'owner');
 
 -- ── Manual Product Requests (engineer adds → owner approves) ──
 CREATE TABLE IF NOT EXISTS manual_product_requests (
