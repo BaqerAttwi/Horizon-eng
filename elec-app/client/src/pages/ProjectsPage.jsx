@@ -48,7 +48,7 @@ function ProjectModal({ project, onClose, onSaved }) {
   const [form, setForm] = useState({
     project_name: '', engineer_id: '', client_id: '',
     exchange_rate_eur_usd: 1.08, deadline: '', notes: '', total_panels: 0, vat_pct: 0,
-    project_discount_pct: 0, payment_terms: '70% at order, 30% after inspection',
+      project_discount_pct: 0, payment_terms: '70% at order, 30% after inspection', client_pdf_note: '',
     ...(project ? {
       project_name: project.project_name,
       engineer_id: project.engineer_id || '',
@@ -56,6 +56,7 @@ function ProjectModal({ project, onClose, onSaved }) {
       exchange_rate_eur_usd: project.exchange_rate_eur_usd || 1.08,
       deadline: project.deadline?.split('T')[0] || '',
       notes: project.notes || '',
+      client_pdf_note: project.client_pdf_note || '',
       total_panels: project.total_panels || 0,
       vat_pct: parseFloat(project.vat_pct) || 0,
       project_discount_pct: parseFloat(project.project_discount_pct) || 0,
@@ -153,6 +154,12 @@ function ProjectModal({ project, onClose, onSaved }) {
             <label className="form-label">Payment Terms</label>
             <textarea className="form-textarea" rows={2} value={form.payment_terms}
               onChange={e => setForm(p => ({ ...p, payment_terms: e.target.value }))} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Client PDF Note</label>
+            <textarea className="form-textarea" rows={3} value={form.client_pdf_note}
+              onChange={e => setForm(p => ({ ...p, client_pdf_note: e.target.value }))}
+              placeholder="Note displayed under pricing on Client PDF..." />
           </div>
           <div className="form-group">
             <label className="form-label">Notes</label>

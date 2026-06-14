@@ -165,7 +165,7 @@ async function createProject(req, res, next) {
 
 async function updateProject(req, res, next) {
   try {
-    const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, status, client_approval, client_rejection_note, admin_approval, rejection_note, total_panels, completed_panels, vat_pct, project_discount_pct, payment_terms } = req.body;
+    const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, client_pdf_note, status, client_approval, client_rejection_note, admin_approval, rejection_note, total_panels, completed_panels, vat_pct, project_discount_pct, payment_terms } = req.body;
     const fields = [], params = [];
     if (project_name       !== undefined) { fields.push('project_name=?');    params.push(project_name); }
     if (engineer_id        !== undefined) { fields.push('engineer_id=?');     params.push(engineer_id||null); }
@@ -173,6 +173,7 @@ async function updateProject(req, res, next) {
     if (exchange_rate_eur_usd !== undefined) { fields.push('exchange_rate_eur_usd=?'); params.push(exchange_rate_eur_usd||1.08); }
     if (deadline           !== undefined) { fields.push('deadline=?');        params.push(deadline||null); }
     if (notes              !== undefined) { fields.push('notes=?');           params.push(notes); }
+    if (client_pdf_note    !== undefined) { fields.push('client_pdf_note=?'); params.push(client_pdf_note); }
     if (status             !== undefined) { fields.push('status=?');          params.push(status); }
     if (client_approval    !== undefined) { fields.push('client_approval=?'); params.push(client_approval); }
     if (client_rejection_note !== undefined) { fields.push('client_rejection_note=?'); params.push(client_rejection_note); }

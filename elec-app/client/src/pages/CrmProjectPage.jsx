@@ -609,7 +609,7 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
   onGroupInstanceQtyChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll }) {
 
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct });
+  const [form, setForm] = useState({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false });
 
   const handleSavePanel = async () => {
     await onUpdatePanel(panel.id, form);
@@ -635,7 +635,7 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
           {editing ? (
             <>
               <button className="btn btn-sm btn-primary" onClick={handleSavePanel}>Save</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => { setEditing(false); setForm({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct }); }}>Cancel</button>
+              <button className="btn btn-sm btn-secondary" onClick={() => { setEditing(false); setForm({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false }); }}>Cancel</button>
             </>
           ) : (
             <>
@@ -669,6 +669,18 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
             <div className="form-group">
               <label className="form-label">Manpower %</label>
               <input type="number" step="0.1" className="form-input" value={form.manpower_pct} onChange={e => setForm(f => ({ ...f, manpower_pct: parseFloat(e.target.value) || 0 }))} />
+            </div>
+          </div>
+          <div className="form-row" style={{ gap: 12, marginTop: 10 }}>
+            <div className="form-group" style={{ flex: 3 }}>
+              <label className="form-label">Note for Client PDF</label>
+              <textarea className="form-input" rows={3} value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} placeholder="Add a note visible in client PDF..." />
+            </div>
+            <div className="form-group" style={{ flex: 0, minWidth: 180, alignSelf: 'flex-end', paddingBottom: 4 }}>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                <input type="checkbox" checked={form.show_note_in_client_pdf} onChange={e => setForm(f => ({ ...f, show_note_in_client_pdf: e.target.checked }))} />
+                Show note in Client PDF
+              </label>
             </div>
           </div>
         </div>

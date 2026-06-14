@@ -82,10 +82,10 @@ async function updatePanel(req, res, next) {
     const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
     if (!hasAccess) return;
 
-    const { panel_name, markupP, markupM, manpower_pct } = req.body;
+    const { panel_name, markupP, markupM, manpower_pct, note, show_note_in_client_pdf } = req.body;
     await db.execute(
-      'UPDATE project_crm_panels SET panel_name=?, markupP=?, markupM=?, manpower_pct=?, updated_by=? WHERE id=? AND project_id=?',
-      [panel_name||null, markupP||0, markupM||0, manpower_pct||0, req.worker.id, req.params.panelId, req.params.projectId]
+      'UPDATE project_crm_panels SET panel_name=?, markupP=?, markupM=?, manpower_pct=?, note=?, show_note_in_client_pdf=?, updated_by=? WHERE id=? AND project_id=?',
+      [panel_name||null, markupP||0, markupM||0, manpower_pct||0, note||null, show_note_in_client_pdf ? 1 : 0, req.worker.id, req.params.panelId, req.params.projectId]
     );
 
     // Cascade panel markups to items and divisions
@@ -643,8 +643,8 @@ async function copyPanelFromProject(req, res, next) {
 
     // 3. Create new panel
     const [panelResult] = await db.execute(
-      'INSERT INTO project_crm_panels(project_id,panel_number,panel_name,markupP,markupM,manpower_pct,updated_by) VALUES(?,?,?,?,?,?,?)',
-      [targetProjectId, nextPanelNum, sourcePanel.panel_name || `Panel #${nextPanelNum}`, sourcePanel.markupP, sourcePanel.markupM, sourcePanel.manpower_pct, currentUserId]
+      'INSERT INTO project_crm_panels(project_id,panel_number,panel_name,markupP,markupM,manpower_pct,note,show_note_in_client_pdf,updated_by) VALUES(?,?,?,?,?,?,?,?,?)',
+      [targetProjectId, nextPanelNum, sourcePanel.panel_name || `Panel #${nextPanelNum}`, sourcePanel.markupP, sourcePanel.markupM, sourcePanel.manpower_pct, sourcePanel.note, sourcePanel.show_note_in_client_pdf, currentUserId]
     );
     const newPanelId = panelResult.insertId;
 

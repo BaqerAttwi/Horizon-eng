@@ -131,11 +131,14 @@ export async function exportProjectPdf(projectId, type = 'owner') {
     doc.text('*Technical specifications  *Price List', valX, y + 58);
     y += msgH + 4;
 
-    // ── Panel Summary Table ──
-    doc.setFontSize(12);
+    // ── Page 2: Panel Summary + Totals ──
+    doc.addPage();
+    y = 30;
+    addSubpageHeader(doc, pw, logoPng, project);
+    doc.setFontSize(14);
     doc.setTextColor(26, 95, 168);
     doc.text('Panel Summary', 14, y);
-    y += 8;
+    y += 10;
 
     const activePanels = panels
       .filter(p => (p.divisions || []).some(d => (d.items || []).length))
@@ -206,7 +209,24 @@ export async function exportProjectPdf(projectId, type = 'owner') {
     doc.text('TOTAL WITH VAT:', totalsX + 4, y + 5.5);
     doc.text(`$${clientGrandWithVat.toFixed(2)}`, totalsX + totalsW - 4, y + 5.5, { align: 'right' });
 
-    // ── Page 2+: Technical Details ──
+    // ── Client PDF Note ──
+    if (project.client_pdf_note) {
+      y += 14;
+      const noteLines = doc.splitTextToSize(String(project.client_pdf_note), pw - 36);
+      const noteH = Math.max(14, 10 + noteLines.length * 4);
+      doc.setDrawColor(200);
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(14, y, pw - 28, noteH, 2, 2, 'F');
+      doc.setFontSize(9);
+      doc.setTextColor(71, 85, 105);
+      doc.text('Note:', 18, y + 4);
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.text(noteLines, 18, y + 10);
+      y += noteH + 4;
+    }
+
+    // ── Page 3+: Technical Details ──
     doc.addPage();
     y = 30;
     addSubpageHeader(doc, pw, logoPng, project);
@@ -226,14 +246,22 @@ export async function exportProjectPdf(projectId, type = 'owner') {
       }
 
       const allItems = [];
+      const groupRows = [];
       for (const div of panel.divisions || []) {
+        // Collect individual items (skip group instance items)
         for (const item of div.items || []) {
           if (item.visible_in_client_pdf === 0) continue;
+          if (item.source_group_instance_id) continue;
           const ref = item.is_manual ? (item.custom_name || 'Manual') : item.reference;
           allItems.push({ ref: ref || '—', desc: item.custom_desc || item.product_desc || item.description || '—', qty: item.qty ?? 1, division: div.division_type || '' });
         }
+        // Collect group instance summaries
+        for (const gi of div.group_instances || []) {
+          const groupTotal = (gi.items || []).reduce((s, i) => s + (parseFloat(i.totalfinalProduct) || 0), 0);
+          groupRows.push({ name: gi.group_name || `Group #${gi.item_group_id}`, qty: gi.quantity || 1, total: groupTotal, division: div.division_type || '' });
+        }
       }
-      if (!allItems.length) continue;
+      if (!allItems.length && !groupRows.length) continue;
 
       doc.setFillColor(26, 95, 168);
       doc.roundedRect(14, y, pw - 28, 7, 2, 2, 'F');
@@ -242,7 +270,28 @@ export async function exportProjectPdf(projectId, type = 'owner') {
       doc.text(`PANEL: Panel #${panel.panel_number}${panel.panel_name ? ' — ' + panel.panel_name : ''}`, 18, y + 5);
       y += 10;
 
+      if (panel.show_note_in_client_pdf && panel.note) {
+        const noteLines = doc.splitTextToSize(String(panel.note), pw - 56);
+        const noteH = Math.max(14, 10 + noteLines.length * 4);
+        doc.setDrawColor(200);
+        doc.setFillColor(254, 249, 235);
+        doc.roundedRect(16, y, pw - 32, noteH, 2, 2, 'F');
+        doc.setFontSize(7);
+        doc.setTextColor(146, 64, 14);
+        doc.text('Note:', 20, y + 4);
+        doc.setFontSize(8);
+        doc.setTextColor(71, 85, 105);
+        doc.text(noteLines, 20, y + 10);
+        y += noteH + 4;
+      }
+
       const itemRows = allItems.map((itm, i) => [`${i + 1}`, itm.ref, itm.desc, itm.division, `${itm.qty}`]);
+      // Add group rows at the end with distinct style
+      const groupStartIdx = itemRows.length + 1;
+      for (const gr of groupRows) {
+        itemRows.push(['', `Group: ${gr.name}`, '', gr.division, `${gr.qty}`]);
+      }
+
       autoTable(doc, {
         startY: y,
         head: [['#', 'Item', 'Description', 'Division', 'Qty']],
@@ -253,6 +302,12 @@ export async function exportProjectPdf(projectId, type = 'owner') {
         columnStyles: { 0: { halign: 'center' }, 1: { fontStyle: 'bold' }, 2: {}, 3: { halign: 'center' }, 4: { halign: 'center' } },
         margin: { left: 16, right: 16 },
         tableWidth: pw - 32,
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.row.index >= groupStartIdx - 1) {
+            data.cell.styles.fillColor = [240, 244, 249];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        },
       });
       y = doc.lastAutoTable.finalY + 6;
     }
@@ -288,7 +343,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
   doc.setTextColor(71, 85, 105);
   const infoLine = `ID: ${project.id}  |  Engineer: ${project.engineer_name || '—'}  |  Client: ${project.client_name || '—'}  |  ${project.deadline ? 'Deadline: ' + project.deadline.split('T')[0] : ''}`;
   doc.text(infoLine, 18, y + 18);
-  y += 30;
+  y += 36;
 
   // ── Status badges ──
   doc.setFontSize(9);
@@ -304,7 +359,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
   y += 8;
 
   for (const panel of panels) {
-    if (y > 250) { doc.addPage(); y = 14; }
+    if (y > 250) { doc.addPage(); y = 30; }
     const divisions = panel.divisions || [];
     let hasItems = divisions.some(d => d.items?.length);
     if (!hasItems) continue;
@@ -322,7 +377,11 @@ export async function exportProjectPdf(projectId, type = 'owner') {
     for (const div of divisions) {
       const items = div.items || [];
       if (!items.length) continue;
-      if (y > 260) { doc.addPage(); y = 14; }
+      if (y > 260) { doc.addPage(); y = 30; }
+
+      // Separate regular items from group items
+      const regularItems = items.filter(i => !i.source_group_instance_id);
+      const groupInstances = div.group_instances || [];
 
       doc.setDrawColor(200);
       doc.setFillColor(248, 250, 252);
@@ -334,7 +393,12 @@ export async function exportProjectPdf(projectId, type = 'owner') {
       doc.text(`mkP:${div.markupP}%  mkM:${div.markupM}%  Man:${div.manpower_pct}%`, pw - 19, y + 4, { align: 'right' });
       y += 8;
 
-      const body = items.map(item => {
+      // Build body rows: regular items first, then groups
+      const body = [];
+      const groupRowIndices = [];
+
+      // Regular items
+      for (const item of regularItems) {
         const base = parseFloat(item.base_price_usd) || 0;
         const qty = item.qty ?? 1;
         const baseTotal = base * qty;
@@ -350,8 +414,32 @@ export async function exportProjectPdf(projectId, type = 'owner') {
         const name = item.is_manual ? (item.custom_name || 'Manual') : item.reference;
         grandTotal += finalPrice;
         grandCost += cost;
-        return [name, `x${qty}`, `$${base.toFixed(2)}`, `${item.markupP_pct}%`, `${item.discount_pct}%`, `${item.manpower_pct}%`, `${item.markupM_pct}%`, `$${finalPrice.toFixed(2)}`, `$${cost.toFixed(2)}`, profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`];
-      });
+        body.push([name, `x${qty}`, `$${base.toFixed(2)}`, `${item.markupP_pct}%`, `${item.discount_pct}%`, `${item.manpower_pct}%`, `${item.markupM_pct}%`, `$${finalPrice.toFixed(2)}`, `$${cost.toFixed(2)}`, profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`]);
+      }
+
+      // Group instances
+      for (const gi of groupInstances) {
+        groupRowIndices.push(body.length);
+        body.push([`= Group: ${gi.group_name || `Group #${gi.item_group_id}`}`, '', '', '', '', '', '', '', '', '']);
+        for (const item of gi.items || []) {
+          const base = parseFloat(item.base_price_usd) || 0;
+          const qty = item.qty ?? 1;
+          const baseTotal = base * qty;
+          const discAmt = baseTotal * (parseFloat(item.discount_pct) / 100);
+          const afterDisc = baseTotal - discAmt;
+          const mkPAmt = afterDisc * (parseFloat(item.markupP_pct) / 100);
+          const tPrice = afterDisc + mkPAmt;
+          const manAmt = afterDisc * (parseFloat(item.manpower_pct) / 100);
+          const mkMAmt = manAmt * (parseFloat(item.markupM_pct) / 100);
+          const finalPrice = tPrice + manAmt + mkMAmt;
+          const cost = parseFloat(item.cost || 0);
+          const profit = finalPrice - cost;
+          const name = item.is_manual ? (item.custom_name || 'Manual') : item.reference;
+          grandTotal += finalPrice;
+          grandCost += cost;
+          body.push([name, `x${qty}`, `$${base.toFixed(2)}`, `${item.markupP_pct}%`, `${item.discount_pct}%`, `${item.manpower_pct}%`, `${item.markupM_pct}%`, `$${finalPrice.toFixed(2)}`, `$${cost.toFixed(2)}`, profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`]);
+        }
+      }
 
       autoTable(doc, {
         startY: y,
@@ -364,11 +452,18 @@ export async function exportProjectPdf(projectId, type = 'owner') {
         margin: { left: 16, right: 16 },
         tableWidth: pw - 32,
         didParseCell: (data) => {
-          if (data.section === 'body' && data.column.index === 9) {
-            const val = data.cell.raw;
-            if (typeof val === 'string') {
-              if (val.startsWith('+')) data.cell.styles.textColor = [34, 197, 94];
-              else if (val.startsWith('-')) data.cell.styles.textColor = [239, 68, 68];
+          if (data.section === 'body') {
+            if (groupRowIndices.includes(data.row.index)) {
+              data.cell.styles.fillColor = [230, 242, 255];
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fontSize = 7;
+            }
+            if (data.column.index === 9) {
+              const val = data.cell.raw;
+              if (typeof val === 'string') {
+                if (val.startsWith('+')) data.cell.styles.textColor = [34, 197, 94];
+                else if (val.startsWith('-')) data.cell.styles.textColor = [239, 68, 68];
+              }
             }
           }
         },
@@ -378,7 +473,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
   }
 
   // ── Grand total + Cost summary (owner only) ──
-  if (y > 260) { doc.addPage(); y = 14; }
+  if (y > 260) { doc.addPage(); y = 30; }
   const vatPct = parseFloat(project.vat_pct) || 0;
   const discountPct = parseFloat(project.project_discount_pct) || 0;
   const discountAmt = grandTotal * (discountPct / 100);
@@ -427,7 +522,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
   y += 14;
 
   // ── Brand Summary (owner) ──
-  if (y > 260) { doc.addPage(); y = 14; }
+  if (y > 260) { doc.addPage(); y = 30; }
   const brandMap = {};
   for (const panel of panels) {
     for (const div of panel.divisions || []) {
@@ -490,7 +585,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
   y = doc.lastAutoTable.finalY + 8;
 
   // Per-item profit breakdown
-  if (y > 270) { doc.addPage(); y = 14; }
+  if (y > 270) { doc.addPage(); y = 30; }
   const profitRows = [];
   for (const panel of panels) {
     for (const div of panel.divisions || []) {
