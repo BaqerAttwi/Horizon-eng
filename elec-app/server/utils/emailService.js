@@ -1,42 +1,18 @@
-const nodemailer = require('nodemailer');
-const dns = require('dns');
+const { Resend } = require('resend');
 
-let transporter = null;
+let resend = null;
 
 function initMailer() {
-  if (transporter) return;
+  if (resend) return;
 
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '587');
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!host || !user || !pass) {
-    console.log('[Mail] ⚠️ SMTP not configured — email notifications disabled');
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.log('[Mail] ⚠️ RESEND_API_KEY not configured — email notifications disabled');
     return;
   }
 
-  // Resolve only IPv4 — DigitalOcean droplets lack IPv6 outbound to Gmail
-  dns.lookup(host, { family: 4 }, (err, address) => {
-    if (err) {
-      console.error('[Mail] ❌ DNS lookup failed:', err.message);
-      return;
-    }
-
-    transporter = nodemailer.createTransport({
-      host: address,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-    });
-
-    transporter.verify().then(() => {
-      console.log('[Mail] ✅ SMTP configured and verified:', host, '→', address);
-    }).catch(err => {
-      console.error('[Mail] ❌ SMTP verification failed:', err.message);
-      transporter = null;
-    });
-  });
+  resend = new Resend(apiKey);
+  console.log('[Mail] ✅ Resend initialized');
 }
 
 function emailTemplate(title, message, link, senderName) {
@@ -82,16 +58,25 @@ function emailTemplate(title, message, link, senderName) {
 }
 
 async function sendEmail({ to, subject, text, html }) {
-  if (!transporter) {
-    console.log('[Mail] ⏭️ Skipped (no SMTP):', to, subject);
+  if (!resend) {
+    console.log('[Mail] ⏭️ Skipped (no Resend API key):', to, subject);
     return;
   }
 
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@elec-app.com';
+  const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
   try {
-    await transporter.sendMail({ from, to, subject, text, html });
-    console.log('[Mail] ✅ Sent to:', to, '—', subject);
+    const { data, error } = await resend.emails.send({
+      from,
+      to: [to],
+      subject,
+      html: html || text,
+    });
+    if (error) {
+      console.error('[Mail] ❌ Resend error:', error.message);
+    } else {
+      console.log('[Mail] ✅ Sent to:', to, '—', subject, '(id:', data?.id, ')');
+    }
   } catch (err) {
     console.error('[Mail] ❌ Failed to send to', to, ':', err.message);
   }
