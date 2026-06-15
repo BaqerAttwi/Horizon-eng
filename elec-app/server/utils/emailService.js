@@ -1,18 +1,28 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
-let resend = null;
+let transporter = null;
 
 function initMailer() {
-  if (resend) return;
+  if (transporter) return;
 
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.log('[Mail] ⚠️ RESEND_API_KEY not configured — email notifications disabled');
+  const host = process.env.SMTP_HOST;
+  const port = parseInt(process.env.SMTP_PORT || '587');
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!host || !user || !pass) {
+    console.log('[Mail] ⚠️ SMTP not configured — email notifications disabled');
     return;
   }
 
-  resend = new Resend(apiKey);
-  console.log('[Mail] ✅ Resend initialized');
+  transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+  });
+
+  console.log('[Mail] ✅ SMTP configured:', host);
 }
 
 function emailTemplate(title, message, link, senderName) {
@@ -58,25 +68,16 @@ function emailTemplate(title, message, link, senderName) {
 }
 
 async function sendEmail({ to, subject, text, html }) {
-  if (!resend) {
-    console.log('[Mail] ⏭️ Skipped (no Resend API key):', to, subject);
+  if (!transporter) {
+    console.log('[Mail] ⏭️ Skipped (no SMTP):', to, subject);
     return;
   }
 
-  const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@elec-app.com';
 
   try {
-    const { data, error } = await resend.emails.send({
-      from,
-      to: [to],
-      subject,
-      html: html || text,
-    });
-    if (error) {
-      console.error('[Mail] ❌ Resend error:', error.message);
-    } else {
-      console.log('[Mail] ✅ Sent to:', to, '—', subject, '(id:', data?.id, ')');
-    }
+    await transporter.sendMail({ from, to, subject, text, html });
+    console.log('[Mail] ✅ Sent to:', to, '—', subject);
   } catch (err) {
     console.error('[Mail] ❌ Failed to send to', to, ':', err.message);
   }
