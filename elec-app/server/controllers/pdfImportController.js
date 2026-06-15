@@ -22,7 +22,7 @@ function parsePdfText(text) {
       continue;
     }
 
-    // Division header: "INCOMING (5 items)" or just "INCOMING"
+    // Division header
     const divMatch = line.match(new RegExp(`^(${DIV_TYPES.join('|')})\\s*(?:\\((\\d+)\\s+items\\))?`));
     if (divMatch && currentPanel) {
       currentDiv = { division_type: divMatch[1], items: [] };
@@ -30,32 +30,53 @@ function parsePdfText(text) {
       continue;
     }
 
-    // Item row — look for pattern: "name  x{qty}" or "name  x{qty}  $..."
-    const itemMatch = line.match(/^(.+?)\s+x(\d+)(?:\s+\$([\d.]+))?/);
+    // Skip group headers and other non-item lines
+    if (/^= / || /^Project:/i || /^Status/i || /^Client/i || /^Date/i) continue;
+
+    // Item row patterns (tried in order)
+
+    // Pattern 1: "name  x{qty}" or "name  x{qty}  $..."
+    let itemMatch = line.match(/^(.+?)\s+x(\d+)(?:\s+\$([\d.]+))?/);
     if (itemMatch && currentDiv) {
       const name = itemMatch[1].trim();
       const qty = parseInt(itemMatch[2]);
-      // Extract all percentages from the remainder of the line
-      // Owner PDF columns: Item, Qty, Base$, mkP%, Disc%, Man%, mkM%, Total$, Cost$, Profit$
       const afterMatch = line.slice(itemMatch[0].length);
       const pcts = [...afterMatch.matchAll(/([\d.]+)%/g)].map(m => parseFloat(m[1]));
-      const markupP_pct = pcts[0] ?? 0;
-      const discount = pcts[1] ?? 0;
-      const manpower_pct = pcts[2] ?? 0;
-      const markupM_pct = pcts[3] ?? 0;
-      currentDiv.items.push({ name, qty, markupP_pct, discount, manpower_pct, markupM_pct });
+      currentDiv.items.push({
+        name, qty,
+        markupP_pct: pcts[0] ?? 0, discount: pcts[1] ?? 0,
+        manpower_pct: pcts[2] ?? 0, markupM_pct: pcts[3] ?? 0,
+      });
       continue;
     }
 
-    // Also try to find items without a division context (client PDF page 2)
+    // Pattern 2: "name  {qty}" (space-separated, qty on same line)
+    itemMatch = line.match(/^(.+?)\s+(\d{1,4})(?:\s|$)/);
+    if (itemMatch && currentDiv && parseInt(itemMatch[2]) > 0) {
+      const name = itemMatch[1].trim();
+      const qty = parseInt(itemMatch[2]);
+      // Avoid matching lines that are just panel metadata or labels
+      if (name.length > 2 && !/^(INCOMING|OUTGOING|Enclosure|Accessories|Measurement|Panel|Total|Subtotal|Grand|mkP|mkM|Man|Disc)/i.test(name)) {
+        currentDiv.items.push({ name, qty, discount: 0 });
+        continue;
+      }
+    }
+
+    // Pattern 3: fallback — "name  x{qty}" without division context
     const fallbackItem = line.match(/^(.+?)\s+x(\d+)$/);
     if (fallbackItem && currentPanel && !currentDiv) {
-      const name = fallbackItem[1].trim();
-      const qty = parseInt(fallbackItem[2]);
-      // Create a default division if none exists
       currentDiv = { division_type: 'INCOMING', items: [] };
       currentPanel.divisions.push(currentDiv);
-      currentDiv.items.push({ name, qty, discount: 0 });
+      currentDiv.items.push({ name: fallbackItem[1].trim(), qty: parseInt(fallbackItem[2]), discount: 0 });
+      continue;
+    }
+
+    // Pattern 4: fallback — "name  {qty}" without division context
+    const fallbackNum = line.match(/^(.+?)\s+(\d{1,4})$/);
+    if (fallbackNum && currentPanel && !currentDiv && fallbackNum[1].trim().length > 2) {
+      currentDiv = { division_type: 'INCOMING', items: [] };
+      currentPanel.divisions.push(currentDiv);
+      currentDiv.items.push({ name: fallbackNum[1].trim(), qty: parseInt(fallbackNum[2]), discount: 0 });
       continue;
     }
   }
