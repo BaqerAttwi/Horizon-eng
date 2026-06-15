@@ -5,80 +5,75 @@ const { calcItemPricing, recalcDivisionTotals, recalcPanelTotals } = require('..
 
 // ── Parse PDF text into structured data ──
 
+function getDivType(line) {
+  const m = line.match(/\b(INCOMING|OUTGOING|Enclosure|Accessories|Measurement)\b/);
+  return m ? m[1] : null;
+}
+
 function parsePdfText(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const panels = [];
   let currentPanel = null;
-  let currentDiv = null;
-  const DIV_TYPES = ['INCOMING', 'OUTGOING', 'Enclosure', 'Accessories', 'Measurement'];
 
   for (const line of lines) {
-    // Panel header
-    const panelMatch = line.match(/^Panel\s*#(\d+)\s*[—–\-]?\s*(.*?)(?:\s+mkP:|$)/i);
+    // Skip header/footer/noise lines
+    if (/^(HORIZON Engineering|Generated on|-- \d+ of \d+ --|Page \d+ of \d+|Dear Sirs|Total Amount|Payment|Validity|Attached|GRAND TOTAL|Grand Total|Discount|VAT|TOTAL WITH|Note:|Panel Name)/.test(line)) continue;
+    if (/^(Project Name|Engineer|Client|Date)/.test(line)) continue;
+    if (/^Panel Summary|^Technical Details|^# Item Description/.test(line)) continue;
+
+    // Panel header (only from Technical Details section with PANEL: prefix)
+    const panelMatch = line.match(/^PANEL:\s*Panel\s*#(\d+)\s*[—–\-]?\s*(.*)/i);
     if (panelMatch) {
       currentPanel = { panel_number: parseInt(panelMatch[1]), panel_name: panelMatch[2].trim() || null, divisions: [] };
       panels.push(currentPanel);
-      currentDiv = null;
       continue;
     }
 
-    // Division header
-    const divMatch = line.match(new RegExp(`^(${DIV_TYPES.join('|')})\\s*(?:\\((\\d+)\\s+items\\))?`));
-    if (divMatch && currentPanel) {
-      currentDiv = { division_type: divMatch[1], items: [] };
-      currentPanel.divisions.push(currentDiv);
+    if (!currentPanel) continue;
+
+    // Collect all items per panel (divisions will be inferred from div type in each line)
+    // Build a flat list; we'll group by division type at the end
+    if (!currentPanel._items) currentPanel._items = [];
+    if (!currentPanel._groups) currentPanel._groups = [];
+
+    // Group row: "Group: grp1 INCOMING 12"
+    const grpMatch = line.match(/^Group:\s*(.+?)\s+(INCOMING|OUTGOING|Enclosure|Accessories|Measurement)\s+(\d+)$/);
+    if (grpMatch) {
+      currentPanel._groups.push({ name: 'Group: ' + grpMatch[1].trim(), divType: grpMatch[2], qty: parseInt(grpMatch[3]) });
       continue;
     }
 
-    // Skip group headers and other non-item lines
-    if (/^= / || /^Project:/i || /^Status/i || /^Client/i || /^Date/i) continue;
-
-    // Item row patterns (tried in order)
-
-    // Pattern 1: "name  x{qty}" or "name  x{qty}  $..."
-    let itemMatch = line.match(/^(.+?)\s+x(\d+)(?:\s+\$([\d.]+))?/);
-    if (itemMatch && currentDiv) {
-      const name = itemMatch[1].trim();
-      const qty = parseInt(itemMatch[2]);
-      const afterMatch = line.slice(itemMatch[0].length);
-      const pcts = [...afterMatch.matchAll(/([\d.]+)%/g)].map(m => parseFloat(m[1]));
-      currentDiv.items.push({
-        name, qty,
-        markupP_pct: pcts[0] ?? 0, discount: pcts[1] ?? 0,
-        manpower_pct: pcts[2] ?? 0, markupM_pct: pcts[3] ?? 0,
-      });
+    // Item row: "1 A9MEM3100 Triphase Kwh Meter 63A INCOMING 1"
+    // Starts with a number, then name, then division type, then qty
+    const itemMatch = line.match(/^\d+\s+(.+)\s+(INCOMING|OUTGOING|Enclosure|Accessories|Measurement)\s+(\d+)$/);
+    if (itemMatch) {
+      currentPanel._items.push({ name: itemMatch[1].trim(), divType: itemMatch[2], qty: parseInt(itemMatch[3]) });
       continue;
     }
 
-    // Pattern 2: "name  {qty}" (space-separated, qty on same line)
-    itemMatch = line.match(/^(.+?)\s+(\d{1,4})(?:\s|$)/);
-    if (itemMatch && currentDiv && parseInt(itemMatch[2]) > 0) {
-      const name = itemMatch[1].trim();
-      const qty = parseInt(itemMatch[2]);
-      // Avoid matching lines that are just panel metadata or labels
-      if (name.length > 2 && !/^(INCOMING|OUTGOING|Enclosure|Accessories|Measurement|Panel|Total|Subtotal|Grand|mkP|mkM|Man|Disc)/i.test(name)) {
-        currentDiv.items.push({ name, qty, discount: 0 });
-        continue;
-      }
-    }
-
-    // Pattern 3: fallback — "name  x{qty}" without division context
-    const fallbackItem = line.match(/^(.+?)\s+x(\d+)$/);
-    if (fallbackItem && currentPanel && !currentDiv) {
-      currentDiv = { division_type: 'INCOMING', items: [] };
-      currentPanel.divisions.push(currentDiv);
-      currentDiv.items.push({ name: fallbackItem[1].trim(), qty: parseInt(fallbackItem[2]), discount: 0 });
+    // Fallback: any non-empty line ending with a number (potential item)
+    const fallMatch = line.match(/^(.+?)\s+(\d{1,4})$/);
+    if (fallMatch && fallMatch[1].trim().length > 3 && !/^(Panel|HORIZON|project\d)/i.test(fallMatch[1])) {
+      const divType = getDivType(fallMatch[1]);
+      const name = divType ? fallMatch[1].replace(divType, '').trim() : fallMatch[1].trim();
+      currentPanel._items.push({ name, divType: divType || 'INCOMING', qty: parseInt(fallMatch[2]) });
       continue;
     }
+  }
 
-    // Pattern 4: fallback — "name  {qty}" without division context
-    const fallbackNum = line.match(/^(.+?)\s+(\d{1,4})$/);
-    if (fallbackNum && currentPanel && !currentDiv && fallbackNum[1].trim().length > 2) {
-      currentDiv = { division_type: 'INCOMING', items: [] };
-      currentPanel.divisions.push(currentDiv);
-      currentDiv.items.push({ name: fallbackNum[1].trim(), qty: parseInt(fallbackNum[2]), discount: 0 });
-      continue;
-    }
+  // Convert flat items into divisions per panel
+  for (const panel of panels) {
+    const divMap = {};
+    const addItem = (item, isGroup) => {
+      const dt = item.divType || 'INCOMING';
+      if (!divMap[dt]) divMap[dt] = { division_type: dt, items: [] };
+      divMap[dt].items.push({ name: item.name, qty: item.qty, discount: 0, is_group: isGroup || false });
+    };
+    for (const item of (panel._items || [])) addItem(item, false);
+    for (const grp of (panel._groups || [])) addItem(grp, true);
+    panel.divisions = Object.values(divMap);
+    delete panel._items;
+    delete panel._groups;
   }
 
   return panels;
