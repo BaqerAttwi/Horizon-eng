@@ -22,7 +22,7 @@ async function getProducts(req, res, next) {
       params
     );
 
-    const [products] = await db.execute(
+    const [products] = await db.query(
       `SELECT p.*, b.name as brand_name,
               (p.stock_qty - p.reserved_qty) as available_qty
        FROM products p

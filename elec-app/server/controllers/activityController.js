@@ -19,7 +19,7 @@ async function getActivityLogs(req, res, next) {
     const { projectId } = req.params;
     const { limit = 100, offset = 0 } = req.query;
 
-    const [logs] = await db.execute(
+    const [logs] = await db.query(
       `SELECT al.*, w.name as performer_name, w.role as performer_role
        FROM activity_logs al
        LEFT JOIN workers w ON w.id = al.performed_by

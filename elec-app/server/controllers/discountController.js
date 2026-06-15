@@ -23,7 +23,7 @@ async function getDiscounts(req, res, next) {
       `SELECT COUNT(*) as total FROM product_discounts pd ${where}`, params
     );
 
-    const [discounts] = await db.execute(
+    const [discounts] = await db.query(
       `SELECT pd.*, b.name as brand_name, pr.reference, pr.description
        FROM product_discounts pd
        LEFT JOIN products pr ON pd.product_id = pr.id
