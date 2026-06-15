@@ -17,7 +17,8 @@ async function logActivity({ project_id, panel_id, division_id, item_id, action,
 async function getActivityLogs(req, res, next) {
   try {
     const { projectId } = req.params;
-    const { limit = 100, offset = 0 } = req.query;
+    const limit  = Math.min(500, Math.max(1, parseInt(req.query.limit) || 100));
+    const offset = Math.max(0, parseInt(req.query.offset) || 0);
 
     const [logs] = await db.query(
       `SELECT al.*, w.name as performer_name, w.role as performer_role
@@ -26,7 +27,7 @@ async function getActivityLogs(req, res, next) {
        WHERE al.project_id = ?
        ORDER BY al.created_at DESC
        LIMIT ? OFFSET ?`,
-      [projectId, parseInt(limit), parseInt(offset)]
+      [projectId, limit, offset]
     );
 
     const [[{ total }]] = await db.execute(

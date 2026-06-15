@@ -5,7 +5,8 @@ const { notifyByEmail } = require('../utils/emailService');
 async function getNotifications(req, res, next) {
   try {
     const userId = req.worker.id;
-    const { limit = 50, unread_only } = req.query;
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 50));
+    const { unread_only } = req.query;
 
     let query = `
       SELECT n.id, n.type, n.title, n.message, n.link, n.is_read, n.created_at
@@ -18,8 +19,8 @@ async function getNotifications(req, res, next) {
       query += ` AND n.is_read = FALSE`;
     }
 
-    query += ` ORDER BY n.created_at DESC LIMIT ?`;
-    params.push(parseInt(limit));
+      query += ` ORDER BY n.created_at DESC LIMIT ?`;
+    params.push(limit);
 
     const [notifications] = await pool.query(query, params);
 

@@ -3,8 +3,10 @@ const db = require('../db/connection');
 // GET /api/products
 async function getProducts(req, res, next) {
   try {
-    const { search = '', brand = '', page = 1, limit = 50 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { search = '', brand = '' } = req.query;
+    const page  = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 50));
+    const offset = (page - 1) * limit;
     const params = [];
     let where = 'WHERE 1=1';
 
