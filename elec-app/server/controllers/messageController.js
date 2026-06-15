@@ -40,7 +40,7 @@ async function createMessage(req, res, next) {
     const [allWorkers] = await pool.query('SELECT id, name, email FROM workers');
     const truncated = `${content.substring(0, 80)}${content.length > 80 ? '...' : ''}`;
     for (const w of allWorkers) {
-      await createNotification(w.id, 'info', 'New Announcement',
+      await createNotification(w.id, 'general', 'New Announcement',
         `${req.worker.name} posted: ${truncated}`,
         '/messages'
       );

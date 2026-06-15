@@ -291,7 +291,7 @@ CREATE TABLE IF NOT EXISTS crm_price_change_requests (
 CREATE TABLE IF NOT EXISTS notifications (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   user_id     INT NOT NULL,
-  type        ENUM('deadline','approval','status','request','stock','general','manual_product','manual_product_approved','manual_product_rejected') NOT NULL DEFAULT 'general',
+  type        ENUM('deadline','approval','status','request','stock','general','info','manual_product','manual_product_approved','manual_product_rejected') NOT NULL DEFAULT 'general',
   title       VARCHAR(250) NOT NULL,
   message     TEXT,
   link        VARCHAR(250),
@@ -515,3 +515,6 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 -- ALTER TABLE workers ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER created_at;
 -- ALTER TABLE clients ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER updated_at;
 -- ALTER TABLE product_discounts ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER updated_at;
+
+-- Add 'info' to notifications type enum
+ALTER TABLE notifications MODIFY COLUMN type ENUM('deadline','approval','status','request','stock','general','info','manual_product','manual_product_approved','manual_product_rejected') NOT NULL DEFAULT 'general';
