@@ -14,7 +14,6 @@ function WorkerModal({ worker, onClose, onSaved }) {
   const save = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
     setSaving(true);
-    console.log('[Workers] Saving:', form);
     try {
       const r = worker?.id
         ? await api.patch(`/workers/${worker.id}`, form)
@@ -80,7 +79,6 @@ function SetPasswordModal({ worker, onClose }) {
   const save = async () => {
     if (newPass.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     setSaving(true);
-    console.log('[Workers] Setting password for id:', worker.id);
     try {
       await api.post('/auth/set-password', { worker_id: worker.id, new_password: newPass });
       toast.success(`✅ Password set for "${worker.name}"`);
@@ -128,7 +126,6 @@ export default function WorkersPage() {
 
   const load = async () => {
     setLoading(true);
-    console.log('[Workers] Loading, role filter:', roleFilter);
     try {
       const r = await api.get('/workers', { params: roleFilter ? { role: roleFilter } : {} });
       setWorkers(r.data);
@@ -140,7 +137,6 @@ export default function WorkersPage() {
 
   const del = async (w) => {
     if (!confirm(`Delete "${w.name}"?`)) return;
-    console.log('[Workers] Deleting id:', w.id);
     try {
       await api.delete(`/workers/${w.id}`);
       setWorkers(ws => ws.filter(x => x.id !== w.id));

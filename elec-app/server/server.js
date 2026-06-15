@@ -16,15 +16,16 @@ app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request logger
-app.use((req, res, next) => {
-  console.log(`[HTTP] ${req.method} ${req.path}`);
-  next();
-});
-
 app.use('/api', routes);
 
-app.use((req, res) => res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` }));
+// Serve built client in production
+const path = require('path');
+const clientBuild = path.join(__dirname, '../client/dist');
+app.use(express.static(clientBuild));
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  res.sendFile(path.join(clientBuild, 'index.html'), err => { if (err) next(); });
+});
 
 app.use((err, req, res, _next) => {
   console.error('[Server] 💥', err.message, err.stack);

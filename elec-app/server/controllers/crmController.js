@@ -68,7 +68,6 @@ async function createPanel(req, res, next) {
     );
 
     const [rows] = await db.execute('SELECT * FROM project_crm_panels WHERE id=?', [result.insertId]);
-    console.log(`[CRM] Panel created: project:${req.params.projectId} panel #${panel_number}`);
     logActivity({ project_id: req.params.projectId, panel_id: result.insertId, action: 'panel_created', field_name: 'panel', new_value: panel_name || `Panel #${panel_number}`, performed_by: req.worker.id });
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -183,7 +182,6 @@ async function createDivision(req, res, next) {
     );
 
     const [rows] = await db.execute('SELECT * FROM panel_divisions WHERE id=?', [result.insertId]);
-    console.log(`[CRM] Division created: panel:${req.params.panelId} type:${division_type}`);
     const [[p]] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [req.params.panelId]);
     if (p) logActivity({ project_id: p.project_id, panel_id: req.params.panelId, division_id: result.insertId, action: 'division_created', field_name: 'division_type', new_value: division_type, performed_by: req.worker.id });
     res.status(201).json(rows[0]);
@@ -393,7 +391,6 @@ async function createCrmItem(req, res, next) {
     await recalcPanelTotals(req.params.panelId);
 
     const [rows] = await db.execute('SELECT * FROM panel_crm_items WHERE id=?', [result.insertId]);
-    console.log(`[CRM] Item created in division:${req.params.divisionId}`);
     logActivity({ project_id: req.params.projectId, panel_id: req.params.panelId, division_id: req.params.divisionId, item_id: result.insertId, action: 'item_created', field_name: 'base_price_usd', new_value: usd, performed_by: req.worker.id });
     await recalcReservedQty();
     res.status(201).json(rows[0]);
@@ -610,7 +607,6 @@ async function getProjectCrm(req, res, next) {
       [projectId]
     );
 
-    console.log(`[CRM] Project ${projectId}: ${panels.length} panels loaded`);
     res.json({ ...project[0], panels, manualProducts });
   } catch (err) { console.error('[CRM] ❌ getProjectCrm:', err.message); next(err); }
 }
@@ -773,7 +769,6 @@ async function bulkUpdateItems(req, res, next) {
       performed_by: req.worker.id
     });
 
-    console.log(`[CRM] ✅ Bulk updated ${updatedIds.size} items — project:${projectId}`, changes);
     res.json({ updated: updatedIds.size, fields: Object.keys(changes) });
   } catch (err) {
     console.error('[CRM] ❌ bulkUpdateItems:', err.message);

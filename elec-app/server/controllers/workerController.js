@@ -8,7 +8,6 @@ async function getWorkers(req, res, next) {
     if (role) { sql += ' WHERE role=?'; params.push(role); }
     sql += ' ORDER BY name';
     const [workers] = await db.execute(sql, params);
-    console.log(`[Workers] GET role:"${role||'all'}" → ${workers.length}`);
     res.json(workers);
   } catch (err) { console.error('[Workers] ❌', err.message); next(err); }
 }
@@ -24,7 +23,6 @@ async function createWorker(req, res, next) {
       [name, email||null, phone||null, role]
     );
     const [rows] = await db.execute('SELECT * FROM workers WHERE id=?', [result.insertId]);
-    console.log(`[Workers] Created: "${name}" role:${role} id:${result.insertId}`);
     res.status(201).json(rows[0]);
   } catch (err) { console.error('[Workers] ❌ create:', err.message); next(err); }
 }
@@ -41,7 +39,6 @@ async function updateWorker(req, res, next) {
     params.push(req.params.id);
     await db.execute(`UPDATE workers SET ${fields.join(',')} WHERE id=?`, params);
     const [rows] = await db.execute('SELECT * FROM workers WHERE id=?', [req.params.id]);
-    console.log(`[Workers] Updated id:${req.params.id}`);
     res.json(rows[0]);
   } catch (err) { console.error('[Workers] ❌ update:', err.message); next(err); }
 }
@@ -56,7 +53,6 @@ async function deleteWorker(req, res, next) {
         await db.execute('DELETE FROM workers WHERE id=?', [req.params.id]);
       } else { throw e; }
     }
-    console.log(`[Workers] Deleted id:${req.params.id}`);
     res.json({ message: 'Deleted' });
   } catch (err) { console.error('[Workers] ❌ delete:', err.message); next(err); }
 }

@@ -31,7 +31,6 @@ async function addGroupToDivision(req, res, next) {
     const markupM = parseFloat(div.markupM) || parseFloat(div.panel_markupM) || 0;
     const manpower = parseFloat(div.manpower_pct) || parseFloat(div.panel_manpower_pct) || 0;
 
-    console.log(`[DivisionItemGroup] Adding group "${group.name}" (x${groupQty}) to division ${divisionId} — inherited markupP:${markupP}, manpower:${manpower}, markupM:${markupM}`);
     const [instanceResult] = await db.execute(
       'INSERT INTO division_item_group_instances (division_id, item_group_id, quantity) VALUES (?, ?, ?)',
       [divisionId, item_group_id, groupQty]

@@ -16,7 +16,6 @@ async function createClient(req, res, next) {
       [type||'individual', name, tax_id||null, credit_limit||0, phone||null, email||null, address||null]
     );
     const [rows] = await db.execute('SELECT * FROM clients WHERE id=?', [result.insertId]);
-    console.log(`[Clients] Created: "${name}" id:${result.insertId}`);
     res.status(201).json(rows[0]);
   } catch (err) { next(err); }
 }

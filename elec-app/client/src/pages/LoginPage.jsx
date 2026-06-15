@@ -23,7 +23,6 @@ export default function LoginPage() {
     e.preventDefault();
     if (!email.trim() || !password) { toast.error('Enter email and password'); return; }
     setLoading(true);
-    console.log('[Login] Attempting login for:', email);
     try {
       const worker = await login(email.trim(), password);
       toast.success(`✅ Welcome, ${worker.name}!`);

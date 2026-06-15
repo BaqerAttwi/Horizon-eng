@@ -110,7 +110,6 @@ async function createNotification(userId, type, title, message, link, skipEmail 
       if (worker && worker.email) {
         notifyByEmail(worker, type, title, message, link).catch(e => console.error('[Email] async error:', e.message));
       } else {
-        console.log(`[Email] ⏭️ Skipped — worker #${userId} has no email${worker ? ' (null field)' : ' (not found)'}`);
       }
     }
   } catch (err) {
@@ -187,7 +186,6 @@ async function checkDeadlineWarnings() {
       );
     }
 
-    console.log(`[Notification] Deadline check: ${projects.length} warnings generated`);
   } catch (err) {
     console.error('[Notification] Deadline check failed:', err.message);
   }
@@ -238,7 +236,6 @@ async function checkPendingApprovals() {
       );
     }
 
-    console.log(`[Notification] Approval check: ${pendingAdmin.length} admin + ${pendingClient.length} client pending`);
   } catch (err) {
     console.error('[Notification] Approval check failed:', err.message);
   }
@@ -265,7 +262,6 @@ async function checkLowStock() {
       );
     }
 
-    console.log(`[Notification] Stock check: ${lowStock.length} alerts`);
   } catch (err) {
     console.error('[Notification] Stock check failed:', err.message);
   }

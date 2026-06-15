@@ -89,7 +89,6 @@ export default function ClientsPage() {
     try {
       const r = await api.get('/clients');
       setClients(r.data);
-      console.log('[Clients] Loaded:', r.data.length);
     } catch(e) { toast.error('❌ ' + e.message); }
     finally { setLoading(false); }
   };

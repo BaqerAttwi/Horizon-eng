@@ -22,7 +22,6 @@ function ReservationModal({ productId, reference, onClose }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[Reservations] Loading for product:', productId);
     api.get(`/products/${productId}`)
       .then(r => { setReservations(r.data.reservations || []); })
       .catch(e => toast.error(e.message))
@@ -80,7 +79,6 @@ function EditModal({ product, onClose, onSaved }) {
 
   const save = async () => {
     setSaving(true);
-    console.log('[Products] Saving edit for id:', product.id, form);
     try {
       const r = await api.patch(`/products/${product.id}`, form);
       toast.success(`✅ Product ${product.reference} updated`);
@@ -220,12 +218,10 @@ export default function ProductsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    console.log('[Products] Fetching page:', page, 'search:', debouncedSearch, 'brand:', brandFilter);
     try {
       const r = await api.get('/products', { params: { page, limit: LIMIT, search: debouncedSearch, brand: brandFilter } });
       setProducts(r.data.products);
       setTotal(r.data.total);
-      console.log('[Products] Loaded:', r.data.products.length, '/', r.data.total);
     } catch(e) {
       toast.error('❌ ' + e.message);
       console.error('[Products] Load error:', e.message);

@@ -54,7 +54,6 @@ async function createDiscount(req, res, next) {
        WHERE pd.id = ?`,
       [result.insertId]
     );
-    console.log(`[Discounts] ✅ Created discount for product:${product_id} brand:${brand_id} → ${discount_pct}%`);
     res.status(201).json(rows[0]);
   } catch (err) { console.error('[Discounts] ❌', err.message); next(err); }
 }
@@ -101,7 +100,6 @@ async function bulkUpdateBrandDiscounts(req, res, next) {
       }
     }
 
-    console.log(`[Discounts] ✅ Bulk updated ${discounts.length} brand discounts`);
     res.json({ message: `Updated ${discounts.length} brand discounts` });
   } catch (err) { console.error('[Discounts] ❌ bulkUpdate:', err.message); next(err); }
 }

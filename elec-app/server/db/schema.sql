@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   reserved_by_name VARCHAR(200) DEFAULT '',
   price_snapshot   DECIMAL(14,4),
   price_currency   ENUM('EUR','USD') DEFAULT 'EUR',
+  created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (order_id)   REFERENCES orders(id)   ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 );
@@ -135,6 +136,7 @@ CREATE TABLE IF NOT EXISTS project_items (
   unit_price     DECIMAL(14,4),
   price_currency ENUM('EUR','USD') DEFAULT 'EUR',
   notes          TEXT,
+  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 );

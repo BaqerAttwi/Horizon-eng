@@ -60,7 +60,6 @@ async function getProjects(req, res, next) {
          p.created_at DESC`,
       params
     );
-    console.log('[Projects] GET →', projects.length, '(filtered for', user.role + ')');
     res.json(projects);
   } catch (err) { console.error('[Projects] ❌ getAll:', err.message); next(err); }
 }
@@ -103,7 +102,6 @@ async function getProject(req, res, next) {
       [projectId]
     );
 
-    console.log(`[Projects] GET id:${projectId} items:${items.length}`);
     res.json({ ...rows[0], items });
   } catch (err) { console.error('[Projects] ❌ getOne:', err.message); next(err); }
 }
@@ -115,8 +113,6 @@ async function createProject(req, res, next) {
 
     // Auto-assign engineer to themselves
     const assignedEngineer = req.worker.role === 'engineer' ? req.worker.id : (engineer_id || null);
-
-    console.log('[Projects] Creating:', project_name, 'engineer:', assignedEngineer, 'items:', items.length);
 
     const [result] = await db.execute(
       `INSERT INTO projects(project_name,engineer_id,client_id,exchange_rate_eur_usd,deadline,notes,total_panels,vat_pct,project_discount_pct,payment_terms)
@@ -158,7 +154,6 @@ async function createProject(req, res, next) {
     await recalcReservedQty();
 
     const [created] = await db.execute('SELECT * FROM projects WHERE id=?', [projectId]);
-    console.log(`[Projects] ✅ Created id:${projectId} total_cost:${totalCost} total_price:${totalPrice}`);
     res.status(201).json(created[0]);
   } catch (err) { console.error('[Projects] ❌ create:', err.message); next(err); }
 }
@@ -211,7 +206,6 @@ async function updateProject(req, res, next) {
       logActivity({ project_id: req.params.id, action: 'client_approval', field_name: 'client_approval', old_value: oldClientApproval, new_value: client_approval, performed_by: req.worker.id });
     }
 
-    console.log(`[Projects] Updated id:${req.params.id}`, req.body);
     const [rows] = await db.execute('SELECT * FROM projects WHERE id=?', [req.params.id]);
     res.json(rows[0]);
   } catch (err) { console.error('[Projects] ❌ update:', err.message); next(err); }
@@ -245,7 +239,6 @@ async function addProjectItem(req, res, next) {
 
     await recalcReservedQty();
 
-    console.log(`[Projects] Item added to project:${req.params.id} product:${product_id} qty:${qty}`);
     const [item] = await db.execute(
       `SELECT pi.*, pr.reference, pr.description FROM project_items pi
        JOIN products pr ON pi.product_id=pr.id WHERE pi.id=?`,
@@ -268,7 +261,6 @@ async function removeProjectItem(req, res, next) {
 
     await recalcReservedQty();
 
-    console.log(`[Projects] Item:${req.params.itemId} removed from project:${req.params.id}`);
     res.json({ message: 'Removed' });
   } catch (err) { console.error('[Projects] ❌ removeItem:', err.message); next(err); }
 }
@@ -277,7 +269,6 @@ async function deleteProject(req, res, next) {
   try {
     await db.execute('DELETE FROM projects WHERE id=?', [req.params.id]);
     await recalcReservedQty();
-    console.log(`[Projects] Hard-deleted id:${req.params.id}`);
     res.json({ message: 'Project permanently deleted' });
   } catch (err) { console.error('[Projects] ❌ delete:', err.message); next(err); }
 }
@@ -288,7 +279,6 @@ async function markReadyForReview(req, res, next) {
     await db.execute('UPDATE projects SET ready_for_review=TRUE WHERE id=?', [id]);
     logActivity({ project_id: id, action: 'ready_for_review', field_name: 'ready_for_review', new_value: 'true', performed_by: req.worker.id });
     await notifyOwners('status', `Ready for Review: Project #${id}`, `${req.worker.name} marked project as ready for review`, `/projects/${id}`);
-    console.log(`[Projects] Marked ready_for_review id:${id} by worker:${req.worker.id}`);
     res.json({ message: 'Project marked as ready for review' });
   } catch (err) { console.error('[Projects] ❌ markReadyForReview:', err.message); next(err); }
 }
@@ -303,7 +293,6 @@ async function adminApproval(req, res, next) {
       [admin_approval, rejection_note||null, req.params.id]);
     await recalcReservedQty();
     logActivity({ project_id: req.params.id, action: 'admin_approval', field_name: 'admin_approval', old_value: 'pending', new_value: admin_approval, performed_by: req.worker.id });
-    console.log(`[Projects] Admin approval id:${req.params.id} → ${admin_approval}`);
     const [rows] = await db.execute('SELECT * FROM projects WHERE id=?', [req.params.id]);
     res.json(rows[0]);
   } catch (err) { console.error('[Projects] ❌ adminApproval:', err.message); next(err); }
@@ -342,7 +331,6 @@ async function getDraftNotifications(req, res, next) {
 
     const count = drafts.length;
     const urgent = drafts.filter(d => d.urgency === 1).length;
-    console.log(`[Projects] Draft notifications for worker:${workerId} — ${count} drafts, ${urgent} urgent`);
     res.json({ count, urgent, drafts });
   } catch (err) { console.error('[Projects] ❌ getDraftNotifications:', err.message); next(err); }
 }

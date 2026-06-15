@@ -14,7 +14,6 @@ function requireAuth(req, res, next) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.worker = decoded;
-    console.log(`[Auth] ✅ "${decoded.name}" role:${decoded.role} → ${req.method} ${req.path}`);
     next();
   } catch (err) {
     console.log('[Auth] ❌ Token error:', err.message);

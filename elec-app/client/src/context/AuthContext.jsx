@@ -24,9 +24,7 @@ export function AuthProvider({ children }) {
             const w = JSON.parse(saved);
             setWorker(w);
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            console.log('[Auth] Session restored from localStorage for:', w.name);
           } catch {
-            console.log('[Auth] Stored session invalid — clearing');
             localStorage.removeItem('token');
             localStorage.removeItem('worker');
           }
@@ -36,7 +34,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    console.log('[Auth] Logging in:', email);
     const r = await api.post('/auth/login', { email, password });
     const { token, worker: w } = r.data;
 
@@ -45,7 +42,6 @@ export function AuthProvider({ children }) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
     setWorker(w);
-    console.log('[Auth] ✅ Logged in as:', w.name, 'role:', w.role, 'permissions:', w.permissions);
     return w;
   };
 
@@ -55,7 +51,6 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('worker');
     delete api.defaults.headers.common['Authorization'];
     setWorker(null);
-    console.log('[Auth] Logged out');
   };
 
   // Check if worker can access a feature

@@ -26,7 +26,6 @@ const ROLE_PERMISSIONS = {
 async function login(req, res, next) {
   try {
     const { email, password } = req.body;
-    console.log('[Auth] Login attempt for email:', email);
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
@@ -38,7 +37,6 @@ async function login(req, res, next) {
     );
 
     if (!rows.length) {
-      console.log('[Auth] ❌ No worker found for email:', email);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
@@ -47,7 +45,6 @@ async function login(req, res, next) {
     // Compare password
     const valid = await bcrypt.compare(password, worker.password_hash);
     if (!valid) {
-      console.log('[Auth] ❌ Wrong password for:', email);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
@@ -69,7 +66,6 @@ async function login(req, res, next) {
       maxAge: 12 * 60 * 60 * 1000, // 12 hours
     });
 
-    console.log(`[Auth] ✅ Login success: "${worker.name}" role:${worker.role}`);
     res.json({
       token,
       worker: {
@@ -93,7 +89,6 @@ async function login(req, res, next) {
 async function register(req, res, next) {
   try {
     const { name, email, phone, role, password } = req.body;
-    console.log('[Auth] Register worker:', name, role);
 
     if (!name || !email || !role || !password) {
       return res.status(400).json({ error: 'name, email, role, password are required' });
@@ -125,7 +120,6 @@ async function register(req, res, next) {
       [result.insertId]
     );
 
-    console.log(`[Auth] ✅ Worker created: "${name}" id:${result.insertId} role:${role}`);
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[Auth] ❌ Register error:', err.message);
@@ -159,7 +153,6 @@ async function changePassword(req, res, next) {
     const hash = await bcrypt.hash(new_password, 10);
     await db.execute('UPDATE workers SET password_hash=? WHERE id=?', [hash, workerId]);
 
-    console.log(`[Auth] ✅ Password changed for worker id:${workerId}`);
     res.json({ message: 'Password changed successfully' });
   } catch (err) {
     console.error('[Auth] ❌ changePassword:', err.message);
@@ -182,7 +175,6 @@ async function setPassword(req, res, next) {
     }
     const hash = await bcrypt.hash(new_password, 10);
     await db.execute('UPDATE workers SET password_hash=? WHERE id=?', [hash, worker_id]);
-    console.log(`[Auth] ✅ Password reset for worker id:${worker_id} by owner`);
     res.json({ message: 'Password reset successfully' });
   } catch (err) {
     console.error('[Auth] ❌ setPassword:', err.message);
@@ -193,23 +185,26 @@ async function setPassword(req, res, next) {
 /**
  * GET /api/auth/me  — verify token and return current worker info
  */
-async function logout(req, res) {
-  res.clearCookie('token', { httpOnly: true, sameSite: 'lax' });
-  res.json({ message: 'Logged out' });
+async function logout(req, res, next) {
+  try {
+    res.clearCookie('token', { httpOnly: true, sameSite: 'lax' });
+    res.json({ message: 'Logged out' });
+  } catch (err) { next(err); }
 }
 
-async function me(req, res) {
-  // Get email from DB (not in JWT payload)
-  const [rows] = await db.execute('SELECT id, name, email, role, created_at FROM workers WHERE id=?', [req.worker.id]);
-  if (!rows.length) return res.status(404).json({ error: 'Worker not found' });
-  const w = rows[0];
-  res.json({
-    id:          w.id,
-    name:        w.name,
-    email:       w.email,
-    role:        w.role,
-    permissions: req.worker.permissions,
-  });
+async function me(req, res, next) {
+  try {
+    const [rows] = await db.execute('SELECT id, name, email, role, created_at FROM workers WHERE id=?', [req.worker.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Worker not found' });
+    const w = rows[0];
+    res.json({
+      id:          w.id,
+      name:        w.name,
+      email:       w.email,
+      role:        w.role,
+      permissions: req.worker.permissions,
+    });
+  } catch (err) { next(err); }
 }
 
 module.exports = { login, register, changePassword, setPassword, logout, me, ROLE_PERMISSIONS };

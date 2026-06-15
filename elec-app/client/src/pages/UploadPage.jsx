@@ -16,24 +16,21 @@ export default function UploadPage() {
       toast.error('❌ Only .xlsx or .xls files are accepted');
       return;
     }
-    console.log('[Upload] File selected:', f.name, f.size, 'bytes');
     setFile(f); setResult(null);
   };
 
   const upload = async () => {
     if (!file) return;
     setLoading(true);
-    console.log('[Upload] Starting upload:', file.name);
     const fd = new FormData();
     fd.append('file', file);
     try {
       const r = await api.post('/upload', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: e => console.log('[Upload] Progress:', Math.round(e.loaded/e.total*100)+'%'),
+        onUploadProgress: () => {},
       });
       setResult(r.data);
       toast.success(`✅ Imported ${r.data.inserted} new, ${r.data.updated} updated`);
-      console.log('[Upload] Result:', r.data);
     } catch(e) {
       toast.error('❌ ' + e.message);
       console.error('[Upload] Failed:', e.message);

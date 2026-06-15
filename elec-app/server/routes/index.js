@@ -46,7 +46,28 @@ const {
 } = require('../controllers/itemGroupController');
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+const storage = multer.memoryStorage();
+const limits  = { fileSize: 20 * 1024 * 1024 };
+
+const excelFilter = (req, file, cb) => {
+  const allowed = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+  cb(null, allowed.includes(file.mimetype));
+};
+const pdfFilter = (req, file, cb) => {
+  cb(null, file.mimetype === 'application/pdf');
+};
+const attachmentFilter = (req, file, cb) => {
+  const allowed = [
+    'application/pdf', 'image/jpeg', 'image/png', 'image/gif',
+    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain', 'text/csv',
+  ];
+  cb(null, allowed.includes(file.mimetype));
+};
+const uploadExcel = multer({ storage, limits, fileFilter: excelFilter });
+const uploadPdf   = multer({ storage, limits, fileFilter: pdfFilter });
+const uploadAttach = multer({ storage, limits, fileFilter: attachmentFilter });
 
 // ── Health (public) ──────────────────────────────────────────
 router.get('/health', (req, res) => res.json({ status: 'ok', ts: new Date() }));
@@ -69,7 +90,7 @@ router.get('/auth/me',               requireAuth, me);
 router.post('/auth/logout',          requireAuth, logout);
 
 // ── Upload (owner + accounting) ──────────────────────────────
-router.post('/upload', requireAuth, requireRole('owner','accounting'), upload.single('file'), handleUpload);
+router.post('/upload', requireAuth, requireRole('owner','accounting'), uploadExcel.single('file'), handleUpload);
 
 // ── Products (all roles) ─────────────────────────────────────
 router.get('/products',                   requireAuth, getProducts);
@@ -107,7 +128,7 @@ router.get('/projects',                      requireAuth, getProjects);
 router.get('/projects/draft-notifications', requireAuth, getDraftNotifications);
 router.get('/projects/:id',                  requireAuth, getProject);
 router.post('/projects',                     requireAuth, requireRole('owner','engineer'), validate('createProject'), createProject);
-router.post('/projects/import-pdf/preview',  requireAuth, requireRole('owner','engineer'), upload.single('file'), previewImport);
+router.post('/projects/import-pdf/preview',  requireAuth, requireRole('owner','engineer'), uploadPdf.single('file'), previewImport);
 router.post('/projects/import-pdf/create',   requireAuth, requireRole('owner','engineer'), createFromImport);
 router.patch('/projects/:id',                requireAuth, requireRole('owner','engineer'), updateProject);
 router.patch('/projects/:id/admin-approval',   requireAuth, requireRole('owner'), adminApproval);
@@ -217,7 +238,7 @@ router.get('/projects/:projectId/activity', requireAuth, getActivityLogs);
 
 // ── File Attachments ────────────────────────────────────────
 router.get('/projects/:projectId/attachments',            requireAuth, getAttachments);
-router.post('/projects/:projectId/attachments',           requireAuth, requireRole('owner','engineer'), upload.single('file'), uploadAttachment);
+router.post('/projects/:projectId/attachments',           requireAuth, requireRole('owner','engineer'), uploadAttach.single('file'), uploadAttachment);
 router.get('/attachments/:attachmentId/download',         requireAuth, downloadAttachment);
 router.delete('/projects/:projectId/attachments/:attachmentId', requireAuth, requireRole('owner','engineer'), deleteAttachment);
 

@@ -70,7 +70,6 @@ async function getAllReservations(req, res, next) {
     const user = req.worker;
     const engFilter = user.role === 'engineer' ? engineerProjectFilter(user.id) : null;
 
-    console.log('[Reservations] Loading demand overview (role:', user.role + ')...');
 
     // All project items from active/draft projects with stock info
     const [projectDemands] = await db.execute(`
@@ -107,7 +106,6 @@ async function getAllReservations(req, res, next) {
       ORDER BY pr.reference, p.id
     `, engFilter ? engFilter.params : []);
 
-    console.log('[Reservations] Project demands:', projectDemands.length, 'rows');
 
     // Group by product_id to detect conflicts
     const productMap = {};
@@ -163,7 +161,6 @@ async function getAllReservations(req, res, next) {
     const conflicts = result.filter(r => r.has_conflict).length;
     const shortages = result.filter(r => r.has_shortage).length;
     const ok = result.filter(r => !r.has_shortage && !r.has_conflict).length;
-    console.log(`[Reservations] ✅ ${result.length} products | ${conflicts} conflicts | ${shortages} shortages`);
 
     res.json({
       items: result,
@@ -191,7 +188,6 @@ async function getProductDemand(req, res, next) {
     const { productId } = req.params;
     const engFilter = user.role === 'engineer' ? engineerProjectFilter(user.id) : null;
 
-    console.log('[Reservations] Product demand for id:', productId, '(role:', user.role + ')');
 
     const [product] = await db.execute(
       `SELECT p.*, b.name as brand_name, (p.stock_qty - p.reserved_qty) as available_qty
@@ -225,7 +221,6 @@ async function getProductDemand(req, res, next) {
     const totalDemanded = demands.reduce((s, d) => s + d.qty, 0);
     const stock = product[0].stock_qty;
 
-    console.log(`[Reservations] Product ${productId}: ${demands.length} demands, total:${totalDemanded}, stock:${stock}`);
 
     res.json({
       product:       product[0],

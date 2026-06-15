@@ -31,7 +31,6 @@ async function getProducts(req, res, next) {
       [...params, parseInt(limit), offset]
     );
 
-    console.log(`[Products] GET page:${page} search:"${search}" brand:"${brand}" → ${products.length}/${total} rows`);
     res.json({ products, total, page: parseInt(page), limit: parseInt(limit) });
   } catch (err) {
     console.error('[Products] ❌ getProducts:', err.message);
@@ -58,7 +57,6 @@ async function getProduct(req, res, next) {
       [req.params.id]
     );
 
-    console.log(`[Products] GET id:${req.params.id} — reservations:${reservations.length}`);
     res.json({ ...rows[0], reservations });
   } catch (err) {
     console.error('[Products] ❌ getProduct:', err.message);
@@ -84,7 +82,6 @@ async function updateProduct(req, res, next) {
     params.push(req.params.id);
     await db.execute(`UPDATE products SET ${fields.join(',')} WHERE id=?`, params);
 
-    console.log(`[Products] PATCH id:${req.params.id} fields:`, req.body);
     const [updated] = await db.execute(
       `SELECT p.*, b.name as brand_name, (p.stock_qty-p.reserved_qty) as available_qty
        FROM products p LEFT JOIN brands b ON p.brand_id=b.id WHERE p.id=?`,
@@ -101,7 +98,6 @@ async function updateProduct(req, res, next) {
 async function getBrands(req, res, next) {
   try {
     const [brands] = await db.execute('SELECT * FROM brands ORDER BY name');
-    console.log('[Brands] GET →', brands.length, 'brands');
     res.json(brands);
   } catch (err) {
     console.error('[Brands] ❌:', err.message);

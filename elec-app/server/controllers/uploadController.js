@@ -47,11 +47,9 @@ function parsePrice(val) {
 async function handleUpload(req, res, next) {
   try {
     if (!req.file) {
-      console.log('[Upload] ❌ No file in request');
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    console.log('[Upload] 📂 File received:', req.file.originalname, '—', req.file.size, 'bytes');
     const startTime = Date.now();
 
     // ── 1. Parse workbook ────────────────────────────────────────────────────
@@ -63,7 +61,6 @@ async function handleUpload(req, res, next) {
       sheetStubs:  true,
     });
 
-    console.log('[Excel] Sheet names:', workbook.SheetNames);
 
     const sheetName = workbook.SheetNames.find(s => s.trim().toUpperCase() === 'PL');
     if (!sheetName) {
@@ -76,15 +73,7 @@ async function handleUpload(req, res, next) {
     const range   = XLSX.utils.decode_range(ws['!ref']);
     const lastRow = range.e.r;
 
-    console.log('[Excel] ✅ Sheet:', sheetName, '| Rows:', lastRow);
-    console.log('[Excel] Headers:', {
-      A: readCell(ws,0,0), B: readCell(ws,1,0), C: readCell(ws,2,0),
-      D: readCell(ws,3,0), E: readCell(ws,4,0), F: readCell(ws,5,0),
-      G: readCell(ws,6,0),
-    });
-
     // ── 2. Parse ALL rows into memory ────────────────────────────────────────
-    console.log('[Import] Parsing all rows into memory...');
     const validRows = [];
     const brandNames = new Set();
     let skipped = 0;
@@ -117,15 +106,8 @@ async function handleUpload(req, res, next) {
       });
     }
 
-    console.log(`[Import] Parsed ${validRows.length} valid rows, ${skipped} skipped, ${brandNames.size} unique brands`);
-    // Sample log — first 3 valid rows
-    validRows.slice(0, 3).forEach((r, i) =>
-      console.log(`[Import] Sample row ${i+1}: ref="${r.reference}" euro=${r.priceEuro} usd=${r.priceUsd} brand="${r.brandName}" cost=${r.priceCost}`)
-    );
-
     // ── 3. Batch upsert brands ────────────────────────────────────────────────
     // One query to get existing brands, one INSERT IGNORE for new ones
-    console.log('[Brands] Upserting', brandNames.size, 'brands...');
 
     if (brandNames.size > 0) {
       const brandArr = [...brandNames];
@@ -141,7 +123,6 @@ async function handleUpload(req, res, next) {
     const [allBrands] = await db.execute('SELECT id, name FROM brands');
     const brandMap = {};
     allBrands.forEach(b => { brandMap[b.name] = b.id; });
-    console.log('[Brands] ✅ Brand map loaded:', Object.keys(brandMap).length, 'brands');
 
     // ── 4. Batch upsert products in chunks of 500 ────────────────────────────
     // MySQL has a limit on how many rows you can INSERT at once
@@ -154,7 +135,6 @@ async function handleUpload(req, res, next) {
       const chunkNum = Math.floor(i / CHUNK_SIZE) + 1;
       const totalChunks = Math.ceil(validRows.length / CHUNK_SIZE);
 
-      console.log(`[Import] Chunk ${chunkNum}/${totalChunks} — rows ${i+1} to ${i+chunk.length}`);
 
       // Build multi-row INSERT
       const placeholders = chunk.map(() => '(?,?,?,?,?,?,?)').join(',');
@@ -200,7 +180,6 @@ async function handleUpload(req, res, next) {
         inserted += Math.max(0, chunkInserted2);
         updated  += chunkUpdated;
 
-        console.log(`[Import] Chunk ${chunkNum} done — affectedRows:${result.affectedRows} changedRows:${result.changedRows}`);
 
       } catch (dbErr) {
         console.error(`[Import] ❌ Chunk ${chunkNum} failed:`, dbErr.message);
@@ -228,12 +207,6 @@ async function handleUpload(req, res, next) {
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(
-      `[Import] ✅ Done in ${elapsed}s` +
-      ` | inserted:${inserted} updated:${updated}` +
-      ` | skipped:${skipped} errors:${errors.length}` +
-      ` | total rows:${lastRow}`
-    );
 
     return res.json({ inserted, updated, skipped, errors, total: lastRow, elapsed });
 
