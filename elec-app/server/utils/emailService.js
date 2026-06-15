@@ -1,6 +1,5 @@
 const nodemailer = require('nodemailer');
 const dns = require('dns');
-dns.setDefaultResultOrder('ipv4first');
 
 let transporter = null;
 
@@ -17,18 +16,26 @@ function initMailer() {
     return;
   }
 
-  transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
+  // Resolve only IPv4 — DigitalOcean droplets lack IPv6 outbound to Gmail
+  dns.lookup(host, { family: 4 }, (err, address) => {
+    if (err) {
+      console.error('[Mail] ❌ DNS lookup failed:', err.message);
+      return;
+    }
 
-  transporter.verify().then(() => {
-    console.log('[Mail] ✅ SMTP configured and verified:', host);
-  }).catch(err => {
-    console.error('[Mail] ❌ SMTP verification failed:', err.message);
-    transporter = null;
+    transporter = nodemailer.createTransport({
+      host: address,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+    });
+
+    transporter.verify().then(() => {
+      console.log('[Mail] ✅ SMTP configured and verified:', host, '→', address);
+    }).catch(err => {
+      console.error('[Mail] ❌ SMTP verification failed:', err.message);
+      transporter = null;
+    });
   });
 }
 
