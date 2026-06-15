@@ -426,7 +426,11 @@ CREATE TABLE IF NOT EXISTS attachments (
   FOREIGN KEY (uploaded_by) REFERENCES workers(id) ON DELETE CASCADE
 );
 
-ALTER TABLE projects ADD COLUMN ready_for_review BOOLEAN DEFAULT FALSE AFTER deleted_at;
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='projects' AND COLUMN_NAME='ready_for_review');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN ready_for_review BOOLEAN DEFAULT FALSE AFTER deleted_at', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 ALTER TABLE projects ADD COLUMN execution_deadline DATE NULL AFTER deadline;
 ALTER TABLE projects ADD COLUMN vat_pct DECIMAL(5,2) DEFAULT 0 AFTER total_price;
 ALTER TABLE projects ADD COLUMN total_vat DECIMAL(12,2) DEFAULT 0 AFTER vat_pct;
