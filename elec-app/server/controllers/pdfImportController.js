@@ -142,16 +142,24 @@ async function createFromImport(req, res, next) {
     );
     const projectId = projResult.insertId;
 
+    // Collect all items from matched + unmatched to use as fallback
+    const allFlatItems = [...(matched_items || []), ...(unmatched_items || [])];
+
     // 2. Create panel rows, divisions, items
-    for (const p of panels) {
+    for (let pi = 0; pi < panels.length; pi++) {
+      const p = panels[pi];
       const [panelResult] = await db.execute(
         'INSERT INTO project_crm_panels(project_id,panel_number,panel_name) VALUES(?,?,?)',
         [projectId, p.panel_number, p.panel_name||null]
       );
       const panelId = panelResult.insertId;
 
-      // Get divisions for this panel from the parsed data
-      const panelDivs = p.divisions || [{ division_type: 'INCOMING', items: [] }];
+      // Get divisions for this panel
+      let panelDivs = p.divisions || [];
+      // If no divisions from parsing, create one default division
+      if (!panelDivs.length) {
+        panelDivs = [{ division_type: 'INCOMING', items: allFlatItems }];
+      }
 
       for (const div of panelDivs) {
         const [divResult] = await db.execute(
@@ -160,8 +168,13 @@ async function createFromImport(req, res, next) {
         );
         const divisionId = divResult.insertId;
 
-        for (const item of div.items || []) {
-          // Skip items marked for skipping
+        // If this division has no items, use flat items as fallback (only for first panel)
+        let divItems = div.items || [];
+        if (!divItems.length && pi === 0) {
+          divItems = allFlatItems;
+        }
+
+        for (const item of divItems) {
           if (item._skip) continue;
 
           let basePriceUsd = parseFloat(item.base_price_usd) || 0;
@@ -212,11 +225,9 @@ async function createFromImport(req, res, next) {
           );
         }
 
-        // Recalc division totals
         await recalcDivisionTotals(divisionId);
       }
 
-      // Recalc panel totals
       await recalcPanelTotals(panelId);
     }
 
