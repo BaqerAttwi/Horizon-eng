@@ -22,7 +22,12 @@ function initMailer() {
     auth: { user, pass },
   });
 
-  console.log('[Mail] ✅ SMTP configured:', host);
+  transporter.verify().then(() => {
+    console.log('[Mail] ✅ SMTP configured and verified:', host);
+  }).catch(err => {
+    console.error('[Mail] ❌ SMTP verification failed:', err.message);
+    transporter = null;
+  });
 }
 
 function emailTemplate(title, message, link, senderName) {

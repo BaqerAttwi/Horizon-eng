@@ -44,10 +44,10 @@ async function createMessage(req, res, next) {
         `${req.worker.name} posted: ${truncated}`,
         '/messages'
       );
-      if (w.email && w.id !== req.worker.id) {
+      if (w.email) {
         notifyByEmail(w, 'info', `📢 New Announcement from ${req.worker.name}`,
           truncated, '/messages', req.worker.name
-        ).catch(() => {});
+        ).catch(err => console.error('[Messages] ❌ Email failed:', err.message));
       }
     }
 
