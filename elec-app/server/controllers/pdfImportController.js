@@ -224,58 +224,12 @@ async function createFromImport(req, res, next) {
         for (const item of divItems) {
           if (item._skip) continue;
 
-          // Handle group instances
+          // Handle group instances — just create reference link, items already in item_group
           if (item.item_group_id) {
-            const [giResult] = await db.execute(
+            await db.execute(
               'INSERT INTO division_item_group_instances(division_id,item_group_id,quantity) VALUES(?,?,?)',
               [divisionId, item.item_group_id, item.qty || 1]
             );
-            const groupInstanceId = giResult.insertId;
-
-            const [groupItems] = await db.execute(
-              'SELECT * FROM item_group_items WHERE group_id = ?',
-              [item.item_group_id]
-            );
-
-            for (const gi of groupItems) {
-              const gpQty = (gi.qty || 1) * (item.qty || 1);
-              let gpBaseUsd = parseFloat(gi.price_usd) || 0;
-              let gpBaseEur = parseFloat(gi.price_euro) || 0;
-              const rate = parseFloat(exchange_rate_eur_usd) || 1.08;
-              if (gpBaseUsd && !gpBaseEur) gpBaseEur = gpBaseUsd / rate;
-              else if (gpBaseEur && !gpBaseUsd) gpBaseUsd = gpBaseEur * rate;
-
-              const gpProdId = gi.product_id || null;
-              const gpIsManual = !gpProdId;
-              let gpManualId = null;
-              if (gpIsManual && gi.custom_name) {
-                const [pm] = await db.execute(
-                  'INSERT INTO panel_manual_products(project_id,name,description,price_usd,price_euro) VALUES(?,?,?,?,?)',
-                  [projectId, gi.custom_name, gi.description || 'Imported from group', gpBaseUsd, gpBaseEur]
-                );
-                gpManualId = pm.insertId;
-              }
-
-              const pricing = calcItemPricing({
-                base_price_usd: gpBaseUsd, markupP_pct: 0, discount_pct: 0,
-                manpower_pct: 0, markupM_pct: 0, qty: gpQty
-              });
-
-              await db.execute(
-                `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
-                  custom_name,custom_desc,custom_price_usd,custom_price_euro,
-                  qty,base_price_usd,base_price_euro,markupP_pct,discount_pct,manpower_pct,markupM_pct,
-                  markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,cost,override_markup,source_group_instance_id)
-                 VALUES(?,?,?,?,?,?,?,?,?,?,?,0,0,0,0,0,0,0,0,0,0,0,0,?)`,
-                [divisionId, gpProdId, gpManualId, gpIsManual,
-                 gpIsManual ? gi.custom_name : null, gpIsManual ? (gi.description || 'Imported from group') : null,
-                 gpIsManual ? gpBaseUsd : null, gpIsManual ? gpBaseEur : null,
-                 gpQty, gpBaseUsd, gpBaseEur,
-                 pricing.markupP_amt, pricing.discount_amt, pricing.totalpriceT,
-                 pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct, 0,
-                 groupInstanceId]
-              );
-            }
             continue;
           }
 
