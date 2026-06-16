@@ -86,21 +86,23 @@ async function matchItems(items) {
   const unmatched = [];
 
   for (const item of items) {
+    // For group items, search using the group name (after 'Group: ' prefix)
+    const searchName = item.is_group ? item.name.replace(/^Group:\s*/i, '') : item.name;
+
     // Try exact match first (full name as reference)
     let [products] = await db.execute(
       'SELECT id, reference, price_usd, price_euro FROM products WHERE reference = ? LIMIT 1',
-      [item.name]
+      [searchName]
     );
 
     // If no match, try prefix match using first word (reference code)
-    if (!products.length && item.name) {
-      const firstWord = item.name.split(/\s+/)[0];
+    if (!products.length && searchName) {
+      const firstWord = searchName.split(/\s+/)[0];
       if (firstWord) {
         [products] = await db.execute(
           'SELECT id, reference, price_usd, price_euro FROM products WHERE reference LIKE ? LIMIT 1',
           [firstWord + '%']
         );
-        // If multiple matches, prefer exact reference match
         if (products.length > 1) {
           const exact = products.find(p => p.reference === firstWord);
           if (exact) products = [exact];
