@@ -1,28 +1,18 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-let transporter = null;
+let resend = null;
 
 function initMailer() {
-  if (transporter) return;
+  if (resend) return;
 
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '587');
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!host || !user || !pass) {
-    console.log('[Mail] ⚠️ SMTP not configured — email notifications disabled');
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.log('[Mail] ⚠️ RESEND_API_KEY not configured — email notifications disabled');
     return;
   }
 
-  transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
-
-  console.log('[Mail] ✅ SMTP configured:', host);
+  resend = new Resend(apiKey);
+  console.log('[Mail] ✅ Resend initialized');
 }
 
 function emailTemplate(title, message, link, senderName) {
@@ -67,16 +57,22 @@ function emailTemplate(title, message, link, senderName) {
 </html>`.trim();
 }
 
+const fromAddr = () => process.env.EMAIL_FROM || 'noreply@app.hps-leb.com';
+
 async function sendEmail({ to, subject, text, html }) {
-  if (!transporter) {
-    console.log('[Mail] ⏭️ Skipped (no SMTP):', to, subject);
+  if (!resend) {
+    console.log('[Mail] ⏭️ Skipped (Resend not initialized):', to, subject);
     return;
   }
 
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@elec-app.com';
-
   try {
-    await transporter.sendMail({ from, to, subject, text, html });
+    await resend.emails.send({
+      from: fromAddr(),
+      to,
+      subject,
+      text,
+      html,
+    });
     console.log('[Mail] ✅ Sent to:', to, '—', subject);
   } catch (err) {
     console.error('[Mail] ❌ Failed to send to', to, ':', err.message);
