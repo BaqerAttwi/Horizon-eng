@@ -60,9 +60,25 @@ export default function LoginPage() {
         {/* Logo */}
         <motion.div variants={childVariants} style={{ textAlign: 'center', marginBottom: 32, paddingTop: 40 }}>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--white)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Logo size={280} style={{ filter: 'drop-shadow(0 0 30px rgba(26,95,168,0.4))' }} /></h1>
-          <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4, fontFamily: 'var(--font-mono)' }}>
-            Manager — Sign in to continue
+          <p style={{ color: 'var(--accent)', fontSize: 16, fontWeight: 700, marginTop: 8, letterSpacing: 2 }}>
+            Horizon LB
           </p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 1, repeat: Infinity, repeatType: 'reverse' }}
+            style={{ color: 'var(--muted)', fontSize: 11, fontStyle: 'italic', marginTop: 4, fontFamily: 'var(--font-mono)' }}
+          >
+            "Powering your world with precision engineering"
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 3, duration: 1, repeat: Infinity, repeatType: 'reverse' }}
+            style={{ color: 'var(--muted)', fontSize: 11, fontStyle: 'italic', marginTop: 2, fontFamily: 'var(--font-mono)' }}
+          >
+            "Intelligent electrical solutions for tomorrow"
+          </motion.p>
         </motion.div>
 
         {/* Login Card */}
