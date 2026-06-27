@@ -64,19 +64,12 @@ export default function LoginPage() {
             Horizon LB
           </p>
           <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 1, repeat: Infinity, repeatType: 'reverse' }}
-            style={{ color: 'var(--muted)', fontSize: 11, fontStyle: 'italic', marginTop: 4, fontFamily: 'var(--font-mono)' }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 2, ease: 'easeOut' }}
+            style={{ color: 'var(--muted)', fontSize: 11, fontStyle: 'italic', marginTop: 6, lineHeight: 1.8, fontFamily: 'var(--font-mono)' }}
           >
-            "Powering your world with precision engineering"
-          </motion.p>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 3, duration: 1, repeat: Infinity, repeatType: 'reverse' }}
-            style={{ color: 'var(--muted)', fontSize: 11, fontStyle: 'italic', marginTop: 2, fontFamily: 'var(--font-mono)' }}
-          >
+            "Powering your world with precision engineering"<br />
             "Intelligent electrical solutions for tomorrow"
           </motion.p>
         </motion.div>
