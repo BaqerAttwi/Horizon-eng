@@ -58,20 +58,17 @@ export default function LoginPage() {
       <motion.div variants={childVariants} style={{ width: '100%', maxWidth: 400, padding: '0 20px' }}>
 
         {/* Logo */}
-        <motion.div variants={childVariants} style={{ textAlign: 'center', marginBottom: 32 }}>
+        <motion.div variants={childVariants} style={{ textAlign: 'center', marginBottom: 32, paddingTop: 40 }}>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--white)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Logo size={280} /></h1>
-          <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4, fontFamily: 'var(--font-mono)' }}>
-            Manager — Sign in to continue
-          </p>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4, fontFamily: 'var(--font-mono)' }}>
             Manager — Sign in to continue
           </p>
         </motion.div>
 
-        {/* Form */}
+        {/* Login Card */}
         <motion.div variants={childVariants}>
-          <div className="card" style={{ padding: 28 }}>
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <form onSubmit={handleLogin} style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="form-group">
                 <label className="form-label">Email Address</label>
                 <input
@@ -104,28 +101,27 @@ export default function LoginPage() {
                 {loading ? <><span className="spinner" /> Signing in...</> : '🔑 Sign In'}
               </motion.button>
             </form>
-          </div>
-        </motion.div>
 
-        {/* Role info */}
-        <motion.div variants={childVariants} style={{ marginTop: 24, padding: '14px 16px', background: 'var(--panel)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 10, letterSpacing: '0.08em' }}>
-            ROLE ACCESS LEVELS
-          </div>
-          {[
-            { role: 'owner',      icon: '👑', access: 'Full access — all features' },
-            { role: 'accounting', icon: '💼', access: 'Products, projects, clients, reports' },
-            { role: 'engineer',   icon: '⚙️', access: 'Products, projects, reservations' },
-            { role: 'secretary',  icon: '📋', access: 'Products, clients, reservations' },
-          ].map(r => (
-            <div key={r.role} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 14 }}>{r.icon}</span>
-              <span style={{ fontSize: 11, color: ROLE_COLORS[r.role], fontWeight: 700, width: 80, fontFamily: 'var(--font-mono)' }}>
-                {r.role}
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--muted)' }}>{r.access}</span>
+            <div style={{ borderTop: '1px solid var(--border)', padding: '14px 28px' }}>
+              <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Role Access Levels
+              </div>
+              {[
+                { role: 'owner',      icon: '👑', access: 'Full access — all features' },
+                { role: 'accounting', icon: '💼', access: 'Products, projects, clients, reports' },
+                { role: 'engineer',   icon: '⚙️', access: 'Products, projects, reservations' },
+                { role: 'secretary',  icon: '📋', access: 'Products, clients, reservations' },
+              ].map(r => (
+                <div key={r.role} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                  <span style={{ fontSize: 13 }}>{r.icon}</span>
+                  <span style={{ fontSize: 10, color: ROLE_COLORS[r.role], fontWeight: 700, width: 75, fontFamily: 'var(--font-mono)' }}>
+                    {r.role}
+                  </span>
+                  <span style={{ fontSize: 10, color: 'var(--muted)' }}>{r.access}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </motion.div>
 
         <motion.p variants={childVariants} style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 11, marginTop: 16, fontFamily: 'var(--font-mono)' }}>
