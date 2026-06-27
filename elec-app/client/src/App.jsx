@@ -82,7 +82,7 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
   return (
     <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
       <div className="sidebar-logo">
-        <h1><Logo size={120} /></h1>
+        <h1><Logo size={160} /></h1>
         <span>Manager v2.0</span>
       </div>
 
@@ -174,7 +174,7 @@ function AppLayout() {
         {worker && (
           <div className="mobile-header">
             <button className="btn-icon" onClick={() => setMobileOpen(true)} aria-label="Open menu">☰</button>
-            <Logo size={60} />
+            <Logo size={80} />
             <div style={{ flex: 1 }} />
         <NotificationBell />
           </div>
