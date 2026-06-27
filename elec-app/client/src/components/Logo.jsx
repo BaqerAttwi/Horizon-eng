@@ -1,4 +1,4 @@
-export default function Logo({ size = 120, showText = true, style }) {
+export default function Logo({ size = 150, showText = true, style }) {
   const imgW = typeof size === 'number' ? size : parseInt(size);
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, ...style }}>
