@@ -59,7 +59,10 @@ export default function LoginPage() {
 
         {/* Logo */}
         <motion.div variants={childVariants} style={{ textAlign: 'center', marginBottom: 32 }}>
-          <h1 style={{ margin: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}><Logo size={250} showText={false} /><span style={{ fontWeight: 800, fontSize: 28, color: 'var(--white)', letterSpacing: 2 }}>HORIZON</span><span style={{ fontWeight: 400, fontSize: 12, color: 'var(--muted)', letterSpacing: 1 }}>Engineering &amp; Contracting</span></h1>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--white)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Logo size={40} /></h1>
+          <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4, fontFamily: 'var(--font-mono)' }}>
+            Manager — Sign in to continue
+          </p>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4, fontFamily: 'var(--font-mono)' }}>
             Manager — Sign in to continue
           </p>
