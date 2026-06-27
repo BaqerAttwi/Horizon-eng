@@ -157,7 +157,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
       bodyStyles: { fontSize: 8 },
       footStyles: { fontSize: 8, fillColor: [240, 244, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
       columnStyles: { 0: {}, 1: { halign: 'center' }, 2: { halign: 'right' }, 3: { halign: 'right', fontStyle: 'bold' } },
-      margin: { left: 16, right: 16 },
+      margin: { left: 16, right: 16, top: 28 },
       tableWidth: pw - 32,
     });
     y = doc.lastAutoTable.finalY + 8;
@@ -296,7 +296,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
         headStyles: { fontSize: 7, fillColor: [71, 85, 105], textColor: 255, halign: 'center' },
         bodyStyles: { fontSize: 7 },
         columnStyles: { 0: { halign: 'center' }, 1: { fontStyle: 'bold' }, 2: {}, 3: { halign: 'center' }, 4: { halign: 'center' } },
-        margin: { left: 16, right: 16 },
+        margin: { left: 16, right: 16, top: 28 },
         tableWidth: pw - 32,
         didParseCell: (data) => {
           if (data.section === 'body' && data.row.index >= groupStartIdx - 1) {
@@ -445,7 +445,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
         headStyles: { fontSize: 6, fillColor: [71, 85, 105], textColor: 255, halign: 'center' },
         bodyStyles: { fontSize: 6 },
         columnStyles: { 0: { cellWidth: 50 }, 7: { halign: 'right', fontStyle: 'bold' }, 8: { halign: 'right' }, 9: { halign: 'right', fontStyle: 'bold' } },
-        margin: { left: 16, right: 16 },
+        margin: { left: 16, right: 16, top: 28 },
         tableWidth: pw - 32,
         didParseCell: (data) => {
           if (data.section === 'body') {
