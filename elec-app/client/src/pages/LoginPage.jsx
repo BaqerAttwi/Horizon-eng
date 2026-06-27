@@ -59,7 +59,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <motion.div variants={childVariants} style={{ textAlign: 'center', marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--white)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Logo size={40} /></h1>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--white)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Logo size={56} /></h1>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4, fontFamily: 'var(--font-mono)' }}>
             Manager — Sign in to continue
           </p>
