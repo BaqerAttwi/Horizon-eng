@@ -566,7 +566,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
     bodyStyles: { fontSize: 7 },
     footStyles: { fontSize: 7, fillColor: [240, 244, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
     columnStyles: { 0: { cellWidth: 50 }, 3: { halign: 'right', fontStyle: 'bold' }, 4: { halign: 'right', fontStyle: 'bold' } },
-    margin: { left: 16, right: 16 },
+    margin: { left: 16, right: 16, top: 28 },
     tableWidth: pw - 32,
     didParseCell: (data) => {
       if (data.section === 'body' && data.column.index === 4) {
@@ -611,7 +611,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
     headStyles: { fontSize: 7, fillColor: [71, 85, 105], textColor: 255 },
     bodyStyles: { fontSize: 7 },
     columnStyles: { 0: { cellWidth: 80 }, 3: { halign: 'right', fontStyle: 'bold' } },
-    margin: { left: 16, right: 16 },
+    margin: { left: 16, right: 16, top: 28 },
     tableWidth: pw - 32,
     didParseCell: (data) => {
       if (data.section === 'body' && data.column.index === 3) {
