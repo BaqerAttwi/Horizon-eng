@@ -1,23 +1,20 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import api from '../api/client';
-import { LOGO_SVG } from './logo';
 
-function svgToPng(svgStr, w = 40, h = 40) {
+function loadPng(url, w = 40, h = 40) {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
     canvas.width = w * 4;
     canvas.height = h * 4;
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+    img.crossOrigin = 'anonymous';
     img.onload = () => {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
       resolve(canvas.toDataURL('image/png'));
     };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    img.onerror = () => resolve(null);
     img.src = url;
   });
 }
@@ -61,7 +58,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
   const project = data;
   const doc = new jsPDF('p', 'mm', 'a4');
   const pw = doc.internal.pageSize.getWidth();
-  const logoPng = await svgToPng(LOGO_SVG);
+  const logoPng = await loadPng('/LogoHorizonLB.png');
   const panels = project.panels || [];
   let grandTotal = 0;
   let grandCost = 0;
