@@ -2,19 +2,34 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import api from '../api/client';
 
-function loadPng(url, w = 40, h = 40) {
+const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <circle cx="250" cy="250" r="240" fill="white"/>
+  <rect x="155" y="130" width="52" height="58" rx="4" fill="#1a5fa8"/>
+  <rect x="293" y="130" width="52" height="58" rx="4" fill="#1a5fa8"/>
+  <rect x="155" y="218" width="52" height="52" rx="0" fill="#4a8fc4"/>
+  <rect x="293" y="218" width="52" height="52" rx="0" fill="#4a8fc4"/>
+  <rect x="207" y="188" width="86" height="42" rx="0" fill="#4a8fc4"/>
+  <rect x="207" y="188" width="86" height="20" rx="0" fill="#6aaed6"/>
+  <path d="M 130 268 Q 250 240 370 268" stroke="#a0b8c8" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <text x="250" y="330" font-family="'Arial Black','Arial Bold',Arial,sans-serif" font-weight="900" font-size="62" fill="#1a5fa8" text-anchor="middle" letter-spacing="6">HORIZON</text>
+  <text x="250" y="365" font-family="Arial,sans-serif" font-weight="400" font-size="22" fill="#4a8fc4" text-anchor="middle" letter-spacing="1.5">Engineering &amp; Contracting</text>
+</svg>`;
+
+function svgToPng(svgStr, w = 40, h = 40) {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
     canvas.width = w * 4;
     canvas.height = h * 4;
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
     img.onload = () => {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
       resolve(canvas.toDataURL('image/png'));
     };
-    img.onerror = () => resolve(null);
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
     img.src = url;
   });
 }
@@ -58,7 +73,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
   const project = data;
   const doc = new jsPDF('p', 'mm', 'a4');
   const pw = doc.internal.pageSize.getWidth();
-  const logoPng = await loadPng('/LogoHorizonLB.png');
+  const logoPng = await svgToPng(LOGO_SVG);
   const panels = project.panels || [];
   let grandTotal = 0;
   let grandCost = 0;
