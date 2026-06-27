@@ -57,7 +57,7 @@
 }
 
 .light-mode .sidebar { background: #eef2f8; }
-.light-mode .sidebar .sidebar-logo { background: #ffffff; border-bottom-color: #e0e6ef; }
+.light-mode .sidebar .sidebar-logo { background: linear-gradient(135deg, #ffffff 0%, #eef2f8 100%); border-bottom-color: #e0e6ef; }
 .light-mode .card,
 .light-mode .stat-card,
 .light-mode .table-wrap { box-shadow: var(--shadow); }
@@ -106,6 +106,7 @@ body {
 .sidebar-logo {
   padding: 20px 16px 16px;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, var(--panel) 0%, var(--panel2) 100%);
 }
 .sidebar-logo h1 { font-size: 16px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
 .sidebar-logo span { font-size: 10px; color: var(--muted); font-family: var(--font-mono); }
