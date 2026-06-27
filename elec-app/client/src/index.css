@@ -58,7 +58,6 @@
 
 .light-mode .sidebar { background: #eef2f8; }
 .light-mode .sidebar .sidebar-logo { background: transparent; border-bottom-color: #e0e6ef; }
-.light-mode .logo-wrapper { background: transparent !important; padding: 0 !important; }
 .light-mode .card,
 .light-mode .stat-card,
 .light-mode .table-wrap { box-shadow: var(--shadow); }
