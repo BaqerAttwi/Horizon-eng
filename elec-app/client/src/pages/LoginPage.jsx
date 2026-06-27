@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
@@ -12,12 +12,23 @@ const ROLE_COLORS = {
   secretary:  '#fbbf24',
 };
 
+const QUOTES = [
+  '"Powering your world with precision engineering"',
+  '"Intelligent electrical solutions for tomorrow"',
+];
+
 export default function LoginPage() {
   const [email, setEmail]     = useState('');
   const [password, setPass]   = useState('');
   const [loading, setLoading] = useState(false);
+  const [quoteIdx, setQuoteIdx] = useState(0);
   const { login } = useAuth();
   const navigate  = useNavigate();
+
+  useEffect(() => {
+    const t = setInterval(() => setQuoteIdx(i => (i + 1) % QUOTES.length), 3500);
+    return () => clearInterval(t);
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -63,15 +74,20 @@ export default function LoginPage() {
           <p style={{ color: 'var(--accent)', fontSize: 16, fontWeight: 700, marginTop: 8, letterSpacing: 2 }}>
             Horizon LB
           </p>
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 2, ease: 'easeOut' }}
-            style={{ color: 'var(--muted)', fontSize: 11, fontStyle: 'italic', marginTop: 6, lineHeight: 1.8, fontFamily: 'var(--font-mono)' }}
-          >
-            "Powering your world with precision engineering"<br />
-            "Intelligent electrical solutions for tomorrow"
-          </motion.p>
+          <div style={{ position: 'relative', height: 20, marginTop: 6 }}>
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={quoteIdx}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.6 }}
+                style={{ position: 'absolute', left: 0, right: 0, textAlign: 'center', color: 'var(--muted)', fontSize: 11, fontStyle: 'italic', fontFamily: 'var(--font-mono)' }}
+              >
+                {QUOTES[quoteIdx]}
+              </motion.p>
+            </AnimatePresence>
+          </div>
         </motion.div>
 
         {/* Login Card */}
