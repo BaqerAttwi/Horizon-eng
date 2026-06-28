@@ -175,9 +175,11 @@ export default function ProductsPage() {
     } catch (e) { /* ignore */ }
   }, []);
 
+  const isEngineer = isRole('engineer');
+
   useEffect(() => {
-    if (!isRole('engineer')) loadPending();
-  }, [loadPending, isRole]);
+    if (!isEngineer) loadPending();
+  }, [loadPending, isEngineer]);
 
   const handleManualSubmit = async () => {
     if (!manualForm.name.trim()) { toast.error('Product name is required'); return; }

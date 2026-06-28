@@ -5,13 +5,6 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
 
-const ROLE_COLORS = {
-  owner:      '#a78bfa',
-  accounting: '#60a5fa',
-  engineer:   '#4ade80',
-  secretary:  '#fbbf24',
-};
-
 const QUOTES = [
   '"Powering your world with precision engineering"',
   '"Intelligent electrical solutions for tomorrow"',
@@ -126,26 +119,6 @@ export default function LoginPage() {
                 {loading ? <><span className="spinner" /> Signing in...</> : '🔑 Sign In'}
               </motion.button>
             </form>
-
-            <div style={{ borderTop: '1px solid var(--border)', padding: '14px 28px' }}>
-              <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Role Access Levels
-              </div>
-              {[
-                { role: 'owner',      icon: '👑', access: 'Full access — all features' },
-                { role: 'accounting', icon: '💼', access: 'Products, projects, clients, reports' },
-                { role: 'engineer',   icon: '⚙️', access: 'Products, projects, reservations' },
-                { role: 'secretary',  icon: '📋', access: 'Products, clients, reservations' },
-              ].map(r => (
-                <div key={r.role} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                  <span style={{ fontSize: 13 }}>{r.icon}</span>
-                  <span style={{ fontSize: 10, color: ROLE_COLORS[r.role], fontWeight: 700, width: 75, fontFamily: 'var(--font-mono)' }}>
-                    {r.role}
-                  </span>
-                  <span style={{ fontSize: 10, color: 'var(--muted)' }}>{r.access}</span>
-                </div>
-              ))}
-            </div>
           </div>
         </motion.div>
 

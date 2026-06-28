@@ -56,7 +56,7 @@ export default function RequestsPage() {
 
   return (
     <div className="page">
-      <div className="page-head">
+      <div className="page-header">
         <h2>Engineer Requests</h2>
       </div>
 

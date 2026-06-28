@@ -8,7 +8,7 @@ import ActivityLog from '../components/ActivityLog';
 import FileAttachments from '../components/FileAttachments';
 
 const DIVISION_TYPES = ['INCOMING', 'OUTGOING', 'Enclosure', 'Accessories', 'Measurement'];
-const DIVISION_COLORS = { INCOMING: '#1a5fa8', OUTGOING: '#4a8fc4', Enclosure: '#8b5cf6', Accessories: '#f59e0b', Measurement: '#6aaed6' };
+const DIVISION_COLORS = { INCOMING: '#e11d48', OUTGOING: '#2563eb', Enclosure: '#7c3aed', Accessories: '#d97706', Measurement: '#059669' };
 
 // ── Product Search ────────────────────────────────────────────
 function ProductSearch({ onSelect, projectId, exchangeRate }) {
@@ -256,7 +256,7 @@ function GroupSelectModal({ project, division, panel, onClose, onGroupAdded }) {
 }
 
 // ── CRM Item Row ──────────────────────────────────────────────
-function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCost, pendingPriceChange, isSelected, onToggleSelect }) {
+function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCost, pendingPriceChange, isSelected, onToggleSelect, editView }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...item });
 
@@ -290,6 +290,14 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
     setForm(f => ({ ...f, base_price_usd: usd, base_price_euro: usd ? (parseFloat(usd) / rate).toFixed(4) : '' }));
   };
 
+  const handleSave = async () => {
+    await onUpdate(item.id, form);
+    setEditing(false);
+  };
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave(); }
+  };
+
   if (editing) {
     return (
       <tr className="crm-item-row" style={{ background: 'var(--panel2)' }}>
@@ -305,13 +313,13 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
         <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', verticalAlign: 'middle' }}>{name}</td>
         <td style={{ verticalAlign: 'middle' }}>
           <input type="number" min={1} className="form-input" style={{ width: 55, padding: '2px 4px', fontSize: 11 }} value={form.qty || 1}
-            onChange={e => setForm(f => ({ ...f, qty: parseInt(e.target.value) || 1 }))} />
+            onChange={e => setForm(f => ({ ...f, qty: parseInt(e.target.value) || 1 }))} onKeyDown={handleKeyDown} />
         </td>
         <td style={{ verticalAlign: 'middle' }}>
           <input type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11 }} value={form.base_price_usd || ''}
-            onChange={e => convertUsdEdit(e.target.value)} placeholder="USD $" />
+            onChange={e => convertUsdEdit(e.target.value)} placeholder="USD $" onKeyDown={handleKeyDown} />
           <input type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11, marginTop: 2 }} value={form.base_price_euro || ''}
-            onChange={e => convertEurEdit(e.target.value)} placeholder="EUR €" />
+            onChange={e => convertEurEdit(e.target.value)} placeholder="EUR €" onKeyDown={handleKeyDown} />
         </td>
         <td className="mono" style={{ verticalAlign: 'middle', color: 'var(--muted)', fontWeight: 600 }}>
           ${((parseFloat(form.base_price_usd) || 0) * (parseInt(form.qty) || 1)).toFixed(2)}
@@ -320,33 +328,33 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
         <td style={{ fontSize: 11, verticalAlign: 'middle' }}>{brand || '—'}</td>
         <td style={{ verticalAlign: 'middle' }}>
           <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.discount_pct}
-            onChange={e => setForm(f => ({ ...f, discount_pct: parseFloat(e.target.value) || 0 }))} />
+            onChange={e => setForm(f => ({ ...f, discount_pct: parseFloat(e.target.value) || 0 }))} onKeyDown={handleKeyDown} />
         </td>
         <td className="mono" style={{ fontSize: 11, color: '#60a5fa', fontWeight: 600, verticalAlign: 'middle' }}>${afterDisc.toFixed(2)}</td>
         <td style={{ verticalAlign: 'middle' }}>
           <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.markupP_pct}
-            onChange={e => setForm(f => ({ ...f, markupP_pct: parseFloat(e.target.value) || 0 }))} />
+            onChange={e => setForm(f => ({ ...f, markupP_pct: parseFloat(e.target.value) || 0 }))} onKeyDown={handleKeyDown} />
         </td>
         <td className="mono" style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, verticalAlign: 'middle' }}>${totalT.toFixed(2)}</td>
         <td style={{ verticalAlign: 'middle' }}>
           <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.manpower_pct}
-            onChange={e => setForm(f => ({ ...f, manpower_pct: parseFloat(e.target.value) || 0 }))} />
+            onChange={e => setForm(f => ({ ...f, manpower_pct: parseFloat(e.target.value) || 0 }))} onKeyDown={handleKeyDown} />
         </td>
         <td style={{ verticalAlign: 'middle' }}>
           <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.markupM_pct}
-            onChange={e => setForm(f => ({ ...f, markupM_pct: parseFloat(e.target.value) || 0 }))} />
+            onChange={e => setForm(f => ({ ...f, markupM_pct: parseFloat(e.target.value) || 0 }))} onKeyDown={handleKeyDown} />
         </td>
         <td className="mono" style={{ fontWeight: 700, color: 'var(--success)', verticalAlign: 'middle' }}>${final.toFixed(2)}</td>
         {!hideCost && <td style={{ verticalAlign: 'middle' }}>
           <input type="number" step="0.01" className="form-input" style={{ width: 62, padding: '2px 4px', fontSize: 11 }} value={form.cost || ''}
-            onChange={e => setForm(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))} />
+            onChange={e => setForm(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))} onKeyDown={handleKeyDown} />
         </td>}
         {!hideCost && <td className="mono" style={{ fontWeight: 700, color: (parseFloat(form.cost) ? (final - parseFloat(form.cost)) : final) >= 0 ? 'var(--success)' : 'var(--danger)', verticalAlign: 'middle' }}>
           ${(final - (parseFloat(form.cost) || 0)).toFixed(2)}
         </td>}
         <td style={{ verticalAlign: 'middle' }}>
           <button className="btn btn-sm btn-primary" style={{ marginRight: 4 }}
-            onClick={async () => { await onUpdate(item.id, form); setEditing(false); }}>Save</button>
+            onClick={handleSave}>Save</button>
           <button className="btn btn-sm btn-secondary" onClick={() => { setEditing(false); setForm({ ...item }); }}>Cancel</button>
         </td>
       </tr>
@@ -354,17 +362,16 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
   }
 
   return (
-    <tr className="crm-item-row" style={pendingPriceChange ? { background: 'rgba(245,158,11,0.06)' } : {}}>
-      <td style={{ textAlign: 'center', verticalAlign: 'middle', width: 28 }}>
+    <tr className="crm-item-row" style={{ ...(pendingPriceChange ? { background: 'rgba(245,158,11,0.06)' } : {}), ...(editView ? { cursor: 'pointer' } : {}) }}
+      onClick={() => { if (editView) setEditing(true); }}>
+      <td style={{ textAlign: 'center', verticalAlign: 'middle', width: 28 }} onClick={e => e.stopPropagation()}>
         <input type="checkbox" checked={!!isSelected}
           onChange={() => onToggleSelect?.(item.id)}
           style={{ width: 15, height: 15, cursor: 'pointer' }} />
       </td>
-      <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+      <td style={{ textAlign: 'center', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
         <span style={{ cursor: 'pointer', fontSize: 14, opacity: item.visible_in_client_pdf ? 1 : 0.35, userSelect: 'none' }}
-          onClick={async () => {
-            await onUpdate(item.id, { visible_in_client_pdf: item.visible_in_client_pdf ? 0 : 1 });
-          }}
+          onClick={async (e) => { e.stopPropagation(); await onUpdate(item.id, { visible_in_client_pdf: item.visible_in_client_pdf ? 0 : 1 }); }}
           title={item.visible_in_client_pdf ? 'Visible in Client PDF — click to hide' : 'Hidden from Client PDF — click to show'}>
           {item.visible_in_client_pdf ? '👁' : '🚫'}
         </span>
@@ -376,11 +383,11 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
             title="Price change pending approval">⏳ PENDING</span>
         )}
       </td>
-      <td className="mono">{item.qty}</td>
+      <td className="mono" style={{ color: 'var(--text)', fontWeight: 600 }}>{item.qty}</td>
       <td className="mono" style={{ color: 'var(--text)' }}>${base.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{baseEur.toFixed(2)}</div></td>
       <td className="mono" style={{ color: 'var(--text)', fontWeight: 700 }}>${baseTotal.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{(baseEur * qty).toFixed(2)}</div></td>
       <td style={{ fontSize: 11, color: 'var(--muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</td>
-      <td style={{ fontSize: 11 }}>{brand || '—'}</td>
+      <td style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600 }}>{brand || '—'}</td>
       <td className="mono" style={{ color: item.discount_pct > 0 ? 'var(--danger)' : 'var(--muted)' }}>{item.discount_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>-${disc.toFixed(2)}</div></td>
       <td className="mono" style={{ color: '#60a5fa', fontWeight: 600 }}>${afterDisc.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>after disc</div></td>
       <td className="mono" style={{ color: 'var(--accent2)' }}>{item.markupP_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>+${mkP.toFixed(2)}</div></td>
@@ -390,7 +397,7 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
       <td className="mono" style={{ fontWeight: 700, color: isLoss ? 'var(--danger)' : 'var(--success)', fontSize: 13 }}>${final.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{finalEur.toFixed(2)}</div></td>
       {!hideCost && <td className="mono" style={{ color: 'var(--muted)' }}>${cost.toFixed(2)}</td>}
       {!hideCost && <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>{profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>}
-      <td>
+      <td onClick={e => e.stopPropagation()}>
         <button className="btn-icon" title="Edit" onClick={() => setEditing(true)}>✏️</button>
         <button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }}
           onClick={() => onDelete(item.id)}>✕</button>
@@ -401,7 +408,7 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
 
 // ── Division Section ──────────────────────────────────────────
 function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, hideCost, pendingPriceChanges,
-  onGroupInstanceQtyChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll }) {
+  onGroupInstanceQtyChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll, editView }) {
   const [showAdd, setShowAdd] = useState(false);
   const [showGroup, setShowGroup] = useState(false);
   const [manualModal, setManualModal] = useState(null);
@@ -486,8 +493,8 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
   const divColor = DIVISION_COLORS[division.division_type] || 'var(--muted)';
 
   return (
-    <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 8, overflow: 'visible', position: 'relative' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: `${divColor}15`, borderBottom: '1px solid var(--border)' }}>
+    <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 8, overflow: 'visible', position: 'relative', background: 'transparent' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: `${divColor}20`, borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: divColor, display: 'inline-block' }} />
           <span style={{ fontWeight: 700, fontSize: 13, color: divColor }}>{division.division_type}</span>
@@ -501,7 +508,7 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
       </div>
 
       {division.items?.length > 0 && (
-        <div className="table-wrap" style={{ overflowX: 'auto' }}>
+        <div className="table-wrap" style={{ overflowX: 'auto', background: 'var(--panel)' }}>
           <table style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             <thead>
               <tr>
@@ -528,7 +535,8 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
                   onUpdate={onItemUpdate} onDelete={onItemDelete} hideCost={hideCost}
                   pendingPriceChange={pendingPriceChanges?.[item.id] || null}
                   isSelected={selectedItems?.has(item.id)}
-                  onToggleSelect={onToggleItem} />
+                  onToggleSelect={onToggleItem}
+                  editView={editView} />
               ))}
             </tbody>
           </table>
@@ -544,7 +552,8 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
           onItemDelete={onItemDelete}
           hideCost={hideCost}
           selectedItems={selectedItems}
-          onToggleItem={onToggleItem} />
+          onToggleItem={onToggleItem}
+          editView={editView} />
       ))}
 
       {pendingProduct && (
@@ -579,7 +588,12 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
 
       {showAdd && !pendingProduct && (
         <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)' }}>
-          <ProductSearch onSelect={handleProductSelect} projectId={project.id} exchangeRate={project.exchange_rate_eur_usd} />
+          <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+            <div style={{ flex: 1 }}>
+              <ProductSearch onSelect={handleProductSelect} projectId={project.id} exchangeRate={project.exchange_rate_eur_usd} />
+            </div>
+            <button className="btn btn-sm btn-secondary" onClick={() => setShowAdd(false)} style={{ marginTop: 1 }}>Cancel</button>
+          </div>
         </div>
       )}
 
@@ -605,8 +619,8 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
 
 // ── Panel Section ─────────────────────────────────────────────
 function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleComplete,
-  onAddDivision, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, onPanelTotalUpdate, hideCost, pendingPriceChanges,
-  onGroupInstanceQtyChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll }) {
+  onAddDivision, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, hideCost, pendingPriceChanges,
+  onGroupInstanceQtyChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll, editView }) {
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false });
@@ -617,16 +631,16 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
   };
 
   return (
-    <div style={{ marginBottom: 20, border: panel.is_completed ? '2px solid var(--success)' : '1px solid var(--border)', borderRadius: 10, overflow: 'visible', position: 'relative' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--panel2)', borderBottom: '1px solid var(--border)' }}>
+    <div style={{ marginBottom: 20, border: panel.is_completed ? '2px solid var(--success)' : '1px solid var(--border)', borderRadius: 10, overflow: 'visible', position: 'relative', background: 'var(--panel2)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--accent)', borderBottom: '1px solid var(--border)', borderRadius: '9px 9px 0 0' }}>
         <div>
-          <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--white)' }}>Panel #{panel.panel_number}</span>
-          {panel.panel_name && <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--muted)' }}>— {panel.panel_name}</span>}
-          <span style={{ marginLeft: 12, fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>
+          <span style={{ fontWeight: 800, fontSize: 14, color: '#fff' }}>Panel #{panel.panel_number}</span>
+          {panel.panel_name && <span style={{ marginLeft: 8, fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>— {panel.panel_name}</span>}
+          <span style={{ marginLeft: 12, fontSize: 12, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.9)' }}>
             Total: ${(parseFloat(panel.total_price) || 0).toFixed(2)}
           </span>
           {panel.updated_by_name && (
-            <span style={{ marginLeft: 10, fontSize: 10, color: 'var(--muted)' }}>
+            <span style={{ marginLeft: 10, fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>
               — Last edit: {panel.updated_by_name}
             </span>
           )}
@@ -639,20 +653,21 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
             </>
           ) : (
             <>
-              <button className="btn btn-sm" style={{ background: panel.is_completed ? 'rgba(34,197,94,0.15)' : 'rgba(26,95,168,0.15)', color: panel.is_completed ? 'var(--success)' : 'var(--accent)' }}
+              <button className="btn btn-sm" style={{ background: panel.is_completed ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.2)', color: panel.is_completed ? 'var(--success)' : '#fff' }}
                 onClick={() => onToggleComplete(panel.id)}>
                 {panel.is_completed ? '✓ Complete' : '☐ Mark Complete'}
               </button>
-              <button className="btn btn-sm btn-secondary" onClick={() => setEditing(true)}>Edit Panel</button>
+              <button className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+                onClick={() => setEditing(true)}>Edit Panel</button>
             </>
           )}
-          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)' }}
+          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.25)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
             onClick={() => onDeletePanel(panel.id)}>Delete</button>
         </div>
       </div>
 
       {editing && (
-        <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'rgba(26,95,168,0.04)' }}>
+        <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'rgba(0,0,0,0.15)' }}>
           <div className="form-row" style={{ gap: 12 }}>
             <div className="form-group" style={{ flex: 2 }}>
               <label className="form-label">Panel Name</label>
@@ -696,7 +711,8 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
           onGroupAdded={onGroupAdded}
           selectedItems={selectedItems}
           onToggleItem={onToggleItem}
-          onSelectAll={onSelectAll} />
+          onSelectAll={onSelectAll}
+          editView={editView} />
       ))}
 
       <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
@@ -716,7 +732,7 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
 }
 
 // ── Group Instance Section (sub-division) ─────────────────────
-function GroupInstanceSection({ instance, division, panel, project, onInstanceQtyChange, onInstanceRemove, onItemUpdate, onItemDelete, hideCost, selectedItems, onToggleItem }) {
+function GroupInstanceSection({ instance, division, panel, project, onInstanceQtyChange, onInstanceRemove, onItemUpdate, onItemDelete, hideCost, selectedItems, onToggleItem, editView }) {
   const [localQty, setLocalQty] = useState(instance.quantity);
 
   useEffect(() => { setLocalQty(instance.quantity); }, [instance.quantity]);
@@ -766,7 +782,8 @@ function GroupInstanceSection({ instance, division, panel, project, onInstanceQt
                 <CrmItemRow key={item.id} item={item} division={division} panel={panel} project={project}
                   onUpdate={onItemUpdate} onDelete={onItemDelete} hideCost={hideCost}
                   isSelected={selectedItems?.has(item.id)}
-                  onToggleSelect={onToggleItem} />
+                  onToggleSelect={onToggleItem}
+                  editView={editView} />
               ))}
             </tbody>
             <tfoot>
@@ -1138,6 +1155,7 @@ export default function CrmProjectPage() {
   const clearSelection = () => setSelectedItems(new Set());
 
   const [activeTab, setActiveTab] = useState('items');
+  const [editView, setEditView] = useState(false);
 
   if (loading) return <div className="page"><div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /> Loading CRM...</div></div>;
   if (!project) return <div className="page"><div className="empty"><p>Project not found</p></div></div>;
@@ -1253,6 +1271,12 @@ export default function CrmProjectPage() {
           style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'items' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'items' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
           📋 Items
         </button>
+        {activeTab === 'items' && (
+          <button onClick={() => setEditView(v => !v)}
+            style={{ padding: '8px 14px', fontSize: 12, fontWeight: 700, border: 'none', background: editView ? 'var(--accent)' : 'transparent', color: editView ? '#fff' : 'var(--muted)', borderRadius: '0 0 6px 6px', cursor: 'pointer', marginLeft: 4, borderBottom: editView ? 'none' : '2px solid transparent' }}>
+            {editView ? '◉ Edit View ON' : '○ Edit View'}
+          </button>
+        )}
         <button onClick={() => setActiveTab('brands')}
           style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'brands' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'brands' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
           🏷️ Brand Summary
@@ -1382,7 +1406,8 @@ export default function CrmProjectPage() {
           onGroupAdded={load}
           selectedItems={selectedItems}
           onToggleItem={toggleSelectItem}
-          onSelectAll={selectAllForDivision} />
+          onSelectAll={selectAllForDivision}
+          editView={editView} />
       ))}
 
       {/* Bulk Edit Toolbar */}
@@ -1430,8 +1455,9 @@ export default function CrmProjectPage() {
                   executionItemData={executionData.itemCompletion}
                   onTogglePanel={toggleExecutionPanel}
                   onToggleItem={toggleExecutionItem}
-                  onSaveDesc={(pid, description) => {
-                    api.patch(`/projects/${id}/execution/panels/${pid}`, { description });
+                  onSaveDesc={async (pid, description) => {
+                    try { await api.patch(`/projects/${id}/execution/panels/${pid}`, { description }); }
+                    catch (e) { toast.error(e.message); }
                   }} />
               ))
             )}

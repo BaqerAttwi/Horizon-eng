@@ -173,6 +173,8 @@ export default function AnalyticsPage() {
 
   const fetchData = () => {
     const { from, to } = getDateRange(datePreset);
+    setDateFrom(from);
+    setDateTo(to);
     const params = new URLSearchParams();
     if (from) params.set('date_from', from);
     if (to) params.set('date_to', to);

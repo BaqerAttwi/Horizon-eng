@@ -39,7 +39,7 @@ const db     = require('./db/connection');
 
 async function ensureOwner() {
   try {
-    const [rows] = await db.execute('SELECT id, password_hash FROM workers WHERE id=1');
+    const [rows] = await db.execute("SELECT id, password_hash FROM workers WHERE role='owner' LIMIT 1");
     if (!rows.length) {
       const defaultPw = process.env.OWNER_PASSWORD || 'admin123';
       const hash = await bcrypt.hash(defaultPw, 10);
@@ -48,12 +48,13 @@ async function ensureOwner() {
         [hash]
       );
       console.log(`[Auth] ✅ Owner created. Email: admin@company.com / Password: ${defaultPw}`);
+    } else if (process.env.OWNER_PASSWORD) {
+      // Only sync if OWNER_PASSWORD is explicitly set in .env
+      const hash = await bcrypt.hash(process.env.OWNER_PASSWORD, 10);
+      await db.execute("UPDATE workers SET name='Admin', email='admin@company.com', password_hash=? WHERE id=?", [hash, rows[0].id]);
+      console.log(`[Auth] ✅ Owner password synced. Email: admin@company.com`);
     } else {
-      // Always set the password hash on startup to ensure it matches
-      const defaultPw = process.env.OWNER_PASSWORD || 'admin123';
-      const hash = await bcrypt.hash(defaultPw, 10);
-      await db.execute("UPDATE workers SET name='Admin', email='admin@company.com', password_hash=? WHERE id=1", [hash]);
-      console.log(`[Auth] ✅ Owner password synced. Email: admin@company.com / Password: ${defaultPw}`);
+      console.log(`[Auth] ✅ Owner exists. Use OWNER_PASSWORD in .env to sync password on startup.`);
     }
   } catch (err) {
     console.error('[Auth] ❌ Failed to ensure owner account:', err.message);

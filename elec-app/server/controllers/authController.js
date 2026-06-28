@@ -187,7 +187,7 @@ async function setPassword(req, res, next) {
  */
 async function logout(req, res, next) {
   try {
-    res.clearCookie('token', { httpOnly: true, sameSite: 'lax' });
+    res.clearCookie('token', { httpOnly: true, secure: process.env.COOKIE_SECURE === 'true', sameSite: 'lax' });
     res.json({ message: 'Logged out' });
   } catch (err) { next(err); }
 }
@@ -207,4 +207,4 @@ async function me(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { login, register, changePassword, setPassword, logout, me, ROLE_PERMISSIONS };
+module.exports = { login, register, changePassword, setPassword, logout, me, ROLE_PERMISSIONS, JWT_SECRET };

@@ -59,7 +59,7 @@ function DeadlineItem({ d }) {
   const urgent = d.days_left <= 1;
   const warning = d.days_left <= 3;
   return (
-    <Link to={`/projects/${d.id}/crm`} style={{ textDecoration: 'none', color: 'inherit' }}>
+    <Link to={`/projects/${d.id}/crm`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
       <div style={{
         display: 'flex', gap: 10, alignItems: 'center',
         padding: '8px 0', borderBottom: '1px solid var(--border)',
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                   <Link to="/projects" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>View all →</Link>
                 </div>
                 {data?.my_projects?.map(p => (
-                  <Link key={p.id} to={`/projects/${p.id}/crm`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <Link key={p.id} to={`/projects/${p.id}/crm`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       padding: '6px 0', borderBottom: '1px solid var(--border)',

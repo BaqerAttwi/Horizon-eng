@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const db = require('../db/connection');
 
 async function getWorkers(req, res, next) {
@@ -14,13 +15,15 @@ async function getWorkers(req, res, next) {
 
 async function createWorker(req, res, next) {
   try {
-    const { name, email, phone, role } = req.body;
+    const { name, email, phone, role, password } = req.body;
     if (!name || !role) return res.status(400).json({ error: 'name and role are required' });
+    if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
     const validRoles = ['owner','accounting','engineer','secretary'];
     if (!validRoles.includes(role)) return res.status(400).json({ error: 'Invalid role' });
+    const hash = await bcrypt.hash(password, 10);
     const [result] = await db.execute(
-      'INSERT INTO workers(name,email,phone,role) VALUES(?,?,?,?)',
-      [name, email||null, phone||null, role]
+      'INSERT INTO workers(name,email,phone,role,password_hash) VALUES(?,?,?,?,?)',
+      [name, email||null, phone||null, role, hash]
     );
     const [rows] = await db.execute('SELECT * FROM workers WHERE id=?', [result.insertId]);
     res.status(201).json(rows[0]);

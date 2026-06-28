@@ -426,14 +426,40 @@ CREATE TABLE IF NOT EXISTS attachments (
 );
 
 -- ── Migration: add columns to projects (safe re-run) ────────
-ALTER TABLE projects ADD COLUMN IF NOT EXISTS ready_for_review BOOLEAN DEFAULT FALSE AFTER deleted_at;
-ALTER TABLE projects ADD COLUMN IF NOT EXISTS execution_deadline DATE NULL AFTER deadline;
-ALTER TABLE projects ADD COLUMN IF NOT EXISTS vat_pct DECIMAL(5,2) DEFAULT 0 AFTER total_price;
-ALTER TABLE projects ADD COLUMN IF NOT EXISTS total_vat DECIMAL(12,2) DEFAULT 0 AFTER vat_pct;
-ALTER TABLE projects ADD COLUMN IF NOT EXISTS total_with_vat DECIMAL(12,2) DEFAULT 0 AFTER total_vat;
-ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_discount_pct DECIMAL(5,2) DEFAULT 0 AFTER total_with_vat;
-ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_discount_amount DECIMAL(12,2) DEFAULT 0 AFTER project_discount_pct;
-ALTER TABLE projects ADD COLUMN IF NOT EXISTS payment_terms TEXT AFTER project_discount_amount;
+SET @t = 'projects';
+SET @db = DATABASE();
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME=@t AND COLUMN_NAME='ready_for_review');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN ready_for_review BOOLEAN DEFAULT FALSE AFTER deleted_at', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME=@t AND COLUMN_NAME='execution_deadline');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN execution_deadline DATE NULL AFTER deadline', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME=@t AND COLUMN_NAME='vat_pct');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN vat_pct DECIMAL(5,2) DEFAULT 0 AFTER total_price', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME=@t AND COLUMN_NAME='total_vat');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN total_vat DECIMAL(12,2) DEFAULT 0 AFTER vat_pct', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME=@t AND COLUMN_NAME='total_with_vat');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN total_with_vat DECIMAL(12,2) DEFAULT 0 AFTER total_vat', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME=@t AND COLUMN_NAME='project_discount_pct');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN project_discount_pct DECIMAL(5,2) DEFAULT 0 AFTER total_with_vat', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME=@t AND COLUMN_NAME='project_discount_amount');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN project_discount_amount DECIMAL(12,2) DEFAULT 0 AFTER project_discount_pct', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME=@t AND COLUMN_NAME='payment_terms');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN payment_terms TEXT AFTER project_discount_amount', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ── Execution Phase: Panel Completion ──────────────────────────
 CREATE TABLE IF NOT EXISTS panel_completion (
@@ -478,7 +504,9 @@ CREATE TABLE IF NOT EXISTS division_item_group_instances (
 );
 
 -- ── Migration: add source_group_instance_id ──────────────
-ALTER TABLE panel_crm_items ADD COLUMN IF NOT EXISTS source_group_instance_id INT DEFAULT NULL AFTER visible_in_client_pdf;
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='panel_crm_items' AND COLUMN_NAME='source_group_instance_id');
+SET @sql = IF(@exists=0, 'ALTER TABLE panel_crm_items ADD COLUMN source_group_instance_id INT DEFAULT NULL AFTER visible_in_client_pdf', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- NOTE: Run this in MySQL after importing schema to set real password:
 -- UPDATE workers SET password_hash = '$2b$10$...' WHERE id=1;

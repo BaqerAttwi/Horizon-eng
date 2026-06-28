@@ -194,7 +194,7 @@ function AddProductModal({ groupId, onClose, onAdded }) {
 }
 
 function GroupCard({ group, onEdit, onDelete, onAddItem, onRemoveItem }) {
-  const { isRole } = useAuth();
+  const { isRole, worker } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(false);
@@ -223,7 +223,7 @@ function GroupCard({ group, onEdit, onDelete, onAddItem, onRemoveItem }) {
     } catch (e) { toast.error(e.message); }
   };
 
-  const canEdit = isOwner || group.created_by === group.workerId;
+  const canEdit = isOwner || (worker && group.created_by === worker.id);
 
   return (
     <div className="card" style={{marginBottom:12}}>

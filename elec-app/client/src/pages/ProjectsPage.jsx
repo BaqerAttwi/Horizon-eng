@@ -448,7 +448,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
 
             {/* ── Action Buttons ── */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-              <button className="btn btn-primary" onClick={() => { onClose(); navigate(`/projects/${project.id}/crm`); }}>
+              <button className="btn btn-primary" onClick={() => { onClose(); window.open(`/projects/${project.id}/crm`, '_blank'); }}>
                 📋 Open CRM Editor
               </button>
               {isRole('owner', 'engineer') && (
@@ -598,7 +598,7 @@ export default function ProjectsPage() {
                     <td className="mono" style={{ fontSize: 11 }}>{p.crm_panels || 0}/{p.total_panels || '—'}</td>
                     <td className="mono" style={{ color: 'var(--success)', fontSize: 12 }}>{p.total_price ? Number(p.total_price).toFixed(0) : '—'}</td>
                     <td style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-sm btn-secondary" onClick={() => navigate(`/projects/${p.id}/crm`)} style={{ fontSize: 11, padding: '2px 8px' }}>CRM</button>
+                      <button className="btn btn-sm btn-secondary" onClick={() => window.open(`/projects/${p.id}/crm`, '_blank')} style={{ fontSize: 11, padding: '2px 8px' }}>CRM</button>
                       <button className="btn-icon" title="View" onClick={() => setDetail(p.id)}>👁</button>
                       {isRole('owner') && <button className="btn-icon" title="Delete" onClick={() => del(p)} style={{ color: 'var(--danger)' }}>🗑</button>}
                     </td>

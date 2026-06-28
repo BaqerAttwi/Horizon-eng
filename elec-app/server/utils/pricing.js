@@ -1,7 +1,8 @@
 const db = require('../db/connection');
 
 function calcItemPricing(item) {
-  const base = parseFloat(item.base_price_usd) || 0;
+  const rate = 1.08;
+  const base = parseFloat(item.base_price_usd) || (parseFloat(item.base_price_euro) * rate) || 0;
   const markupP_pct = parseFloat(item.markupP_pct) || 0;
   const discount_pct = parseFloat(item.discount_pct) || 0;
   const manpower_pct = parseFloat(item.manpower_pct) || 0;

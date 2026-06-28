@@ -120,10 +120,23 @@ async function deletePanel(req, res, next) {
     const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
     if (!hasAccess) return;
 
-    const [[deletedPanel]] = await db.execute('SELECT panel_name FROM project_crm_panels WHERE id=?', [req.params.panelId]);
+    const [[deletedPanel]] = await db.execute('SELECT panel_name, project_id FROM project_crm_panels WHERE id=?', [req.params.panelId]);
+    if (!deletedPanel) return res.status(404).json({ error: 'Panel not found' });
     await db.execute('DELETE FROM project_crm_panels WHERE id=? AND project_id=?', [req.params.panelId, req.params.projectId]);
-    await recalcPanelTotals(req.params.panelId);
     await recalcReservedQty();
+    // Recalculate project totals from remaining panels
+    const [panels] = await db.execute('SELECT id, total_price, is_completed FROM project_crm_panels WHERE project_id=?', [deletedPanel.project_id]);
+    let projectTotal = panels.reduce((s, p) => s + (parseFloat(p.total_price) || 0), 0);
+    const completedCount = panels.filter(p => p.is_completed).length;
+    const [[proj]] = await db.execute('SELECT vat_pct, project_discount_pct FROM projects WHERE id=?', [deletedPanel.project_id]);
+    const vatPct = parseFloat(proj?.vat_pct) || 0;
+    const discPct = parseFloat(proj?.project_discount_pct) || 0;
+    const discountAmount = projectTotal * (discPct / 100);
+    const netAfterDiscount = projectTotal - discountAmount;
+    const totalVat = netAfterDiscount * (vatPct / 100);
+    const totalWithVat = netAfterDiscount + totalVat;
+    await db.execute('UPDATE projects SET total_price=?, project_discount_amount=?, total_vat=?, total_with_vat=?, completed_panels=? WHERE id=?',
+      [projectTotal, discountAmount, totalVat, totalWithVat, completedCount, deletedPanel.project_id]);
     logActivity({ project_id: req.params.projectId, panel_id: req.params.panelId, action: 'panel_deleted', field_name: 'panel_name', old_value: deletedPanel?.panel_name, performed_by: req.worker.id });
     res.json({ message: 'Panel deleted' });
   } catch (err) { console.error('[CRM] ❌ deletePanel:', err.message); next(err); }
@@ -352,7 +365,7 @@ async function createCrmItem(req, res, next) {
     if (is_manual && !mpId) {
       const [mpResult] = await db.execute(
         'INSERT INTO panel_manual_products(project_id,name,description,price_euro,price_usd,brand) VALUES(?,?,?,?,?,?)',
-        [req.body.project_id || 0, custom_name, custom_desc, eur, usd, custom_brand]
+        [req.params.projectId, custom_name, custom_desc, eur, usd, custom_brand]
       );
       mpId = mpResult.insertId;
     }

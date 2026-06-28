@@ -81,7 +81,7 @@ export default function CalendarPage() {
                   }}>{day}</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {getDeadlinesForDay(day).slice(0, 3).map(p => (
-                      <Link key={p.id} to={`/projects/${p.id}/crm`}
+                      <Link key={p.id} to={`/projects/${p.id}/crm`} target="_blank" rel="noopener noreferrer"
                         style={{
                           fontSize: 10, padding: '2px 4px', borderRadius: 3,
                           background: 'rgba(26,95,168,0.12)', color: 'var(--accent)',
@@ -108,14 +108,14 @@ export default function CalendarPage() {
         <div className="card">
           <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)', marginBottom: 12 }}>📋 Upcoming Deadlines</h3>
           {projects.filter(p => p.deadline).sort((a, b) => a.deadline.localeCompare(b.deadline)).slice(0, 20).map(p => (
-            <Link key={p.id} to={`/projects/${p.id}/crm`} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link key={p.id} to={`/projects/${p.id}/crm`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: 13,
               }}>
                 <span style={{ color: 'var(--text)', fontWeight: 600 }}>{p.project_name}</span>
                 <span style={{ color: 'var(--muted)', fontSize: 12 }}>
-                  {new Date(p.deadline).toLocaleDateString()} · {p.project_name}
+                  {new Date(p.deadline).toLocaleDateString()}
                 </span>
               </div>
             </Link>
