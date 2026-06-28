@@ -1,6 +1,6 @@
 # Horizon LB — Electrical Engineering CRM
 
-Full-stack project management and CRM application for electrical engineering contracting companies. Built for **Electric Eng Co** to manage the full lifecycle from product inventory and project estimation through to execution and analytics.
+Full-stack project management and CRM application for electrical engineering contracting companies. Built for **Horizon LB** to manage the full lifecycle from product inventory and project estimation through to execution and analytics.
 
 ---
 
@@ -138,18 +138,3 @@ Core tables: `workers`, `products`, `brands`, `clients`, `projects`, `project_cr
 
 ---
 
-## Setup
-
-```bash
-# Server
-cd server
-npm install
-cp .env.example .env  # configure your variables
-# Run schema.sql against your MySQL database
-node server.js
-
-# Client
-cd client
-npm install
-npm run dev
-```
