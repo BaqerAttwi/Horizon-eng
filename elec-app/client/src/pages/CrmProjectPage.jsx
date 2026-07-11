@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api/client';
@@ -270,12 +270,16 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
   const baseEur = parseFloat(item.base_price_euro || 0);
   const qty = parseInt(item.qty) || 1;
   const baseTotal = base * qty;
-  const disc = baseTotal * (parseFloat(item.discount_pct) / 100);
+  const discPctVal = parseFloat(item.discount_pct) || 0;
+  const disc = baseTotal * (discPctVal / 100);
   const afterDisc = baseTotal - disc;
-  const mkP = afterDisc * (parseFloat(item.markupP_pct) / 100);
+  const mkPPct = parseFloat(item.markupP_pct) || 0;
+  const mkP = afterDisc * (mkPPct / 100);
   const totalT = afterDisc + mkP;
-  const man = afterDisc * (parseFloat(item.manpower_pct) / 100);
-  const mkM = man * (parseFloat(item.markupM_pct) / 100);
+  const manPct = parseFloat(item.manpower_pct) || 0;
+  const man = afterDisc * (manPct / 100);
+  const mkMPct = parseFloat(item.markupM_pct) || 0;
+  const mkM = man * (mkMPct / 100);
   const final = totalT + man + mkM;
   const finalEur = baseEur * (final / (base || 1));
   const cost = parseFloat(item.cost || 0);
@@ -317,9 +321,9 @@ function CrmItemRow({ item, division, panel, project, onUpdate, onDelete, hideCo
             onChange={e => setForm(f => ({ ...f, qty: parseInt(e.target.value) || 1 }))} onKeyDown={handleKeyDown} />
         </td>
         <td style={{ verticalAlign: 'middle' }}>
-          <input type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11 }} value={form.base_price_usd || ''}
+          <input type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11 }} value={form.base_price_usd ?? ''}
             onChange={e => convertUsdEdit(e.target.value)} placeholder="USD $" onKeyDown={handleKeyDown} />
-          <input type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11, marginTop: 2 }} value={form.base_price_euro || ''}
+          <input type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11, marginTop: 2 }} value={form.base_price_euro ?? ''}
             onChange={e => convertEurEdit(e.target.value)} placeholder="EUR €" onKeyDown={handleKeyDown} />
         </td>
         <td className="mono" style={{ verticalAlign: 'middle', color: 'var(--muted)', fontWeight: 600 }}>
@@ -935,6 +939,11 @@ export default function CrmProjectPage() {
   const [executionData, setExecutionData] = useState({ panelCompletion: {}, itemCompletion: {} });
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [showBulkEdit, setShowBulkEdit] = useState(false);
+  const [brandDiscountEdits, setBrandDiscountEdits] = useState({});
+  const [showBrandPreview, setShowBrandPreview] = useState(false);
+  const [previewBrand, setPreviewBrand] = useState('');
+  const [previewDiscPct, setPreviewDiscPct] = useState(0);
+  const [applyingBrandDisc, setApplyingBrandDisc] = useState(false);
 
   const hideCost = isRole('engineer');
 
@@ -1158,6 +1167,55 @@ export default function CrmProjectPage() {
   const [activeTab, setActiveTab] = useState('items');
   const [editView, setEditView] = useState(false);
 
+  // ── Brand discount helpers (must be before early returns to keep hook order) ──
+  const calcItemFinal = (item, discPct) => {
+    const base = parseFloat(item.base_price_usd) || 0;
+    const qty = parseFloat(item.qty) || 1;
+    const baseTotal = base * qty;
+    const discAmt = baseTotal * (discPct / 100);
+    const afterDisc = baseTotal - discAmt;
+    const mkPPct = parseFloat(item.markupP_pct) || 0;
+    const mkPAmt = afterDisc * (mkPPct / 100);
+    const tPrice = afterDisc + mkPAmt;
+    const manPct = parseFloat(item.manpower_pct) || 0;
+    const manAmt = afterDisc * (manPct / 100);
+    const mkMPct = parseFloat(item.markupM_pct) || 0;
+    const mkMAmt = manAmt * (mkMPct / 100);
+    return tPrice + manAmt + mkMAmt;
+  };
+  const brandPanelBreakdown = useMemo(() => {
+    if (!showBrandPreview || !previewBrand) return [];
+    const rows = [];
+    for (const panel of panels) {
+      let currentTotal = 0, newTotal = 0, itemCount = 0;
+      for (const div of panel.divisions || []) {
+        for (const item of div.items || []) {
+          const brand = item.is_manual
+            ? (item.custom_brand || 'Unbranded')
+            : (item.brand_name || 'Unbranded');
+          if (brand !== previewBrand) continue;
+          const base = parseFloat(item.base_price_usd) || 0;
+          const qty = parseFloat(item.qty) || 1;
+          const baseTotal = base * qty;
+          const bDiscPct = parseFloat(item.discount_pct) || 0;
+          const curDisc = baseTotal * (bDiscPct / 100);
+          const curAfter = baseTotal - curDisc;
+          const bMkPPct = parseFloat(item.markupP_pct) || 0;
+          const curMkP = curAfter * (bMkPPct / 100);
+          const bManPct = parseFloat(item.manpower_pct) || 0;
+          const curMan = curAfter * (bManPct / 100);
+          const bMkMPct = parseFloat(item.markupM_pct) || 0;
+          const curMkM = curMan * (bMkMPct / 100);
+          currentTotal += curAfter + curMkP + curMan + curMkM;
+          newTotal += calcItemFinal(item, previewDiscPct);
+          itemCount++;
+        }
+      }
+      if (itemCount > 0) rows.push({ panel_number: panel.panel_number, panel_name: panel.panel_name, currentTotal, newTotal, itemCount });
+    }
+    return rows;
+  }, [showBrandPreview, previewBrand, previewDiscPct, panels]);
+
   if (loading) return <div className="page"><div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /> Loading CRM...</div></div>;
   if (!project) return <div className="page"><div className="empty"><p>Project not found</p></div></div>;
 
@@ -1182,25 +1240,76 @@ export default function CrmProjectPage() {
           const base = parseFloat(item.base_price_usd) || 0;
           const qty = parseFloat(item.qty) || 1;
           const baseTotal = base * qty;
-          const discAmt = baseTotal * (parseFloat(item.discount_pct) / 100);
+          const discPctVal = parseFloat(item.discount_pct) || 0;
+          const discAmt = baseTotal * (discPctVal / 100);
           const afterDisc = baseTotal - discAmt;
-          const mkPAmt = afterDisc * (parseFloat(item.markupP_pct) / 100);
+          const mkPPct = parseFloat(item.markupP_pct) || 0;
+          const mkPAmt = afterDisc * (mkPPct / 100);
           const tPrice = afterDisc + mkPAmt;
-          const manAmt = afterDisc * (parseFloat(item.manpower_pct) / 100);
-          const mkMAmt = manAmt * (parseFloat(item.markupM_pct) / 100);
+          const manPct = parseFloat(item.manpower_pct) || 0;
+          const manAmt = afterDisc * (manPct / 100);
+          const mkMPct = parseFloat(item.markupM_pct) || 0;
+          const mkMAmt = manAmt * (mkMPct / 100);
           const finalPrice = tPrice + manAmt + mkMAmt;
           const cost = parseFloat(item.cost || 0);
-          if (!map[brand]) map[brand] = { brand, total_cost: 0, total_price: 0, total_qty: 0, profit: 0, count: 0 };
+          if (!map[brand]) map[brand] = { brand, total_cost: 0, total_price: 0, total_qty: 0, profit: 0, count: 0, discountInfo: {} };
           map[brand].total_cost += cost;
           map[brand].total_price += finalPrice;
           map[brand].total_qty += qty;
           map[brand].profit = map[brand].total_price - map[brand].total_cost;
           map[brand].count++;
+          const key = String(discPctVal);
+          if (!map[brand].discountInfo[key]) map[brand].discountInfo[key] = { pct: discPctVal, count: 0 };
+          map[brand].discountInfo[key].count += qty;
         }
       }
     }
     return Object.values(map).sort((a, b) => b.total_price - a.total_price);
   })();
+
+  const brandPreview = (() => {
+    const map = {};
+    for (const panel of panels) {
+      for (const div of panel.divisions || []) {
+        for (const item of div.items || []) {
+          const brand = item.is_manual
+            ? (item.custom_brand || 'Unbranded')
+            : (item.brand_name || 'Unbranded');
+          const edit = brandDiscountEdits[brand];
+          if (edit === undefined || edit === null) continue;
+          const discPct = parseFloat(edit);
+          if (isNaN(discPct)) continue;
+          const finalPrice = calcItemFinal(item, discPct);
+          if (!map[brand]) map[brand] = 0;
+          map[brand] += finalPrice;
+        }
+      }
+    }
+    return map;
+  })();
+
+  const openBrandPreview = (brand) => {
+    const discPct = brandDiscountEdits[brand];
+    if (discPct === undefined || discPct === null || discPct === '') {
+      toast.error('Enter a discount percentage first');
+      return;
+    }
+    setPreviewBrand(brand);
+    setPreviewDiscPct(parseFloat(discPct) || 0);
+    setShowBrandPreview(true);
+  };
+
+  const handleConfirmBrandDiscount = async () => {
+    setApplyingBrandDisc(true);
+    try {
+      const r = await api.post(`/projects/${id}/items/apply-brand-discount`, { brand: previewBrand, discount_pct: previewDiscPct });
+      toast.success(`✅ ${r.data.updated} items updated for ${previewBrand}`);
+      setBrandDiscountEdits(prev => ({ ...prev, [previewBrand]: undefined }));
+      setShowBrandPreview(false);
+      load();
+    } catch (e) { toast.error(e.message); }
+    finally { setApplyingBrandDisc(false); }
+  };
 
   const reportItems = (() => {
     const flat = [];
@@ -1477,6 +1586,9 @@ export default function CrmProjectPage() {
               <div className="empty"><p>No items with brands found.</p></div>
             ) : (
               <>
+                <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+                  Set a discount % per brand to preview the impact. Click Apply to save to this project.
+                </div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid var(--border)' }}>
@@ -1484,25 +1596,61 @@ export default function CrmProjectPage() {
                       <th style={{ textAlign: 'right', padding: '8px 10px' }}>Items</th>
                       <th style={{ textAlign: 'right', padding: '8px 10px' }}>Total Qty</th>
                       {!hideCost && <th style={{ textAlign: 'right', padding: '8px 10px' }}>Total Cost</th>}
-                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Total Price</th>
-                      {!hideCost && <th style={{ textAlign: 'right', padding: '8px 10px' }}>Profit</th>}
+                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Current Total</th>
+                      <th style={{ textAlign: 'center', padding: '8px 10px', minWidth: 70 }}>Current Disc %</th>
+                      <th style={{ textAlign: 'center', padding: '8px 10px', minWidth: 80 }}>New Discount %</th>
+                      {Object.keys(brandDiscountEdits).some(k => brandDiscountEdits[k] !== undefined && brandDiscountEdits[k] !== '') && (
+                        <th style={{ textAlign: 'right', padding: '8px 10px', color: 'var(--accent2)' }}>Preview Total</th>
+                      )}
+                      <th style={{ textAlign: 'center', padding: '8px 10px' }}></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {brandData.map(b => (
+                    {brandData.map(b => {
+                      const edit = brandDiscountEdits[b.brand];
+                      const hasEdit = edit !== undefined && edit !== null && edit !== '';
+                      const discPct = hasEdit ? parseFloat(edit) : null;
+                      const previewTotal = hasEdit && !isNaN(discPct) ? (brandPreview[b.brand] ?? null) : null;
+                      const diff = previewTotal !== null ? previewTotal - b.total_price : null;
+                      return (
                       <tr key={b.brand} style={{ borderBottom: '1px solid var(--border)' }}>
                         <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--accent)' }}>{b.brand}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right' }}>{b.count}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{b.total_qty}</td>
                         {!hideCost && <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>${b.total_cost.toFixed(2)}</td>}
                         <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>${b.total_price.toFixed(2)}</td>
-                        {!hideCost && (
-                          <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: b.profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                            {b.profit >= 0 ? '+' : '-'}${Math.abs(b.profit).toFixed(2)}
+                        <td style={{ padding: '8px 10px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
+                          {Object.values(b.discountInfo)
+                            .sort((a, b2) => b2.count - a.count)
+                            .map(d => `${d.pct}% (${d.count})`).join(', ')}
+                        </td>
+                        <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                          <input type="number" min={0} max={100} step={0.5}
+                            value={edit ?? ''}
+                            onChange={e => setBrandDiscountEdits(prev => ({ ...prev, [b.brand]: e.target.value }))}
+                            placeholder="%"
+                            style={{ width: 60, padding: '4px 6px', fontSize: 12, textAlign: 'center', background: 'var(--panel2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--white)' }} />
+                        </td>
+                        {Object.keys(brandDiscountEdits).some(k => brandDiscountEdits[k] !== undefined && brandDiscountEdits[k] !== '') && (
+                          <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--accent2)' }}>
+                            {previewTotal !== null ? `$${previewTotal.toFixed(2)}` : '—'}
+                            {diff !== null && diff !== 0 && (
+                              <div style={{ fontSize: 10, color: diff < 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                {diff < 0 ? '-' : '+'}${Math.abs(diff).toFixed(2)}
+                              </div>
+                            )}
                           </td>
                         )}
+                        <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                          <button className="btn btn-sm btn-primary" style={{ fontSize: 11, padding: '4px 10px' }}
+                            onClick={() => openBrandPreview(b.brand)}
+                            disabled={!hasEdit || isNaN(parseFloat(edit))}>
+                            Preview & Apply
+                          </button>
+                        </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                   <tfoot>
                     <tr style={{ borderTop: '2px solid var(--border)', fontWeight: 700 }}>
@@ -1511,16 +1659,78 @@ export default function CrmProjectPage() {
                       <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>{brandData.reduce((s, b) => s + b.total_qty, 0)}</td>
                       {!hideCost && <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>${brandData.reduce((s, b) => s + b.total_cost, 0).toFixed(2)}</td>}
                       <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>${brandData.reduce((s, b) => s + b.total_price, 0).toFixed(2)}</td>
-                      {!hideCost && (
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: brandData.reduce((s, b) => s + (b.total_price - b.total_cost), 0) >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                          {brandData.reduce((s, b) => s + (b.total_price - b.total_cost), 0) >= 0 ? '+' : '-'}${Math.abs(brandData.reduce((s, b) => s + (b.total_price - b.total_cost), 0)).toFixed(2)}
+                      {Object.keys(brandDiscountEdits).some(k => brandDiscountEdits[k] !== undefined && brandDiscountEdits[k] !== '') && (
+                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--accent2)' }}>
+                          ${(brandData.reduce((s, b) => s + (brandPreview[b.brand] ?? b.total_price), 0)).toFixed(2)}
                         </td>
                       )}
+                      <td style={{ padding: '8px 10px' }}></td>
                     </tr>
                   </tfoot>
                 </table>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Brand Discount Preview Modal ── */}
+      {showBrandPreview && (
+        <div className="modal-overlay" onClick={() => setShowBrandPreview(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
+            <div className="modal-header">
+              <span className="modal-title">📊 Preview: {previewDiscPct}% Discount on {previewBrand}</span>
+              <button className="btn-icon" onClick={() => setShowBrandPreview(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+                Review the impact per panel before applying
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                    <th style={{ textAlign: 'left', padding: '6px 8px' }}>Panel</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px' }}>Items</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px' }}>Current Total</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px', color: 'var(--accent2)' }}>New Total ({previewDiscPct}% off)</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px' }}>Difference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {brandPanelBreakdown.map(r => {
+                    const diff = r.newTotal - r.currentTotal;
+                    return (
+                      <tr key={r.panel_number} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)', color: 'var(--white)', fontWeight: 600 }}>#{r.panel_number}{r.panel_name ? ` — ${r.panel_name}` : ''}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--muted)' }}>{r.itemCount}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>${r.currentTotal.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--accent2)' }}>${r.newTotal.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: diff < 0 ? 'var(--success)' : diff > 0 ? 'var(--danger)' : 'var(--muted)' }}>
+                          {diff < 0 ? '-' : '+'}${Math.abs(diff).toFixed(2)} ({((diff / (r.currentTotal || 1)) * 100).toFixed(1)}%)
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr style={{ borderTop: '2px solid var(--border)', fontWeight: 700 }}>
+                    <td style={{ padding: '6px 8px' }}>Total</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right' }}>{brandPanelBreakdown.reduce((s, r) => s + r.itemCount, 0)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>${brandPanelBreakdown.reduce((s, r) => s + r.currentTotal, 0).toFixed(2)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--accent2)' }}>${brandPanelBreakdown.reduce((s, r) => s + r.newTotal, 0).toFixed(2)}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>
+                      -${(brandPanelBreakdown.reduce((s, r) => s + r.currentTotal, 0) - brandPanelBreakdown.reduce((s, r) => s + r.newTotal, 0)).toFixed(2)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowBrandPreview(false)} disabled={applyingBrandDisc}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleConfirmBrandDiscount} disabled={applyingBrandDisc}>
+                {applyingBrandDisc ? <><span className="spinner" /> Applying...</> : `✅ Apply ${previewDiscPct}% to ${previewBrand}`}
+              </button>
+            </div>
           </div>
         </div>
       )}

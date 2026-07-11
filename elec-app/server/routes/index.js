@@ -25,7 +25,7 @@ const {
   getDivisions, createDivision, updateDivision, deleteDivision,
   getManualProducts, createManualProduct, deleteManualProduct,
   getCrmItems, createCrmItem, updateCrmItem, deleteCrmItem,
-  getProjectCrm, copyPanelFromProject, bulkUpdateItems, bulkReplaceItem,
+  getProjectCrm, copyPanelFromProject, bulkUpdateItems, bulkReplaceItem, applyBrandDiscount,
 } = require('../controllers/crmController');
 const {
   getEngineerStats, getClientStats, getSummary, getProjectTeam,
@@ -164,6 +164,7 @@ router.patch('/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:
 router.delete('/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId', requireAuth, requireRole('owner','engineer'), deleteCrmItem);
 router.post('/projects/:projectId/items/bulk-update', requireAuth, requireRole('owner','engineer'), bulkUpdateItems);
 router.post('/projects/:projectId/items/bulk-replace', requireAuth, requireRole('owner','engineer'), bulkReplaceItem);
+router.post('/projects/:projectId/items/apply-brand-discount', requireAuth, requireRole('owner','engineer'), applyBrandDiscount);
 
 // ── Engineer Collaboration Requests ──────────────────────────
 router.get('/engineer-requests/pending',   requireAuth, getMyPendingRequests);

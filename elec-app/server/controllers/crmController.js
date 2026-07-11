@@ -757,6 +757,8 @@ async function copyPanelFromProject(req, res, next) {
 async function bulkUpdateItems(req, res, next) {
   try {
     const { projectId } = req.params;
+    const hasAccess = await checkProjectAccess(req, res, projectId);
+    if (!hasAccess) return;
     const { item_ids, changes } = req.body;
     if (!item_ids?.length || !changes) {
       return res.status(400).json({ error: 'item_ids array and changes object required' });
@@ -904,12 +906,90 @@ async function bulkReplaceItem(req, res, next) {
   }
 }
 
+// ── Apply Brand Discount to Project ─────────────────────────
+async function applyBrandDiscount(req, res, next) {
+  try {
+    const { projectId } = req.params;
+    const { brand, discount_pct } = req.body;
+    if (brand === undefined || discount_pct === undefined) {
+      return res.status(400).json({ error: 'brand and discount_pct required' });
+    }
+
+    const hasAccess = await checkProjectAccess(req, res, projectId);
+    if (!hasAccess) return;
+
+    const num = parseFloat(discount_pct) || 0;
+
+    // Get project exchange rate for EUR→USD conversion
+    const [[proj]] = await db.execute('SELECT exchange_rate_eur_usd FROM projects WHERE id=?', [projectId]);
+    const rate = parseFloat(proj?.exchange_rate_eur_usd) || 1.08;
+
+    // Find all items with matching brand in this project (handles both catalog and manual)
+    const [items] = await db.execute(
+      `SELECT pci.id, pci.base_price_usd, pci.base_price_euro, pci.qty, pci.markupP_pct, pci.manpower_pct, pci.markupM_pct
+       FROM panel_crm_items pci
+       JOIN panel_divisions pd ON pci.division_id = pd.id
+       JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+       LEFT JOIN products p ON pci.product_id = p.id
+       LEFT JOIN brands b ON p.brand_id = b.id
+       WHERE pcp.project_id = ?
+         AND (b.name = ? OR (pci.is_manual = 1 AND pci.custom_brand = ?))`,
+      [projectId, brand, brand]
+    );
+
+    if (!items.length) {
+      return res.status(404).json({ error: `No items found for brand "${brand}"` });
+    }
+
+    const updatedIds = [];
+    for (const item of items) {
+      const pricing = calcItemPricing({ ...item, discount_pct: num }, rate);
+      await db.execute(
+        `UPDATE panel_crm_items SET discount_pct=?, markupP_amt=?,discount_amt=?,totalpriceT=?,
+         manpower_amt=?,markupM_amt=?,totalfinalProduct=? WHERE id=?`,
+        [num, pricing.markupP_amt, pricing.discount_amt, pricing.totalpriceT,
+         pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct, item.id]
+      );
+      updatedIds.push(item.id);
+    }
+
+    // Recalc totals for affected divisions/panels
+    const [affected] = await db.execute(
+      `SELECT DISTINCT pci.division_id, pd.panel_id
+       FROM panel_crm_items pci
+       JOIN panel_divisions pd ON pci.division_id = pd.id
+       WHERE pci.id IN (${updatedIds.map(() => '?').join(',')})`,
+      updatedIds
+    );
+    for (const a of affected) {
+      await recalcDivisionTotals(a.division_id);
+      await recalcPanelTotals(a.panel_id);
+    }
+    await recalcReservedQty();
+
+    logActivity({
+      project_id: projectId,
+      action: 'brand_discount_applied',
+      field_name: 'discount_pct',
+      old_value: null,
+      new_value: `Brand "${brand}" discount set to ${num}% (${updatedIds.length} items)`,
+      performed_by: req.worker.id,
+    });
+
+    res.json({ updated: updatedIds.length, brand, discount_pct: num });
+  } catch (err) {
+    console.error('[CRM] ❌ applyBrandDiscount:', err.message);
+    next(err);
+  }
+}
+
 module.exports = {
   getPanels, createPanel, updatePanel, deletePanel, togglePanelComplete,
   getDivisions, createDivision, updateDivision, deleteDivision,
   getManualProducts, createManualProduct, deleteManualProduct,
   getCrmItems, createCrmItem, updateCrmItem, deleteCrmItem,
   getProjectCrm, copyPanelFromProject, bulkUpdateItems, bulkReplaceItem,
+  applyBrandDiscount,
   recalcDivisionTotals, recalcPanelTotals,
   calcItemPricing,
 };
