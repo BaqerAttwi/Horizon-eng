@@ -415,7 +415,7 @@ async function updateCrmItem(req, res, next) {
     const hasAccess = await checkDivisionAccess(req, res, req.params.divisionId);
     if (!hasAccess) return;
 
-    const { qty, base_price_usd, base_price_euro, markupP_pct, discount_pct, manpower_pct, markupM_pct, notes, cost, visible_in_client_pdf } = req.body;
+    const { product_id, is_manual, qty, base_price_usd, base_price_euro, markupP_pct, discount_pct, manpower_pct, markupM_pct, notes, cost, visible_in_client_pdf, custom_name, custom_desc, custom_brand, custom_price_euro, custom_price_usd } = req.body;
 
     const [existing] = await db.execute('SELECT * FROM panel_crm_items WHERE id=? AND division_id=?', [req.params.itemId, req.params.divisionId]);
     if (!existing.length) return res.status(404).json({ error: 'Item not found' });
@@ -473,20 +473,53 @@ async function updateCrmItem(req, res, next) {
       (markupP_pct !== undefined) || (manpower_pct !== undefined) || (markupM_pct !== undefined)
     );
 
-    await db.execute(
-      `UPDATE panel_crm_items SET qty=?,base_price_usd=?,base_price_euro=?,markupP_pct=?,discount_pct=?,
-        manpower_pct=?,markupM_pct=?,markupP_amt=?,discount_amt=?,totalpriceT=?,
-        manpower_amt=?,markupM_amt=?,totalfinalProduct=?,notes=?,cost=?${markupChanged ? ',override_markup=1' : ''}${visible_in_client_pdf !== undefined ? ',visible_in_client_pdf=?' : ''} WHERE id=?`,
-      [
-        item.qty, item.base_price_usd, item.base_price_euro, item.markupP_pct, item.discount_pct,
-        item.manpower_pct, item.markupM_pct, pricing.markupP_amt, pricing.discount_amt,
-        pricing.totalpriceT, pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct,
-        notes !== undefined ? notes : existing[0].notes,
-        cost !== undefined ? cost : existing[0].cost,
-        ...(visible_in_client_pdf !== undefined ? [visible_in_client_pdf] : []),
-        req.params.itemId
-      ]
-    );
+    const updateFields = ['qty=?','base_price_usd=?','base_price_euro=?','markupP_pct=?','discount_pct=?',
+      'manpower_pct=?','markupM_pct=?','markupP_amt=?','discount_amt=?','totalpriceT=?',
+      'manpower_amt=?','markupM_amt=?','totalfinalProduct=?','notes=?','cost=?'];
+    const updateParams = [
+      item.qty, item.base_price_usd, item.base_price_euro, item.markupP_pct, item.discount_pct,
+      item.manpower_pct, item.markupM_pct, pricing.markupP_amt, pricing.discount_amt,
+      pricing.totalpriceT, pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct,
+      notes !== undefined ? notes : existing[0].notes,
+      cost !== undefined ? cost : existing[0].cost,
+    ];
+
+    if (product_id !== undefined) {
+      updateFields.push('product_id=?');
+      updateParams.push(product_id);
+    }
+    if (is_manual !== undefined) {
+      updateFields.push('is_manual=?');
+      updateParams.push(is_manual);
+    }
+    if (custom_name !== undefined) {
+      updateFields.push('custom_name=?');
+      updateParams.push(custom_name);
+    }
+    if (custom_desc !== undefined) {
+      updateFields.push('custom_desc=?');
+      updateParams.push(custom_desc);
+    }
+    if (custom_brand !== undefined) {
+      updateFields.push('custom_brand=?');
+      updateParams.push(custom_brand);
+    }
+    if (custom_price_euro !== undefined) {
+      updateFields.push('custom_price_euro=?');
+      updateParams.push(custom_price_euro);
+    }
+    if (custom_price_usd !== undefined) {
+      updateFields.push('custom_price_usd=?');
+      updateParams.push(custom_price_usd);
+    }
+    if (markupChanged) updateFields.push('override_markup=1');
+    if (visible_in_client_pdf !== undefined) {
+      updateFields.push('visible_in_client_pdf=?');
+      updateParams.push(visible_in_client_pdf);
+    }
+
+    updateParams.push(req.params.itemId);
+    await db.execute(`UPDATE panel_crm_items SET ${updateFields.join(',')} WHERE id=?`, updateParams);
 
     await recalcPanelTotals(req.params.panelId);
     await recalcReservedQty();
@@ -789,12 +822,94 @@ async function bulkUpdateItems(req, res, next) {
   }
 }
 
+// ── Bulk Replace Item Across Panels ──────────────────────────
+async function bulkReplaceItem(req, res, next) {
+  try {
+    const { projectId } = req.params;
+    const { item_ids, product_id, base_price_usd, base_price_euro } = req.body;
+    if (!item_ids?.length || !product_id) {
+      return res.status(400).json({ error: 'item_ids array and product_id required' });
+    }
+
+    const hasAccess = await checkProjectAccess(req, res, projectId);
+    if (!hasAccess) return;
+
+    const [projRows] = await db.execute('SELECT exchange_rate_eur_usd FROM projects WHERE id=?', [projectId]);
+    const rate = projRows.length ? parseFloat(projRows[0].exchange_rate_eur_usd) || 1.08 : 1.08;
+    let usd = parseFloat(base_price_usd) || 0;
+    let eur = parseFloat(base_price_euro) || 0;
+    if (!usd && eur) usd = eur * rate;
+    if (usd && !eur) eur = usd / rate;
+
+    const updatedIds = [];
+    for (const itemId of item_ids) {
+      const [existing] = await db.execute('SELECT * FROM panel_crm_items WHERE id=?', [itemId]);
+      if (!existing.length) continue;
+
+      const item = {
+        ...existing[0],
+        product_id: parseInt(product_id, 10),
+        base_price_usd: usd,
+        base_price_euro: eur,
+        is_manual: 0,
+        custom_name: null,
+        custom_desc: null,
+        custom_brand: null,
+        custom_price_euro: null,
+        custom_price_usd: null,
+      };
+      const pricing = calcItemPricing(item);
+
+      await db.execute(
+        `UPDATE panel_crm_items SET product_id=?,base_price_usd=?,base_price_euro=?,
+         is_manual=0,custom_name=NULL,custom_desc=NULL,custom_brand=NULL,
+         custom_price_euro=NULL,custom_price_usd=NULL,
+         markupP_amt=?,discount_amt=?,totalpriceT=?,
+         manpower_amt=?,markupM_amt=?,totalfinalProduct=?
+         WHERE id=?`,
+        [item.product_id, item.base_price_usd, item.base_price_euro,
+         pricing.markupP_amt, pricing.discount_amt, pricing.totalpriceT,
+         pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct, itemId]
+      );
+      updatedIds.push(itemId);
+    }
+
+    // Recalc totals for affected divisions/panels
+    const [affected] = await db.execute(
+      `SELECT DISTINCT pci.division_id, pd.panel_id
+       FROM panel_crm_items pci
+       JOIN panel_divisions pd ON pci.division_id = pd.id
+       WHERE pci.id IN (${item_ids.map(() => '?').join(',')})`,
+      item_ids
+    );
+    for (const a of affected) {
+      await recalcDivisionTotals(a.division_id);
+      await recalcPanelTotals(a.panel_id);
+    }
+    await recalcReservedQty();
+
+    logActivity({
+      project_id: projectId,
+      action: 'items_bulk_replaced',
+      field_name: 'product_id',
+      old_value: null,
+      new_value: `Replaced ${updatedIds.length} items with product #${product_id}`,
+      performed_by: req.worker.id,
+    });
+
+    res.json({ updated: updatedIds.length });
+  } catch (err) {
+    console.error('[CRM] ❌ bulkReplaceItem:', err.message);
+    next(err);
+  }
+}
+
 module.exports = {
   getPanels, createPanel, updatePanel, deletePanel, togglePanelComplete,
   getDivisions, createDivision, updateDivision, deleteDivision,
   getManualProducts, createManualProduct, deleteManualProduct,
   getCrmItems, createCrmItem, updateCrmItem, deleteCrmItem,
-  getProjectCrm, copyPanelFromProject, bulkUpdateItems,
+  getProjectCrm, copyPanelFromProject, bulkUpdateItems, bulkReplaceItem,
   recalcDivisionTotals, recalcPanelTotals,
   calcItemPricing,
 };

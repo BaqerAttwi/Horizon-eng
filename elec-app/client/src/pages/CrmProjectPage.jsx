@@ -6,6 +6,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../context/AuthContext';
 import ActivityLog from '../components/ActivityLog';
 import FileAttachments from '../components/FileAttachments';
+import SummaryTesting from '../components/SummaryTesting';
 
 const DIVISION_TYPES = ['INCOMING', 'OUTGOING', 'Enclosure', 'Accessories', 'Measurement'];
 const DIVISION_COLORS = { INCOMING: '#e11d48', OUTGOING: '#2563eb', Enclosure: '#7c3aed', Accessories: '#d97706', Measurement: '#059669' };
@@ -973,7 +974,7 @@ export default function CrmProjectPage() {
     setSelectedSourcePanel(null);
     try {
       const r = await api.get('/projects');
-      setSourceProjects(r.data.filter(p => p.id !== parseInt(id)));
+      setSourceProjects(r.data);
     } catch (e) { toast.error(e.message); }
   };
 
@@ -1285,6 +1286,10 @@ export default function CrmProjectPage() {
           style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'report' ? 'var(--accent)' : 'var(--muted)', borderBottom: activeTab === 'report' ? '2px solid var(--accent)' : '2px solid transparent', cursor: 'pointer' }}>
           📋 Final Report
         </button>
+        <button onClick={() => setActiveTab('testing')}
+          style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'testing' ? 'var(--accent2)' : 'var(--muted)', borderBottom: activeTab === 'testing' ? '2px solid var(--accent2)' : '2px solid transparent', cursor: 'pointer' }}>
+          🧪 Summary Testing
+        </button>
         {project.client_approval === 'approved' && (
           <button onClick={() => setActiveTab('execution')}
             style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'execution' ? 'var(--success)' : 'var(--muted)', borderBottom: activeTab === 'execution' ? '2px solid var(--success)' : '2px solid transparent', cursor: 'pointer' }}>
@@ -1568,6 +1573,12 @@ export default function CrmProjectPage() {
             )}
           </div>
         </div>
+      )}
+
+      {activeTab === 'testing' && (
+        <SummaryTesting panels={panels} project={project} id={id}
+          onItemUpdate={updateItem} onItemDelete={deleteItem}
+          hideCost={hideCost} exchangeRate={project.exchange_rate_eur_usd} />
       )}
 
       {activeTab === 'activity' && (
