@@ -206,6 +206,7 @@ async function exportCrm(req, res, next) {
     const [rows] = await db.execute(`
       SELECT
         pcp.panel_number,
+        pd.division_type,
         COALESCE(i.custom_name, pr.reference) AS reference,
         COALESCE(i.custom_desc, pr.description) AS description,
         i.qty
@@ -228,10 +229,11 @@ async function exportCrm(req, res, next) {
 
     // Section 1: Items by Panel
     const flatCols = [
-      { key: 'panel_number', label: 'Panel #' },
-      { key: 'reference',    label: 'Reference' },
-      { key: 'description',  label: 'Description' },
-      { key: 'qty',          label: 'Qty' },
+      { key: 'panel_number',  label: 'Panel #' },
+      { key: 'division_type', label: 'Division' },
+      { key: 'reference',     label: 'Reference' },
+      { key: 'description',   label: 'Description' },
+      { key: 'qty',           label: 'Qty' },
     ];
     let csv = toCsv(rows, flatCols);
 
