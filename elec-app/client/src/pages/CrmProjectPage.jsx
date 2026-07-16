@@ -663,7 +663,7 @@ function PanelSection({ panel, project, onUpdatePanel, onDeletePanel, onToggleCo
                 {panel.is_completed ? '✓ Complete' : '☐ Mark Complete'}
               </button>
               <button className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
-                onClick={() => setEditing(true)}>Edit Panel</button>
+                onClick={() => { setEditing(true); setForm({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false }); }}>Edit Panel</button>
             </>
           )}
           <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.25)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}

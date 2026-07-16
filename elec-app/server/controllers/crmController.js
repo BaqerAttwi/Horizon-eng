@@ -120,9 +120,17 @@ async function deletePanel(req, res, next) {
     const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
     if (!hasAccess) return;
 
-    const [[deletedPanel]] = await db.execute('SELECT panel_name, project_id FROM project_crm_panels WHERE id=?', [req.params.panelId]);
+    const [[deletedPanel]] = await db.execute('SELECT panel_name, panel_number, project_id FROM project_crm_panels WHERE id=?', [req.params.panelId]);
     if (!deletedPanel) return res.status(404).json({ error: 'Panel not found' });
     await db.execute('DELETE FROM project_crm_panels WHERE id=? AND project_id=?', [req.params.panelId, req.params.projectId]);
+    // Re-number remaining panels sequentially starting from 1
+    const [remaining] = await db.execute(
+      'SELECT id FROM project_crm_panels WHERE project_id=? ORDER BY panel_number',
+      [deletedPanel.project_id]
+    );
+    for (let i = 0; i < remaining.length; i++) {
+      await db.execute('UPDATE project_crm_panels SET panel_number=? WHERE id=?', [i + 1, remaining[i].id]);
+    }
     await recalcReservedQty();
     // Recalculate project totals from remaining panels
     const [panels] = await db.execute('SELECT id, total_price, is_completed FROM project_crm_panels WHERE project_id=?', [deletedPanel.project_id]);
