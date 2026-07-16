@@ -514,7 +514,27 @@ function DivisionSection({ division, panel, project, onItemAdd, onItemUpdate, on
 
       {division.items?.length > 0 && (
         <div className="table-wrap" style={{ overflowX: 'auto', background: 'var(--panel)' }}>
-          <table style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+          <table style={{ fontSize: 12, whiteSpace: 'nowrap', tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: 28 }} />
+              <col style={{ width: 32 }} />
+              <col style={{ width: 90 }} />
+              <col style={{ width: 35 }} />
+              <col style={{ width: 65 }} />
+              <col style={{ width: 65 }} />
+              <col style={{ width: 100 }} />
+              <col style={{ width: 70 }} />
+              <col style={{ width: 60 }} />
+              <col style={{ width: 65 }} />
+              <col style={{ width: 40 }} />
+              <col style={{ width: 65 }} />
+              <col style={{ width: 38 }} />
+              <col style={{ width: 38 }} />
+              <col style={{ width: 70 }} />
+              {!hideCost && <col style={{ width: 55 }} />}
+              {!hideCost && <col style={{ width: 60 }} />}
+              <col />
+            </colgroup>
             <thead>
               <tr>
                 <th style={{ width: 28, textAlign: 'center' }}>
@@ -759,7 +779,27 @@ function GroupInstanceSection({ instance, division, panel, project, onInstanceQt
       </div>
       {instance.items?.length > 0 && (
         <div className="table-wrap" style={{ overflowX: 'auto' }}>
-          <table style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+          <table style={{ fontSize: 11, whiteSpace: 'nowrap', tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: 28 }} />
+              <col style={{ width: 32 }} />
+              <col style={{ width: 90 }} />
+              <col style={{ width: 35 }} />
+              <col style={{ width: 65 }} />
+              <col style={{ width: 65 }} />
+              <col style={{ width: 100 }} />
+              <col style={{ width: 70 }} />
+              <col style={{ width: 60 }} />
+              <col style={{ width: 65 }} />
+              <col style={{ width: 40 }} />
+              <col style={{ width: 65 }} />
+              <col style={{ width: 38 }} />
+              <col style={{ width: 38 }} />
+              <col style={{ width: 70 }} />
+              {!hideCost && <col style={{ width: 55 }} />}
+              {!hideCost && <col style={{ width: 60 }} />}
+              <col />
+            </colgroup>
             <thead>
               <tr>
                 <th style={{ width: 28, textAlign: 'center' }}>

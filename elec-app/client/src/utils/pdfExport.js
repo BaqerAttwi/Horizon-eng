@@ -67,17 +67,17 @@ export async function exportProjectPdf(projectId, type = 'owner') {
   // ────────────────────────────────────────────────────────────────
   if (type === 'client') {
     // ── Page 1: Header + Project Info ──
-    if (logoPng) { doc.addImage(logoPng, 'PNG', 14, 14, 22, 22); }
+    if (logoPng) { doc.addImage(logoPng, 'PNG', 14, 8, 33, 33); }
     doc.setFontSize(18);
     doc.setTextColor(26, 95, 168);
-    doc.text('HORIZON Engineering & Contracting', pw / 2, 22, { align: 'center' });
+    doc.text('HORIZON Engineering & Contracting', pw / 2, 30, { align: 'center' });
 
     doc.setDrawColor(26, 95, 168);
     doc.setLineWidth(0.5);
-    doc.line(14, 42, pw - 14, 42);
+    doc.line(14, 46, pw - 14, 46);
 
     // Info block
-    const infoY = 56;
+    const infoY = 60;
     doc.setDrawColor(200);
     doc.setFillColor(248, 250, 252);
     doc.roundedRect(14, infoY, pw - 28, 38, 2, 2, 'F');
