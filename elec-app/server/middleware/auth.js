@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
+const db = require('../db/connection');
 const { JWT_SECRET } = require('../controllers/authController');
 
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   // Check HttpOnly cookie first, then Authorization header
   const token = req.cookies?.token || (req.headers['authorization']?.startsWith('Bearer ') ? req.headers['authorization'].slice(7) : null);
   if (!token) {
@@ -10,6 +11,16 @@ function requireAuth(req, res, next) {
   }
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    // A valid JWT can still reference a worker who no longer exists (deleted
+    // account, or a DB reset/reimport) — every FK write that uses
+    // req.worker.id (completed_by, performed_by, assigned_by, ...) would
+    // otherwise crash with a raw foreign-key violation instead of a clean
+    // "please log in again".
+    const [[worker]] = await db.execute('SELECT id FROM workers WHERE id=?', [decoded.id]);
+    if (!worker) {
+      console.log('[Auth] ❌ Token references a worker that no longer exists:', decoded.id);
+      return res.status(401).json({ error: 'Session expired — please log in again' });
+    }
     req.worker = decoded;
     next();
   } catch (err) {

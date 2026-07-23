@@ -86,7 +86,6 @@ function EditModal({ product, onClose, onSaved }) {
       onClose();
     } catch(e) {
       toast.error('❌ ' + e.message);
-      console.error('[Products] Edit save error:', e.message);
     } finally { setSaving(false); }
   };
 
@@ -226,7 +225,6 @@ export default function ProductsPage() {
       setTotal(r.data.total);
     } catch(e) {
       toast.error('❌ ' + e.message);
-      console.error('[Products] Load error:', e.message);
     } finally { setLoading(false); }
   }, [page, debouncedSearch, brandFilter]);
 
@@ -249,7 +247,7 @@ export default function ProductsPage() {
           <div className="page-title">📦 Products</div>
           <div className="page-subtitle">{total} products across {brands.length} brands</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="btn btn-secondary" onClick={() => setShowManualForm(!showManualForm)}>
             {showManualForm ? '✕ Close' : '➕ Manual Product'}
           </button>
@@ -302,7 +300,7 @@ export default function ProductsPage() {
                   onChange={e => setManualForm(f => ({ ...f, reference: e.target.value }))} />
               </div>
             </div>
-            <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <button className="btn btn-secondary" onClick={() => setShowManualForm(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={handleManualSubmit} disabled={submitting}>
                 {submitting ? <><span className="spinner" /> Submitting...</> : isRole('owner') ? '💾 Save to Database' : '📤 Submit for Approval'}
@@ -319,7 +317,7 @@ export default function ProductsPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="card-body">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent2)' }}>
                 ⏳ Pending Manual Product Approvals ({pendingRequests.length})
               </h3>

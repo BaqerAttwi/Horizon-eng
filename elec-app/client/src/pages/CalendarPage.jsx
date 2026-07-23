@@ -51,7 +51,7 @@ export default function CalendarPage() {
       </div>
 
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
           <button className="btn btn-secondary btn-sm" onClick={prevMonth}>← {MONTHS[viewMonth === 0 ? 11 : viewMonth - 1]}</button>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--white)' }}>{MONTHS[viewMonth]} {viewYear}</h3>
           <button className="btn btn-secondary btn-sm" onClick={nextMonth}>{MONTHS[viewMonth === 11 ? 0 : viewMonth + 1]} →</button>

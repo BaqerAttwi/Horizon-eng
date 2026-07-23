@@ -129,7 +129,7 @@ export default function PriceChangesPage() {
           <div className="page-title">💰 Price Change Requests</div>
           <div className="page-subtitle">{requests.length} requests</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {['pending', 'approved', 'rejected', 'all'].map(f => (
             <button
               key={f}

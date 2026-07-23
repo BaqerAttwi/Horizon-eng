@@ -1,32 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AnimatedPage }   from './components/AnimatedPage';
-import LoginPage       from './pages/LoginPage';
-import ProductsPage    from './pages/ProductsPage';
-import UploadPage      from './pages/UploadPage';
-import ProjectsPage    from './pages/ProjectsPage';
-import CrmProjectPage  from './pages/CrmProjectPage';
-import WorkersPage     from './pages/WorkersPage';
-import ClientsPage     from './pages/ClientsPage';
-import ReservationsPage from './pages/ReservationsPage';
-import DiscountsPage   from './pages/DiscountsPage';
-import RequestsPage    from './pages/RequestsPage';
-import AnalyticsPage   from './pages/AnalyticsPage';
-import DashboardPage   from './pages/DashboardPage';
-import NotificationsPage from './pages/NotificationsPage';
-import PriceChangesPage from './pages/PriceChangesPage';
-import GroupsPage from './pages/GroupsPage';
-import MessagesPage from './pages/MessagesPage';
-import CalendarPage from './pages/CalendarPage';
 import NotificationBell from './components/NotificationBell';
 import Logo            from './components/Logo';
 
+// Route-level code splitting — each page ships as its own chunk and is only
+// fetched when the user actually navigates there, instead of all pages
+// bloating the initial bundle.
+import LoginPage       from './pages/LoginPage';
+const ProductsPage     = lazy(() => import('./pages/ProductsPage'));
+const UploadPage       = lazy(() => import('./pages/UploadPage'));
+const ProjectsPage     = lazy(() => import('./pages/ProjectsPage'));
+const WorkersPage      = lazy(() => import('./pages/WorkersPage'));
+const ClientsPage      = lazy(() => import('./pages/ClientsPage'));
+const ReservationsPage = lazy(() => import('./pages/ReservationsPage'));
+const DiscountsPage    = lazy(() => import('./pages/DiscountsPage'));
+const CrmProjectPage   = lazy(() => import('./pages/CrmProjectPage'));
+const RequestsPage     = lazy(() => import('./pages/RequestsPage'));
+const AnalyticsPage    = lazy(() => import('./pages/AnalyticsPage'));
+const DashboardPage    = lazy(() => import('./pages/DashboardPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const PriceChangesPage = lazy(() => import('./pages/PriceChangesPage'));
+const GroupsPage       = lazy(() => import('./pages/GroupsPage'));
+const MessagesPage     = lazy(() => import('./pages/MessagesPage'));
+const CalendarPage     = lazy(() => import('./pages/CalendarPage'));
+const TechnicianProjectsPage = lazy(() => import('./pages/TechnicianProjectsPage'));
+const TechnicianExecutionPage = lazy(() => import('./pages/TechnicianExecutionPage'));
+
 // Role badge colors
-const ROLE_COLORS = { owner:'#a78bfa', accounting:'#60a5fa', engineer:'#4ade80', secretary:'#fbbf24' };
-const ROLE_ICONS  = { owner:'👑', accounting:'💼', engineer:'⚙️', secretary:'📋' };
+const ROLE_COLORS = { owner:'#a78bfa', accounting:'#60a5fa', engineer:'#4ade80', secretary:'#fbbf24', technician:'#94a3b8' };
+const ROLE_ICONS  = { owner:'👑', accounting:'💼', engineer:'⚙️', secretary:'📋', technician:'🛠️' };
+
+// Technicians only get the execution-only "My Projects" view — no pricing/CRM access
+const TECHNICIAN_NAV = [
+  { to: '/my-projects', icon: '🛠️', label: 'My Projects', perm: null, group: 'main' },
+];
 
 // Nav items with permission check
 const NAV = [
@@ -57,6 +68,8 @@ function ProtectedRoute({ children, perm }) {
   const { worker, loading, can } = useAuth();
   if (loading) return <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100vh' }}><span className="spinner"/></div>;
   if (!worker)  return <Navigate to="/login" replace />;
+  // Technicians only ever get execution-scoped routes — no dashboard, CRM, pricing, etc.
+  if (worker.role === 'technician' && perm !== 'execution') return <Navigate to="/my-projects" replace />;
   if (perm && !can(perm)) return (
     <div className="page">
       <div className="empty" style={{ paddingTop: 80 }}>
@@ -70,7 +83,7 @@ function ProtectedRoute({ children, perm }) {
 }
 
 function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
-  const { worker, logout, can } = useAuth();
+  const { worker, logout, can, isRole } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -88,7 +101,7 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
 
       <nav className="sidebar-nav">
         {(() => {
-          const visible = NAV.filter(n => !n.perm || can(n.perm));
+          const visible = isRole('technician') ? TECHNICIAN_NAV : NAV.filter(n => !n.perm || can(n.perm));
           const groups = [...new Set(visible.map(n => n.group))];
           return groups.flatMap((g, gi) => [
             <div key={`h-${g}`} className="nav-group-label">{GROUP_LABELS[g]}</div>,
@@ -148,6 +161,13 @@ function AppLayout() {
   const { worker } = useAuth();
   const location = useLocation();
 
+  // Mirror the theme onto <html> too — the Toaster portal renders as a sibling
+  // of this component, outside the `.light-mode` div below, so it otherwise
+  // never sees the light-mode color overrides and toasts stay dark-styled.
+  useEffect(() => {
+    document.documentElement.classList.toggle('light-mode', theme === 'light');
+  }, [theme]);
+
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
@@ -181,27 +201,31 @@ function AppLayout() {
         )}
 
         <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
-            <Route path="/login" element={<AnimatedPage><LoginPage /></AnimatedPage>} />
-            <Route path="/"          element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<AnimatedPage><ProtectedRoute><DashboardPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/calendar"  element={<AnimatedPage><ProtectedRoute><CalendarPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/products"  element={<AnimatedPage><ProtectedRoute perm="products"><ProductsPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/reservations" element={<AnimatedPage><ProtectedRoute perm="reservations"><ReservationsPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/upload"    element={<AnimatedPage><ProtectedRoute perm="upload"><UploadPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/projects"  element={<AnimatedPage><ProtectedRoute perm="projects"><ProjectsPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/projects/:id/crm" element={<AnimatedPage><ProtectedRoute perm="projects"><CrmProjectPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/requests"  element={<AnimatedPage><ProtectedRoute perm="requests"><RequestsPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/price-changes" element={<AnimatedPage><ProtectedRoute perm="price-changes"><PriceChangesPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/groups" element={<AnimatedPage><ProtectedRoute perm="item-groups"><GroupsPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/messages" element={<AnimatedPage><ProtectedRoute perm="messages"><MessagesPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/discounts"  element={<AnimatedPage><ProtectedRoute perm="discounts"><DiscountsPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/workers"   element={<AnimatedPage><ProtectedRoute perm="workers"><WorkersPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/clients"   element={<AnimatedPage><ProtectedRoute perm="clients"><ClientsPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/analytics" element={<AnimatedPage><ProtectedRoute perm="analytics"><AnalyticsPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="/notifications" element={<AnimatedPage><ProtectedRoute><NotificationsPage /></ProtectedRoute></AnimatedPage>} />
-            <Route path="*"          element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+          <Suspense fallback={<div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'60vh' }}><span className="spinner"/></div>}>
+            <Routes location={location} key={location.pathname}>
+              <Route path="/login" element={<AnimatedPage><LoginPage /></AnimatedPage>} />
+              <Route path="/"          element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<AnimatedPage><ProtectedRoute><DashboardPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/calendar"  element={<AnimatedPage><ProtectedRoute><CalendarPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/products"  element={<AnimatedPage><ProtectedRoute perm="products"><ProductsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/reservations" element={<AnimatedPage><ProtectedRoute perm="reservations"><ReservationsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/upload"    element={<AnimatedPage><ProtectedRoute perm="upload"><UploadPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/projects"  element={<AnimatedPage><ProtectedRoute perm="projects"><ProjectsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/projects/:id/crm" element={<AnimatedPage><ProtectedRoute perm="projects"><CrmProjectPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/requests"  element={<AnimatedPage><ProtectedRoute perm="requests"><RequestsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/price-changes" element={<AnimatedPage><ProtectedRoute perm="price-changes"><PriceChangesPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/groups" element={<AnimatedPage><ProtectedRoute perm="item-groups"><GroupsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/messages" element={<AnimatedPage><ProtectedRoute perm="messages"><MessagesPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/discounts"  element={<AnimatedPage><ProtectedRoute perm="discounts"><DiscountsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/workers"   element={<AnimatedPage><ProtectedRoute perm="workers"><WorkersPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/clients"   element={<AnimatedPage><ProtectedRoute perm="clients"><ClientsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/analytics" element={<AnimatedPage><ProtectedRoute perm="analytics"><AnalyticsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/notifications" element={<AnimatedPage><ProtectedRoute><NotificationsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/my-projects"     element={<AnimatedPage><ProtectedRoute perm="execution"><TechnicianProjectsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/my-projects/:id" element={<AnimatedPage><ProtectedRoute perm="execution"><TechnicianExecutionPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="*"          element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </Suspense>
         </AnimatePresence>
       </main>
     </div>

@@ -60,7 +60,7 @@ export default function RequestsPage() {
         <h2>Engineer Requests</h2>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <button className={`btn btn-sm ${tab === 'incoming' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('incoming')}>
           Incoming ({pending.length})
         </button>
@@ -82,7 +82,7 @@ export default function RequestsPage() {
                     <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Requested by <strong>{r.requested_by_name}</strong></div>
                     <div style={{ fontSize: 11, color: 'var(--muted)' }}>{new Date(r.created_at).toLocaleDateString()}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <button className="btn btn-sm" style={{ background: 'rgba(34,197,94,0.15)', color: 'var(--success)' }} onClick={() => handleRespond(r.id, 'accept')}>Accept</button>
                     <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)' }} onClick={() => handleRespond(r.id, 'reject')}>Reject</button>
                   </div>
@@ -133,7 +133,7 @@ export default function RequestsPage() {
               onChange={e => setRejectReason(e.target.value)}
               placeholder="Required reason..."
             />
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12, flexWrap: 'wrap' }}>
               <button className="btn btn-sm btn-secondary" onClick={() => { setRejectModal(null); setRejectReason(''); }}>Cancel</button>
               <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)' }} onClick={handleRejectConfirm}>Reject</button>
             </div>

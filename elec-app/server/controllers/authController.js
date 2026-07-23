@@ -16,6 +16,7 @@ const ROLE_PERMISSIONS = {
   accounting: ['products','projects','clients','reservations','reports'],
   engineer:   ['products','projects','reservations','requests','item-groups','messages','clients'],
   secretary:  ['products','clients','reservations','messages'],
+  technician: ['execution'],
 };
 
 /**
@@ -96,7 +97,7 @@ async function register(req, res, next) {
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
-    const validRoles = ['owner','accounting','engineer','secretary'];
+    const validRoles = ['owner','accounting','engineer','secretary','technician'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
     }

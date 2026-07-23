@@ -8,7 +8,7 @@ const schemas = {
   register: z.object({
     name: z.string().min(1, 'Name required'),
     email: z.string().email('Invalid email'),
-    role: z.enum(['owner', 'accounting', 'engineer', 'secretary']),
+    role: z.enum(['owner', 'accounting', 'engineer', 'secretary', 'technician']),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     phone: z.string().optional().nullable(),
   }),
@@ -25,7 +25,8 @@ const schemas = {
     name: z.string().min(1, 'Name required'),
     email: z.string().email().optional().nullable().or(z.literal('')),
     phone: z.string().optional().nullable(),
-    role: z.enum(['owner', 'accounting', 'engineer', 'secretary']),
+    role: z.enum(['owner', 'accounting', 'engineer', 'secretary', 'technician']),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
   }),
   createDiscount: z.object({
     product_id: z.union([z.number(), z.string()]).pipe(z.coerce.number()).optional().nullable(),

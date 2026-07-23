@@ -202,6 +202,9 @@ async function exportReservations(req, res, next) {
 async function exportCrm(req, res, next) {
   try {
     const { projectId } = req.params;
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, projectId);
+    if (!hasAccess) return;
 
     const [rows] = await db.execute(`
       SELECT

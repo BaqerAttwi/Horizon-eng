@@ -168,10 +168,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Tab Bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
+      <div style={{ display: 'flex', gap: 2, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 0, flexWrap: 'wrap', overflowX: 'auto' }}>
         {visibleTabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
-            padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
             background: 'none', border: 'none', color: tab === t.key ? 'var(--accent)' : 'var(--muted)',
             borderBottom: tab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
             transition: 'all 0.15s', marginBottom: -1,

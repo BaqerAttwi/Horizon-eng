@@ -224,6 +224,7 @@ CREATE TABLE IF NOT EXISTS panel_crm_items (
   markupM_amt       DECIMAL(14,4) DEFAULT 0,
   totalfinalProduct DECIMAL(14,4) DEFAULT 0,
   cost              DECIMAL(14,2) DEFAULT 0,
+  cr_amount         DECIMAL(14,2) DEFAULT 0,
   override_markup   BOOLEAN DEFAULT FALSE,
   visible_in_client_pdf BOOLEAN DEFAULT TRUE,
   notes             TEXT,
@@ -334,6 +335,7 @@ CREATE TABLE IF NOT EXISTS item_group_items (
 -- ALTER TABLE panel_crm_items ADD COLUMN base_price_euro DECIMAL(14,4) AFTER base_price_usd;
 -- ALTER TABLE projects ADD COLUMN client_rejection_note TEXT;
 -- ALTER TABLE panel_crm_items ADD COLUMN cost DECIMAL(14,2) DEFAULT 0 AFTER totalfinalProduct;
+-- ALTER TABLE panel_crm_items ADD COLUMN cr_amount DECIMAL(14,2) DEFAULT 0 AFTER cost;
 -- ALTER TABLE project_crm_panels ADD COLUMN updated_by INT DEFAULT NULL AFTER is_completed;
 -- ALTER TABLE project_crm_panels ADD FOREIGN KEY (updated_by) REFERENCES workers(id) ON DELETE SET NULL;
 -- ALTER TABLE item_group_items ADD COLUMN description TEXT AFTER custom_name;
@@ -483,6 +485,8 @@ CREATE TABLE IF NOT EXISTS item_completion (
   project_id    INT NOT NULL,
   item_id       INT NOT NULL,
   is_completed  BOOLEAN DEFAULT FALSE,
+  qty_done      INT DEFAULT 0,
+  execution_notes TEXT DEFAULT NULL,
   completed_by  INT DEFAULT NULL,
   completed_at  DATETIME DEFAULT NULL,
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -508,6 +512,11 @@ SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEM
 SET @sql = IF(@exists=0, 'ALTER TABLE panel_crm_items ADD COLUMN source_group_instance_id INT DEFAULT NULL AFTER visible_in_client_pdf', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+-- ── Migration: add qty_done + execution_notes to item_completion ──
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='item_completion' AND COLUMN_NAME='qty_done');
+SET @sql = IF(@exists=0, 'ALTER TABLE item_completion ADD COLUMN qty_done INT DEFAULT 0 AFTER is_completed, ADD COLUMN execution_notes TEXT DEFAULT NULL AFTER qty_done', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 -- NOTE: Run this in MySQL after importing schema to set real password:
 -- UPDATE workers SET password_hash = '$2b$10$...' WHERE id=1;
 -- Or use the /api/auth/register endpoint to create workers with proper hashed passwords.
@@ -519,3 +528,19 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- Add 'info' to notifications type enum
 ALTER TABLE notifications MODIFY COLUMN type ENUM('deadline','approval','status','request','stock','general','info','manual_product','manual_product_approved','manual_product_rejected') NOT NULL DEFAULT 'general';
+
+-- ── Technician role (field worker — execution only, no pricing access) ──
+ALTER TABLE workers MODIFY COLUMN role ENUM('owner','accounting','engineer','secretary','technician') NOT NULL;
+
+-- ── Project Technician Assignments (owner assigns technicians per project) ──
+CREATE TABLE IF NOT EXISTS project_technicians (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  project_id   INT NOT NULL,
+  worker_id    INT NOT NULL,
+  assigned_by  INT NOT NULL,
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id)  REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (worker_id)   REFERENCES workers(id)  ON DELETE CASCADE,
+  FOREIGN KEY (assigned_by) REFERENCES workers(id)  ON DELETE CASCADE,
+  UNIQUE KEY uq_project_technician (project_id, worker_id)
+);

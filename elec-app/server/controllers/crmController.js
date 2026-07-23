@@ -10,6 +10,10 @@ recalcReservedQty().catch(err => console.error('[CRM] init recalcReservedQty err
 // Engineers can only access projects they lead or collaborate on
 async function checkProjectAccess(req, res, projectId) {
   const user = req.worker;
+  if (user.role === 'technician') {
+    res.status(403).json({ error: 'Access denied — technicians can only use the Execution tab' });
+    return false;
+  }
   if (user.role === 'engineer') {
     const [[access]] = await db.execute(
       `SELECT p.id FROM projects p
@@ -66,6 +70,12 @@ async function createPanel(req, res, next) {
       'INSERT INTO project_crm_panels(project_id,panel_number,panel_name,markupP,markupM,manpower_pct) VALUES(?,?,?,?,?,?)',
       [req.params.projectId, panel_number, panel_name||null, markupP||0, markupM||0, manpower_pct||0]
     );
+
+    // Keep projects.total_panels (and progress %) in sync with the actual
+    // panel count — it's only used to seed the initial auto-created batch,
+    // so anything added afterward has to update it manually or progress
+    // tracking silently goes stale.
+    await recalcPanelTotals(result.insertId);
 
     const [rows] = await db.execute('SELECT * FROM project_crm_panels WHERE id=?', [result.insertId]);
     logActivity({ project_id: req.params.projectId, panel_id: result.insertId, action: 'panel_created', field_name: 'panel', new_value: panel_name || `Panel #${panel_number}`, performed_by: req.worker.id });
@@ -143,8 +153,8 @@ async function deletePanel(req, res, next) {
     const netAfterDiscount = projectTotal - discountAmount;
     const totalVat = netAfterDiscount * (vatPct / 100);
     const totalWithVat = netAfterDiscount + totalVat;
-    await db.execute('UPDATE projects SET total_price=?, project_discount_amount=?, total_vat=?, total_with_vat=?, completed_panels=? WHERE id=?',
-      [projectTotal, discountAmount, totalVat, totalWithVat, completedCount, deletedPanel.project_id]);
+    await db.execute('UPDATE projects SET total_price=?, project_discount_amount=?, total_vat=?, total_with_vat=?, completed_panels=?, total_panels=? WHERE id=?',
+      [projectTotal, discountAmount, totalVat, totalWithVat, completedCount, panels.length, deletedPanel.project_id]);
     logActivity({ project_id: req.params.projectId, panel_id: req.params.panelId, action: 'panel_deleted', field_name: 'panel_name', old_value: deletedPanel?.panel_name, performed_by: req.worker.id });
     res.json({ message: 'Panel deleted' });
   } catch (err) { console.error('[CRM] ❌ deletePanel:', err.message); next(err); }
@@ -244,6 +254,7 @@ async function deleteDivision(req, res, next) {
     const [[oldDiv]] = await db.execute('SELECT division_type FROM panel_divisions WHERE id=?', [req.params.divisionId]);
     await db.execute('DELETE FROM panel_divisions WHERE id=? AND panel_id=?', [req.params.divisionId, req.params.panelId]);
     await recalcPanelTotals(req.params.panelId);
+    await recalcReservedQty();
     const [[divPDel]] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [req.params.panelId]);
     if (divPDel) logActivity({ project_id: divPDel.project_id, panel_id: req.params.panelId, division_id: req.params.divisionId, action: 'division_deleted', field_name: 'division_type', old_value: oldDiv?.division_type, performed_by: req.worker.id });
     res.json({ message: 'Division deleted' });
@@ -345,7 +356,7 @@ async function createCrmItem(req, res, next) {
     const {
       product_id, manual_product_id, is_manual, custom_name, custom_desc,
       custom_brand, custom_price_euro, custom_price_usd, qty, base_price_usd, base_price_euro,
-      markupP_pct, discount_pct, manpower_pct, markupM_pct, notes, cost
+      markupP_pct, discount_pct, manpower_pct, markupM_pct, notes, cost, cr_amount
     } = req.body;
 
     if (!req.params.divisionId) return res.status(400).json({ error: 'division_id required' });
@@ -373,7 +384,7 @@ async function createCrmItem(req, res, next) {
     if (is_manual && !mpId) {
       const [mpResult] = await db.execute(
         'INSERT INTO panel_manual_products(project_id,name,description,price_euro,price_usd,brand) VALUES(?,?,?,?,?,?)',
-        [req.params.projectId, custom_name, custom_desc, eur, usd, custom_brand]
+        [req.params.projectId, custom_name || null, custom_desc || null, eur || null, usd || null, custom_brand || null]
       );
       mpId = mpResult.insertId;
     }
@@ -397,15 +408,15 @@ async function createCrmItem(req, res, next) {
       `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
         custom_name,custom_desc,custom_brand,custom_price_euro,custom_price_usd,
         qty,base_price_usd,base_price_euro,markupP_pct,discount_pct,manpower_pct,markupM_pct,
-        markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,notes,cost,override_markup,visible_in_client_pdf)
-       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,1)`,
+        markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,notes,cost,cr_amount,override_markup,visible_in_client_pdf)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,1)`,
       [
         req.params.divisionId, product_id||null, mpId||null, is_manual||false,
         custom_name||null, custom_desc||null, custom_brand||null,
         custom_price_euro||null, custom_price_usd||null,
-        qty||1, usd, eur, markupP_pct||0, disc||0, manpower_pct||0, markupM_pct||0,
+        qty||1, usd||null, eur||null, markupP_pct||0, disc||0, manpower_pct||0, markupM_pct||0,
         pricing.markupP_amt, pricing.discount_amt, pricing.totalpriceT,
-        pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct, notes||null, cost||0
+        pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct, notes||null, cost||0, cr_amount||0
       ]
     );
 
@@ -423,7 +434,7 @@ async function updateCrmItem(req, res, next) {
     const hasAccess = await checkDivisionAccess(req, res, req.params.divisionId);
     if (!hasAccess) return;
 
-    const { product_id, is_manual, qty, base_price_usd, base_price_euro, markupP_pct, discount_pct, manpower_pct, markupM_pct, notes, cost, visible_in_client_pdf, custom_name, custom_desc, custom_brand, custom_price_euro, custom_price_usd } = req.body;
+    const { product_id, is_manual, qty, base_price_usd, base_price_euro, markupP_pct, discount_pct, manpower_pct, markupM_pct, notes, cost, cr_amount, visible_in_client_pdf, custom_name, custom_desc, custom_brand, custom_price_euro, custom_price_usd } = req.body;
 
     const [existing] = await db.execute('SELECT * FROM panel_crm_items WHERE id=? AND division_id=?', [req.params.itemId, req.params.divisionId]);
     if (!existing.length) return res.status(404).json({ error: 'Item not found' });
@@ -521,6 +532,7 @@ async function updateCrmItem(req, res, next) {
       updateParams.push(custom_price_usd);
     }
     if (markupChanged) updateFields.push('override_markup=1');
+    if (cr_amount !== undefined) { updateFields.push('cr_amount=?'); updateParams.push(cr_amount); }
     if (visible_in_client_pdf !== undefined) {
       updateFields.push('visible_in_client_pdf=?');
       updateParams.push(visible_in_client_pdf);
@@ -618,41 +630,62 @@ async function getProjectCrm(req, res, next) {
       panels = updatedPanels;
     }
 
-    for (const panel of panels) {
-      const [divisions] = await db.execute(
+    // Bulk-fetch divisions/items/group-instances for ALL panels in a handful of
+    // round trips instead of one query per panel/division (was O(panels*divisions)
+    // sequential queries — the main cause of slow CRM page loads).
+    if (panels.length) {
+      const panelIds = panels.map(p => p.id);
+      const [allDivisions] = await db.query(
         `SELECT d.*, COUNT(i.id) as item_count
          FROM panel_divisions d
          LEFT JOIN panel_crm_items i ON i.division_id=d.id
-         WHERE d.panel_id=? GROUP BY d.id ORDER BY d.id`,
-        [panel.id]
+         WHERE d.panel_id IN (?) GROUP BY d.id ORDER BY d.id`,
+        [panelIds]
       );
 
-      panel.divisions = divisions;
-      for (const div of divisions) {
-        const [items] = await db.execute(
-          `SELECT i.*, p.reference, p.description as product_desc, b.name as brand_name,
-                  p.price_euro, p.price_usd
-           FROM panel_crm_items i
-           LEFT JOIN products p ON i.product_id = p.id
-           LEFT JOIN brands b ON p.brand_id = b.id
-           WHERE i.division_id=? ORDER BY i.id`,
-          [div.id]
-        );
-        // Fetch group instances and attach their items
-        const [groupInstances] = await db.execute(
-          `SELECT dig.*, ig.name as group_name
-           FROM division_item_group_instances dig
-           JOIN item_groups ig ON dig.item_group_id = ig.id
-           WHERE dig.division_id = ?
-           ORDER BY dig.created_at`,
-          [div.id]
-        );
+      const divisionIds = allDivisions.map(d => d.id);
+      let allItems = [], allGroupInstances = [];
+      if (divisionIds.length) {
+        [[allItems], [allGroupInstances]] = await Promise.all([
+          db.query(
+            `SELECT i.*, p.reference, p.description as product_desc, b.name as brand_name,
+                    p.price_euro, p.price_usd
+             FROM panel_crm_items i
+             LEFT JOIN products p ON i.product_id = p.id
+             LEFT JOIN brands b ON p.brand_id = b.id
+             WHERE i.division_id IN (?) ORDER BY i.id`,
+            [divisionIds]
+          ),
+          db.query(
+            `SELECT dig.*, ig.name as group_name
+             FROM division_item_group_instances dig
+             JOIN item_groups ig ON dig.item_group_id = ig.id
+             WHERE dig.division_id IN (?)
+             ORDER BY dig.created_at`,
+            [divisionIds]
+          ),
+        ]);
+      }
+
+      const itemsByDivision = {};
+      for (const item of allItems) (itemsByDivision[item.division_id] ||= []).push(item);
+      const giByDivision = {};
+      for (const gi of allGroupInstances) (giByDivision[gi.division_id] ||= []).push(gi);
+
+      const divisionsByPanel = {};
+      for (const div of allDivisions) {
+        const items = itemsByDivision[div.id] || [];
+        const groupInstances = giByDivision[div.id] || [];
         for (const gi of groupInstances) {
           gi.items = items.filter(i => i.source_group_instance_id === gi.id);
         }
         div.group_instances = groupInstances;
         div.items = items;
+        (divisionsByPanel[div.panel_id] ||= []).push(div);
       }
+      for (const panel of panels) panel.divisions = divisionsByPanel[panel.id] || [];
+    } else {
+      for (const panel of panels) panel.divisions = [];
     }
 
     // Get manual products
@@ -732,12 +765,12 @@ async function copyPanelFromProject(req, res, next) {
           `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
             custom_name,custom_desc,custom_brand,custom_price_euro,custom_price_usd,
             qty,base_price_usd,base_price_euro,markupP_pct,discount_pct,manpower_pct,markupM_pct,
-            markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,cost,notes,override_markup,visible_in_client_pdf)
-           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,cost,cr_amount,notes,override_markup,visible_in_client_pdf)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [newDivisionId, si.product_id, newManualProductId, si.is_manual,
            si.custom_name, si.custom_desc, si.custom_brand, si.custom_price_euro, si.custom_price_usd,
            si.qty, si.base_price_usd, si.base_price_euro, si.markupP_pct, si.discount_pct, si.manpower_pct, si.markupM_pct,
-           si.markupP_amt, si.discount_amt, si.totalpriceT, si.manpower_amt, si.markupM_amt, si.totalfinalProduct, si.cost, si.notes, 0, si.visible_in_client_pdf]
+           si.markupP_amt, si.discount_amt, si.totalpriceT, si.manpower_amt, si.markupM_amt, si.totalfinalProduct, si.cost, si.cr_amount||0, si.notes, 0, si.visible_in_client_pdf]
         );
       }
 
@@ -992,6 +1025,7 @@ async function applyBrandDiscount(req, res, next) {
 }
 
 module.exports = {
+  checkProjectAccess,
   getPanels, createPanel, updatePanel, deletePanel, togglePanelComplete,
   getDivisions, createDivision, updateDivision, deleteDivision,
   getManualProducts, createManualProduct, deleteManualProduct,

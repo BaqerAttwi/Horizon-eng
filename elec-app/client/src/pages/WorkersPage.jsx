@@ -3,27 +3,29 @@ import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
-const ROLES = ['owner','accounting','engineer','secretary'];
-const ROLE_BADGE = { owner:'badge-purple', accounting:'badge-blue', engineer:'badge-green', secretary:'badge-yellow' };
-const ROLE_ICON  = { owner:'👑', accounting:'💼', engineer:'⚙️', secretary:'📋' };
+const ROLES = ['owner','accounting','engineer','secretary','technician'];
+const ROLE_BADGE = { owner:'badge-purple', accounting:'badge-blue', engineer:'badge-green', secretary:'badge-yellow', technician:'badge-gray' };
+const ROLE_ICON  = { owner:'👑', accounting:'💼', engineer:'⚙️', secretary:'📋', technician:'🛠️' };
 
 function WorkerModal({ worker, onClose, onSaved }) {
-  const [form, setForm] = useState({ name:'', email:'', phone:'', role:'engineer', ...worker });
+  const isNew = !worker?.id;
+  const [form, setForm] = useState({ name:'', email:'', phone:'', role:'engineer', ...worker, password: '' });
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
+    if (isNew && (!form.password || form.password.length < 6)) { toast.error('Password must be at least 6 characters'); return; }
     setSaving(true);
     try {
-      const r = worker?.id
-        ? await api.patch(`/workers/${worker.id}`, form)
-        : await api.post('/workers', form);
-      toast.success(`✅ Worker "${form.name}" ${worker?.id ? 'updated' : 'created'}`);
-      onSaved(r.data, !!worker?.id);
+      const body = isNew ? form : { name: form.name, email: form.email, phone: form.phone, role: form.role };
+      const r = isNew
+        ? await api.post('/workers', body)
+        : await api.patch(`/workers/${worker.id}`, body);
+      toast.success(`✅ Worker "${form.name}" ${isNew ? 'created' : 'updated'}`);
+      onSaved(r.data, !isNew);
       onClose();
     } catch(e) {
       toast.error('❌ ' + e.message);
-      console.error('[Workers] Save error:', e.message);
     } finally { setSaving(false); }
   };
 
@@ -33,7 +35,7 @@ function WorkerModal({ worker, onClose, onSaved }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e=>e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">{worker?.id ? 'Edit Worker' : 'Add Worker'}</span>
+          <span className="modal-title">{isNew ? 'Add Worker' : 'Edit Worker'}</span>
           <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
@@ -49,6 +51,12 @@ function WorkerModal({ worker, onClose, onSaved }) {
               </select>
             </div>
           </div>
+          {isNew && (
+            <div className="form-group" style={{marginBottom:12}}>
+              <label className="form-label">Password * (min 6 chars)</label>
+              <input className="form-input" type="password" placeholder="Set initial password..." {...f('password')} />
+            </div>
+          )}
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Email</label>
@@ -172,7 +180,7 @@ export default function WorkersPage() {
         ))}
       </div>
 
-      <div style={{marginBottom:12,display:'flex',gap:8,alignItems:'center'}}>
+      <div style={{marginBottom:12,display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
         <select className="form-select" style={{width:180}} value={roleFilter} onChange={e=>setRole(e.target.value)}>
           <option value="">All Roles</option>
           {ROLES.map(r=><option key={r} value={r}>{ROLE_ICON[r]} {r}</option>)}

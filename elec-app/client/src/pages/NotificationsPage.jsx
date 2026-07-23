@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import api from '../api/client';
 import { FadeIn } from '../components/AnimatedPage';
 
@@ -54,7 +54,7 @@ export default function NotificationsPage() {
           <div className="page-title">🔔 Notifications</div>
           <div className="page-subtitle">{unreadCount} unread · {notifications.length} total</div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="tabs" style={{ marginBottom: 0, border: 'none' }}>
             <div className={`tab${filter === 'all' ? ' active' : ''}`} onClick={() => setFilter('all')}>All</div>
             <div className={`tab${filter === 'unread' ? ' active' : ''}`} onClick={() => setFilter('unread')}>

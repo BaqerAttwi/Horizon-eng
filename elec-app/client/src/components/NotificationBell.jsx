@@ -116,20 +116,20 @@ export default function NotificationBell() {
     api.patch(`/notifications/${id}/read`).then(() => {
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    });
+    }).catch(() => {});
   };
 
   const handleReadAll = () => {
     api.patch('/notifications/read-all').then(() => {
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
-    });
+    }).catch(() => {});
   };
 
   const handleDelete = (id) => {
     api.delete(`/notifications/${id}`).then(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
-    });
+    }).catch(() => {});
   };
 
   return (
@@ -156,18 +156,32 @@ export default function NotificationBell() {
 
       <AnimatePresence>
         {open && (
+          // Fixed, full-viewport flex-centering wrapper — centering lives here via
+          // flexbox instead of a `transform: translate(-50%,-50%)` on the panel
+          // itself, because framer-motion's animate={{ y, scale }} below fully
+          // owns the panel's `transform` property and would silently clobber any
+          // static translate() set alongside it (that's what pushed the panel
+          // off-screen on mobile before — its top-left corner, not its center,
+          // was landing on the viewport's center point).
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 300,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 12, pointerEvents: 'none',
+            }}
+          >
           <motion.div
             initial={{ opacity: 0, y: -8, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
             style={{
-              position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-              width: 360, maxHeight: 480,
+              pointerEvents: 'auto',
+              width: 360, maxWidth: '100%', maxHeight: 480,
               background: 'var(--panel)', border: '1px solid var(--border)',
               borderRadius: 12, overflow: 'hidden',
               boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-              zIndex: 300,
+              display: 'flex', flexDirection: 'column',
             }}
           >
             {/* Header */}
@@ -224,6 +238,7 @@ export default function NotificationBell() {
               </Link>
             </div>
           </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

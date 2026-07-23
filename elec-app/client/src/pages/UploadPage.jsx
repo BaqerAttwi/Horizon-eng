@@ -33,7 +33,6 @@ export default function UploadPage() {
       toast.success(`✅ Imported ${r.data.inserted} new, ${r.data.updated} updated`);
     } catch(e) {
       toast.error('❌ ' + e.message);
-      console.error('[Upload] Failed:', e.message);
     } finally { setLoading(false); }
   };
 

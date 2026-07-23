@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
+import LoginBackground from '../components/LoginBackground';
 
 const QUOTES = [
   '"Powering your world with precision engineering"',
@@ -33,7 +34,6 @@ export default function LoginPage() {
       navigate('/products');
     } catch (err) {
       toast.error('❌ ' + err.message);
-      console.error('[Login] Failed:', err.message);
     } finally {
       setLoading(false);
     }
@@ -54,12 +54,13 @@ export default function LoginPage() {
       initial="hidden"
       animate="visible"
       style={{
+        position: 'relative',
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--bg)',
-        backgroundImage: 'radial-gradient(ellipse at 30% 20%, rgba(26,95,168,0.1) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(74,143,196,0.06) 0%, transparent 50%)',
+        background: 'var(--bg)', overflow: 'hidden',
       }}
     >
-      <motion.div variants={childVariants} style={{ width: '100%', maxWidth: 400, padding: '0 20px' }}>
+      <LoginBackground />
+      <motion.div variants={childVariants} style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 400, padding: '0 20px' }}>
 
         {/* Logo */}
         <motion.div variants={childVariants} style={{ textAlign: 'center', marginBottom: 32, paddingTop: 40 }}>

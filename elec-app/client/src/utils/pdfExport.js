@@ -405,7 +405,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
         const manAmt = afterDisc * (parseFloat(item.manpower_pct) / 100);
         const mkMAmt = manAmt * (parseFloat(item.markupM_pct) / 100);
         const finalPrice = tPrice + manAmt + mkMAmt;
-        const cost = parseFloat(item.cost || 0);
+        const cost = (parseFloat(item.cost || 0)) * qty;
         const profit = finalPrice - cost;
         const name = item.is_manual ? (item.custom_name || 'Manual') : item.reference;
         grandTotal += finalPrice;
@@ -428,7 +428,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
           const manAmt = afterDisc * (parseFloat(item.manpower_pct) / 100);
           const mkMAmt = manAmt * (parseFloat(item.markupM_pct) / 100);
           const finalPrice = tPrice + manAmt + mkMAmt;
-          const cost = parseFloat(item.cost || 0);
+          const cost = (parseFloat(item.cost || 0)) * qty;
           const profit = finalPrice - cost;
           const name = item.is_manual ? (item.custom_name || 'Manual') : item.reference;
           grandTotal += finalPrice;
@@ -534,7 +534,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
         const manAmt = afterDisc * (parseFloat(item.manpower_pct) / 100);
         const mkMAmt = manAmt * (parseFloat(item.markupM_pct) / 100);
         const finalPrice = tPrice + manAmt + mkMAmt;
-        const cost = parseFloat(item.cost || 0);
+        const cost = (parseFloat(item.cost || 0)) * qty;
         if (!brandMap[brand]) brandMap[brand] = { brand, total_cost: 0, total_price: 0, count: 0 };
         brandMap[brand].total_cost += cost;
         brandMap[brand].total_price += finalPrice;
@@ -596,7 +596,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
         const manAmt = afterDisc * (parseFloat(item.manpower_pct) / 100);
         const mkMAmt = manAmt * (parseFloat(item.markupM_pct) / 100);
         const finalPrice = tPrice + manAmt + mkMAmt;
-        const cost = parseFloat(item.cost || 0);
+        const cost = (parseFloat(item.cost || 0)) * qty;
         const pft = finalPrice - cost;
         const name = item.is_manual ? (item.custom_name || 'Manual') : item.reference;
         profitRows.push([name, `$${finalPrice.toFixed(2)}`, `$${cost.toFixed(2)}`, pft >= 0 ? `+$${pft.toFixed(2)}` : `-$${Math.abs(pft).toFixed(2)}`]);
@@ -620,6 +620,76 @@ export async function exportProjectPdf(projectId, type = 'owner') {
           if (val.startsWith('+')) data.cell.styles.textColor = [34, 197, 94];
           else if (val.startsWith('-')) data.cell.styles.textColor = [239, 68, 68];
         }
+      }
+    },
+  });
+
+  // ── C.R Comparison table (owner) ──
+  if (y > 270) { doc.addPage(); y = 30; }
+  const crRows = [];
+  let grandDb = 0, grandCr = 0, grandNp = 0;
+  for (const panel of panels) {
+    for (const div of panel.divisions || []) {
+      for (const item of div.items || []) {
+        const base = parseFloat(item.base_price_usd) || 0;
+        const qty = item.qty ?? 1;
+        const baseTotal = base * qty;
+        const discAmt = baseTotal * (parseFloat(item.discount_pct) / 100);
+        const afterDisc = baseTotal - discAmt;
+        const mkPAmt = afterDisc * (parseFloat(item.markupP_pct) / 100);
+        const tPrice = afterDisc + mkPAmt;
+        const manAmt = afterDisc * (parseFloat(item.manpower_pct) / 100);
+        const mkMAmt = manAmt * (parseFloat(item.markupM_pct) / 100);
+        const dbPrice = tPrice + manAmt + mkMAmt;
+        const cr = (parseFloat(item.cr_amount) || 0) * qty;
+        const np = dbPrice - cr;
+        const name = item.is_manual ? (item.custom_name || 'Manual') : item.reference;
+        crRows.push([`#${panel.panel_number}`, name, `$${dbPrice.toFixed(2)}`, cr > 0 ? `$${cr.toFixed(2)}` : '—', np >= 0 ? `+$${np.toFixed(2)}` : `-$${Math.abs(np).toFixed(2)}`]);
+        grandDb += dbPrice; grandCr += cr; grandNp += np;
+      }
+      for (const gi of div.group_instances || []) {
+        for (const item of gi.items || []) {
+          const base = parseFloat(item.base_price_usd) || 0;
+          const qty = item.qty ?? 1;
+          const baseTotal = base * qty;
+          const discAmt = baseTotal * (parseFloat(item.discount_pct) / 100);
+          const afterDisc = baseTotal - discAmt;
+          const mkPAmt = afterDisc * (parseFloat(item.markupP_pct) / 100);
+          const tPrice = afterDisc + mkPAmt;
+          const manAmt = afterDisc * (parseFloat(item.manpower_pct) / 100);
+          const mkMAmt = manAmt * (parseFloat(item.markupM_pct) / 100);
+          const dbPrice = tPrice + manAmt + mkMAmt;
+          const cr = (parseFloat(item.cr_amount) || 0) * qty;
+          const np = dbPrice - cr;
+          const name = item.is_manual ? (item.custom_name || 'Manual') : item.reference;
+          crRows.push([`#${panel.panel_number}`, name, `$${dbPrice.toFixed(2)}`, cr > 0 ? `$${cr.toFixed(2)}` : '—', np >= 0 ? `+$${np.toFixed(2)}` : `-$${Math.abs(np).toFixed(2)}`]);
+          grandDb += dbPrice; grandCr += cr; grandNp += np;
+        }
+      }
+    }
+  }
+  doc.setFontSize(12);
+  doc.setTextColor(26, 95, 168);
+  doc.text('Cost Reduction (C.R) vs DB Price', 14, y);
+  y += 6;
+  autoTable(doc, {
+    startY: y,
+    head: [['Panel', 'Item', 'DB Price', 'C.R $', 'N Profit']],
+    body: crRows,
+    foot: [['', 'TOTAL', `$${grandDb.toFixed(2)}`, `$${grandCr.toFixed(2)}`, grandNp >= 0 ? `+$${grandNp.toFixed(2)}` : `-$${Math.abs(grandNp).toFixed(2)}`]],
+    theme: 'grid',
+    headStyles: { fontSize: 7, fillColor: [71, 85, 105], textColor: 255 },
+    bodyStyles: { fontSize: 7 },
+    footStyles: { fontSize: 7, fillColor: [240, 244, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
+    columnStyles: { 0: { cellWidth: 18 }, 1: { cellWidth: 80 }, 2: { halign: 'right' }, 3: { halign: 'right', fontStyle: 'bold' }, 4: { halign: 'right', fontStyle: 'bold' } },
+    margin: { left: 16, right: 16, top: 28 },
+    tableWidth: pw - 32,
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.column.index === 3 && data.cell.raw !== '—') data.cell.styles.textColor = [251, 191, 36];
+      if (data.section === 'body' && data.column.index === 4) {
+        const val = data.cell.raw;
+        if (typeof val === 'string' && val.startsWith('-')) data.cell.styles.textColor = [239, 68, 68];
+        else if (typeof val === 'string' && val.startsWith('+')) data.cell.styles.textColor = [34, 197, 94];
       }
     },
   });

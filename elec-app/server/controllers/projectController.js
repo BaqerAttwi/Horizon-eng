@@ -28,6 +28,9 @@ async function recalcReservedQty() {
 async function getProjects(req, res, next) {
   try {
     const user = req.worker;
+    if (user.role === 'technician') {
+      return res.status(403).json({ error: 'Access denied — use /technicians/my-projects instead' });
+    }
     let whereClause = 'WHERE p.deleted_at IS NULL';
     const params = [];
 
@@ -68,6 +71,10 @@ async function getProject(req, res, next) {
   try {
     const user = req.worker;
     const projectId = req.params.id;
+
+    if (user.role === 'technician') {
+      return res.status(403).json({ error: 'Access denied — use the Execution view instead' });
+    }
 
     // Check if engineer has access to this project
     if (user.role === 'engineer') {
@@ -160,6 +167,10 @@ async function createProject(req, res, next) {
 
 async function updateProject(req, res, next) {
   try {
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, req.params.id);
+    if (!hasAccess) return;
+
     const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, client_pdf_note, status, client_approval, client_rejection_note, admin_approval, rejection_note, total_panels, completed_panels, vat_pct, project_discount_pct, payment_terms } = req.body;
     const fields = [], params = [];
     if (project_name       !== undefined) { fields.push('project_name=?');    params.push(project_name); }
@@ -213,6 +224,10 @@ async function updateProject(req, res, next) {
 
 async function addProjectItem(req, res, next) {
   try {
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, req.params.id);
+    if (!hasAccess) return;
+
     const { product_id, qty, unit_cost, unit_price, currency, notes } = req.body;
     if (!product_id) return res.status(400).json({ error: 'product_id required' });
 
@@ -250,6 +265,10 @@ async function addProjectItem(req, res, next) {
 
 async function removeProjectItem(req, res, next) {
   try {
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, req.params.id);
+    if (!hasAccess) return;
+
     await db.execute('DELETE FROM project_items WHERE id=? AND project_id=?', [req.params.itemId, req.params.id]);
 
     const [totals] = await db.execute(
@@ -276,6 +295,9 @@ async function deleteProject(req, res, next) {
 async function markReadyForReview(req, res, next) {
   try {
     const { id } = req.params;
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, id);
+    if (!hasAccess) return;
     await db.execute('UPDATE projects SET ready_for_review=TRUE WHERE id=?', [id]);
     logActivity({ project_id: id, action: 'ready_for_review', field_name: 'ready_for_review', new_value: 'true', performed_by: req.worker.id });
     await notifyOwners('status', `Ready for Review: Project #${id}`, `${req.worker.name} marked project as ready for review`, `/projects/${id}`);

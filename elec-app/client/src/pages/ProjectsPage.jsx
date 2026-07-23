@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useDebounce } from '../hooks/useDebounce';
-import { exportProjectPdf } from '../utils/pdfExport';
 
 const STATUS_BADGE = { draft:'badge-gray', active:'badge-blue', completed:'badge-green', cancelled:'badge-red' };
 const APPROVAL_BADGE = { pending:'badge-yellow', approved:'badge-green', rejected:'badge-red' };
@@ -265,6 +264,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
     setPdfExporting(true);
     setPdfType(type);
     try {
+      const { exportProjectPdf } = await import('../utils/pdfExport');
       await exportProjectPdf(projectId, type);
       toast.success('✅ PDF exported');
     } catch (e) { toast.error('PDF export failed: ' + e.message); }
@@ -423,7 +423,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
               {collaborators.length > 0 ? (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                   {collaborators.map(c => (
-                    <span key={c.id} style={{ fontSize: 12, padding: '3px 10px', background: 'rgba(99,102,241,0.1)', borderRadius: 20, color: '#818cf8' }}>
+                    <span key={c.id} className="badge badge-purple">
                       {c.name}
                     </span>
                   ))}
@@ -717,7 +717,7 @@ function ImportPdfModal({ onClose, onCreated }) {
         <div className="modal-body">
           {step === 'form' && (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="form-row">
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Project Name *</label>
                   <input className="form-input" value={form.project_name} onChange={e => setForm(f => ({ ...f, project_name: e.target.value }))} placeholder="e.g. New Office Building" />
@@ -803,7 +803,7 @@ function ImportPdfModal({ onClose, onCreated }) {
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16, flexWrap: 'wrap' }}>
                 <button className="btn btn-sm btn-secondary" onClick={() => setStep('form')}>Back</button>
                 <button className="btn btn-sm btn-primary" onClick={handleCreate} disabled={creating}>
                   {creating ? '⏳ Creating...' : '✅ Create Project'}

@@ -71,8 +71,8 @@ async function recalcPanelTotals(panelId) {
     const totalVat = netAfterDiscount * (vatPct / 100);
     const totalWithVat = netAfterDiscount + totalVat;
 
-    await db.execute('UPDATE projects SET total_price=?, project_discount_amount=?, total_vat=?, total_with_vat=?, completed_panels=? WHERE id=?',
-      [projectTotal, discountAmount, totalVat, totalWithVat, completedCount, projectId]);
+    await db.execute('UPDATE projects SET total_price=?, project_discount_amount=?, total_vat=?, total_with_vat=?, completed_panels=?, total_panels=? WHERE id=?',
+      [projectTotal, discountAmount, totalVat, totalWithVat, completedCount, panels.length, projectId]);
   }
 }
 

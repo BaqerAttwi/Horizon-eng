@@ -168,6 +168,8 @@ async function approveRequest(req, res, next) {
 
     await recalcDivisionTotals(request.division_id);
     await recalcPanelTotals(request.panel_id);
+    const { recalcReservedQty } = require('./projectController');
+    await recalcReservedQty();
 
     const approvedUsd = parseFloat(request.new_base_price_usd) || 0;
     const approvedEur = parseFloat(request.new_base_price_euro) || 0;

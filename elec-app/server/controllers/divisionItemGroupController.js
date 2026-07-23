@@ -1,6 +1,7 @@
 const db = require('../db/connection');
 const { logActivity } = require('./activityController');
 const { recalcDivisionTotals, recalcPanelTotals } = require('../utils/pricing');
+const { checkProjectAccess } = require('./crmController');
 
 async function addGroupToDivision(req, res, next) {
   try {
@@ -92,6 +93,8 @@ async function addGroupToDivision(req, res, next) {
     // Recalc totals (this also computes pricing for all items)
     await recalcDivisionTotals(divisionId);
     await recalcPanelTotals(div.panel_id);
+    const { recalcReservedQty } = require('./projectController');
+    await recalcReservedQty();
 
     logActivity({
       project_id: div.project_id,
@@ -132,6 +135,8 @@ async function updateGroupInstanceQuantity(req, res, next) {
        WHERE dig.id = ?`, [instanceId]
     );
     if (!instance) return res.status(404).json({ error: 'Group instance not found' });
+    const hasAccess = await checkProjectAccess(req, res, instance.project_id);
+    if (!hasAccess) return;
 
     const oldQty = instance.quantity;
 
@@ -164,6 +169,8 @@ async function updateGroupInstanceQuantity(req, res, next) {
     // Recalc totals
     await recalcDivisionTotals(instance.division_id);
     await recalcPanelTotals(instance.panel_id);
+    const { recalcReservedQty } = require('./projectController');
+    await recalcReservedQty();
 
     logActivity({
       project_id: instance.project_id,
@@ -199,6 +206,8 @@ async function removeGroupInstance(req, res, next) {
        WHERE dig.id = ?`, [instanceId]
     );
     if (!instance) return res.status(404).json({ error: 'Group instance not found' });
+    const hasAccess = await checkProjectAccess(req, res, instance.project_id);
+    if (!hasAccess) return;
 
     // Delete child items
     await db.execute('DELETE FROM panel_crm_items WHERE source_group_instance_id = ?', [instanceId]);
@@ -219,6 +228,8 @@ async function removeGroupInstance(req, res, next) {
     // Recalc totals after removal
     await recalcDivisionTotals(instance.division_id);
     await recalcPanelTotals(instance.panel_id);
+    const { recalcReservedQty } = require('./projectController');
+    await recalcReservedQty();
 
     res.json({ message: 'Group instance removed', items_deleted: true });
   } catch (err) {

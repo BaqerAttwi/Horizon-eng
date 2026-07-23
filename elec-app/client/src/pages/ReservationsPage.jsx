@@ -57,7 +57,7 @@ function DemandRow({ item, onExpand, expanded, onReserve, onRelease, loadingRese
             <div style={{ background: 'var(--panel2)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
               <table style={{ width: '100%', fontSize: 12 }}>
                 <thead>
-                  <tr style={{ background: 'rgba(0,0,0,0.2)' }}>
+                  <tr style={{ background: 'var(--border)' }}>
                     <th style={{ padding: '6px 16px' }}>Admin</th>
                     <th style={{ padding: '6px 8px' }}>Client</th>
                     <th style={{ padding: '6px 8px' }}>Project ID</th>
@@ -334,7 +334,7 @@ export default function ReservationsPage() {
             See which products are needed across all active projects — click a row to expand
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="btn btn-secondary" onClick={handleCsvDownload}>
             📥 CSV
           </button>

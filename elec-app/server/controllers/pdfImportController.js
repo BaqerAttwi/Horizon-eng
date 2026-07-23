@@ -269,15 +269,15 @@ async function createFromImport(req, res, next) {
             `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
               custom_name,custom_desc,custom_price_usd,custom_price_euro,
               qty,base_price_usd,base_price_euro,markupP_pct,discount_pct,manpower_pct,markupM_pct,
-              markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,cost,override_markup)
-             VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)`,
+              markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,cost,cr_amount,override_markup)
+             VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)`,
             [divisionId, productId, manualProductId, isManual,
              isManual ? item.name : null, isManual ? `Imported from PDF` : null,
              isManual ? basePriceUsd : null, isManual ? basePriceEur : null,
              qty, basePriceUsd, basePriceEur,
              markupP_pct, discount, manpower_pct, markupM_pct,
              pricing.markupP_amt, pricing.discount_amt, pricing.totalpriceT,
-             pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct, 0]
+             pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct, 0, 0]
           );
         }
 

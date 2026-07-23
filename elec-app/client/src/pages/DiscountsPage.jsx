@@ -96,7 +96,7 @@ export default function DiscountsPage() {
           <div className="page-title">🏷️ Brand Discounts</div>
           <div className="page-subtitle">{brandDiscounts.length} brand discounts • {productDiscounts.length} product-specific discounts</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {isOwner && <button className={`btn ${bulkMode ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setBulkMode(b => !b)}>
             {bulkMode ? '✕ Cancel Bulk' : '📊 Bulk Edit All Brands'}
           </button>}
@@ -140,9 +140,9 @@ export default function DiscountsPage() {
       {/* ── Bulk Edit All Brands ── */}
       {bulkMode && (
         <div className="card" style={{ marginBottom: 20 }}>
-          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <span style={{ fontWeight: 700 }}>📊 Set Discounts for All Brands</span>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button className="btn btn-sm btn-secondary" onClick={randomize}>🎲 Randomize 1-20%</button>
               <button className="btn btn-sm btn-primary" onClick={saveBulk} disabled={savingBulk}>
                 {savingBulk ? <><span className="spinner" /> Saving...</> : '💾 Save All'}

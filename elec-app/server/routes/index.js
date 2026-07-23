@@ -191,7 +191,7 @@ router.delete('/notifications/:notificationId', requireAuth, deleteNotification)
 
 // ── Price Change Requests ─────────────────────────────────
 router.post('/price-changes',               requireAuth, requireRole('owner','engineer'), createPriceChangeRequest);
-router.get('/price-changes',                requireAuth, getPendingRequests);
+router.get('/price-changes',                requireAuth, requireRole('owner'), getPendingRequests);
 router.get('/price-changes/my',             requireAuth, getMyRequests);
 router.get('/price-changes/project/:projectId', requireAuth, getPendingForProject);
 router.patch('/price-changes/:requestId/approve', requireAuth, requireRole('owner'), approveRequest);
@@ -208,11 +208,20 @@ router.post('/item-groups/:id/items',   requireAuth, requireRole('owner','engine
 router.delete('/item-groups/:id/items/:itemId', requireAuth, requireRole('owner','engineer'), removeGroupItem);
 
 // ── Execution Phase ──────────────────────────────────────────
-const { getExecutionStatus, togglePanelExecution, toggleItemExecution } = require('../controllers/executionController');
+const { getExecutionStatus, togglePanelExecution, toggleItemExecution, getExecutionView } = require('../controllers/executionController');
 
 router.get('/projects/:projectId/execution',                                 requireAuth, getExecutionStatus);
-router.patch('/projects/:projectId/execution/panels/:panelId',               requireAuth, requireRole('owner','engineer'), togglePanelExecution);
-router.patch('/projects/:projectId/execution/items/:itemId',                 requireAuth, requireRole('owner','engineer'), toggleItemExecution);
+router.get('/projects/:projectId/execution/view',                            requireAuth, getExecutionView);
+router.patch('/projects/:projectId/execution/panels/:panelId',               requireAuth, requireRole('owner','engineer','technician'), togglePanelExecution);
+router.patch('/projects/:projectId/execution/items/:itemId',                 requireAuth, requireRole('owner','engineer','technician'), toggleItemExecution);
+
+// ── Technicians (execution-only field workers, assigned per project) ──
+const { getProjectTechnicians, assignTechnician, removeTechnician, getMyProjects } = require('../controllers/technicianController');
+
+router.get('/technicians/my-projects',                requireAuth, requireRole('technician'), getMyProjects);
+router.get('/projects/:projectId/technicians',         requireAuth, requireRole('owner','engineer'), getProjectTechnicians);
+router.post('/projects/:projectId/technicians',        requireAuth, requireRole('owner'), assignTechnician);
+router.delete('/projects/:projectId/technicians/:workerId', requireAuth, requireRole('owner'), removeTechnician);
 
 // ── Division Item Group Instances ──────────────────────────────
 const {
@@ -249,7 +258,7 @@ router.get('/export/products',    requireAuth, exportProducts);
 router.get('/export/projects',    requireAuth, exportProjects);
 router.get('/export/analytics',   requireAuth, requireRole('owner'), exportAnalytics);
 router.get('/export/reservations', requireAuth, exportReservations);
-router.get('/export/crm/:projectId', requireAuth, exportCrm);
+router.get('/export/crm/:projectId', requireAuth, requireRole('owner','engineer'), exportCrm);
 
 // ── Messages / Announcements ────────────────────────────────
 const { getMessages, createMessage, deleteMessage } = require('../controllers/messageController');
