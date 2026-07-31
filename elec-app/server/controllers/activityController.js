@@ -17,6 +17,10 @@ async function logActivity({ project_id, panel_id, division_id, item_id, action,
 async function getActivityLogs(req, res, next) {
   try {
     const { projectId } = req.params;
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, projectId);
+    if (!hasAccess) return;
+
     const limit  = Math.min(500, Math.max(1, parseInt(req.query.limit) || 100));
     const offset = Math.max(0, parseInt(req.query.offset) || 0);
 

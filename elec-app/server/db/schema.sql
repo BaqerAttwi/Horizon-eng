@@ -1,8 +1,10 @@
 -- ============================================================
 --  ELECTRIC ENG CO — DATABASE SCHEMA v2
 -- ============================================================
-CREATE DATABASE IF NOT EXISTS horizonlb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE horizonlb;
+-- Run this against whichever database you intend to target, e.g.:
+--   mysql -u <user> -p <db_name> < schema.sql
+-- Deliberately no CREATE DATABASE/USE here — hardcoding a database name
+-- silently overrides whatever DB the caller pointed the import at.
 
 -- ── Workers (employees + login) ──────────────────────────────
 CREATE TABLE IF NOT EXISTS workers (
@@ -544,3 +546,63 @@ CREATE TABLE IF NOT EXISTS project_technicians (
   FOREIGN KEY (assigned_by) REFERENCES workers(id)  ON DELETE CASCADE,
   UNIQUE KEY uq_project_technician (project_id, worker_id)
 );
+
+-- ── Migration: OneDrive-backed attachments (existing local files keep working) ──
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='attachments' AND COLUMN_NAME='storage');
+SET @sql = IF(@exists=0, "ALTER TABLE attachments ADD COLUMN storage ENUM('local','onedrive') NOT NULL DEFAULT 'local' AFTER mime_type, ADD COLUMN onedrive_item_id VARCHAR(255) DEFAULT NULL AFTER storage, ADD COLUMN onedrive_web_url VARCHAR(500) DEFAULT NULL AFTER onedrive_item_id", 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ── OneDrive OAuth tokens (personal Microsoft account — delegated auth) ──
+-- Single-row-per-provider table: one connected OneDrive account for the whole app.
+CREATE TABLE IF NOT EXISTS oauth_tokens (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  provider       VARCHAR(50) NOT NULL,
+  account_email  VARCHAR(255) DEFAULT NULL,
+  refresh_token  TEXT NOT NULL,
+  access_token   TEXT DEFAULT NULL,
+  expires_at     DATETIME DEFAULT NULL,
+  connected_by   INT DEFAULT NULL,
+  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (connected_by) REFERENCES workers(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_provider (provider)
+);
+
+-- ── Migration: manual OneDrive links (optional, pasted by the user — not the automated upload) ──
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='project_crm_panels' AND COLUMN_NAME='onedrive_link');
+SET @sql = IF(@exists=0, 'ALTER TABLE project_crm_panels ADD COLUMN onedrive_link VARCHAR(500) DEFAULT NULL AFTER show_note_in_client_pdf', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='projects' AND COLUMN_NAME='onedrive_folder_link');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN onedrive_folder_link VARCHAR(500) DEFAULT NULL AFTER client_pdf_note', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ── Migration: attachments become link-based (paste a link instead of uploading a file) ──
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='attachments' AND COLUMN_NAME='link_url');
+SET @sql = IF(@exists=0, 'ALTER TABLE attachments ADD COLUMN link_url VARCHAR(1000) DEFAULT NULL AFTER onedrive_web_url', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = "ALTER TABLE attachments MODIFY COLUMN storage ENUM('local','onedrive','link') NOT NULL DEFAULT 'link'";
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = 'ALTER TABLE attachments MODIFY COLUMN stored_name VARCHAR(255) NULL';
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ── Project Payments (installments — a project's total may be paid across multiple partial payments) ──
+CREATE TABLE IF NOT EXISTS project_payments (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  project_id    INT NOT NULL,
+  amount        DECIMAL(14,2) NOT NULL,
+  payment_date  DATE NOT NULL,
+  method        VARCHAR(100) DEFAULT NULL,
+  notes         TEXT DEFAULT NULL,
+  recorded_by   INT DEFAULT NULL,
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (recorded_by) REFERENCES workers(id) ON DELETE SET NULL
+);
+
+-- ── Migration: payment deadline (for the remaining balance, set once installments start) ──
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='projects' AND COLUMN_NAME='payment_deadline');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN payment_deadline DATE DEFAULT NULL AFTER onedrive_folder_link', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

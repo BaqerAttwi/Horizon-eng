@@ -43,7 +43,7 @@ async function getDashboard(req, res, next) {
              w.name as engineer_name, c.name as client_name,
              DATEDIFF(p.deadline, CURDATE()) as days_left
       FROM projects p
-      JOIN workers w ON w.id = p.engineer_id
+      LEFT JOIN workers w ON w.id = p.engineer_id
       LEFT JOIN clients c ON c.id = p.client_id
       WHERE p.deadline IS NOT NULL
         AND p.deadline >= CURDATE()
@@ -65,7 +65,7 @@ async function getDashboard(req, res, next) {
         w.name as actor,
         CONCAT('/projects/', p.id) as link
       FROM projects p
-      JOIN workers w ON w.id = p.engineer_id
+      LEFT JOIN workers w ON w.id = p.engineer_id
       WHERE p.deleted_at IS NULL ${engWhere}
       ORDER BY p.created_at DESC
       LIMIT 10)
@@ -79,7 +79,7 @@ async function getDashboard(req, res, next) {
         CONCAT('/projects/', pcp.project_id, '/crm') as link
       FROM project_crm_panels pcp
       JOIN projects p ON p.id = pcp.project_id
-      JOIN workers w ON w.id = pcp.updated_by
+      LEFT JOIN workers w ON w.id = pcp.updated_by
       WHERE pcp.is_completed = TRUE
         AND p.deleted_at IS NULL
         ${engWhere}

@@ -56,18 +56,8 @@ const excelFilter = (req, file, cb) => {
 const pdfFilter = (req, file, cb) => {
   cb(null, file.mimetype === 'application/pdf');
 };
-const attachmentFilter = (req, file, cb) => {
-  const allowed = [
-    'application/pdf', 'image/jpeg', 'image/png', 'image/gif',
-    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/plain', 'text/csv',
-  ];
-  cb(null, allowed.includes(file.mimetype));
-};
 const uploadExcel = multer({ storage, limits, fileFilter: excelFilter });
 const uploadPdf   = multer({ storage, limits, fileFilter: pdfFilter });
-const uploadAttach = multer({ storage, limits, fileFilter: attachmentFilter });
 
 // ── Health (public) ──────────────────────────────────────────
 router.get('/health', (req, res) => res.json({ status: 'ok', ts: new Date() }));
@@ -249,9 +239,23 @@ router.get('/projects/:projectId/activity', requireAuth, getActivityLogs);
 
 // ── File Attachments ────────────────────────────────────────
 router.get('/projects/:projectId/attachments',            requireAuth, getAttachments);
-router.post('/projects/:projectId/attachments',           requireAuth, requireRole('owner','engineer'), uploadAttach.single('file'), uploadAttachment);
+router.post('/projects/:projectId/attachments',           requireAuth, requireRole('owner','engineer'), uploadAttachment);
 router.get('/attachments/:attachmentId/download',         requireAuth, downloadAttachment);
 router.delete('/projects/:projectId/attachments/:attachmentId', requireAuth, requireRole('owner','engineer'), deleteAttachment);
+
+// ── OneDrive connection (owner-only one-time sign-in) ───────
+const { connect: onedriveConnect, callback: onedriveCallback, status: onedriveStatus, disconnect: onedriveDisconnect } = require('../controllers/oneDriveAuthController');
+router.get('/onedrive/connect',    requireAuth, requireRole('owner'), onedriveConnect);
+router.get('/onedrive/callback',   requireAuth, requireRole('owner'), onedriveCallback);
+router.get('/onedrive/status',     requireAuth, onedriveStatus);
+router.post('/onedrive/disconnect', requireAuth, requireRole('owner'), onedriveDisconnect);
+
+// ── Project Payments (partial/installment payments) ─────────
+const { getProjectPayments, addPayment, deletePayment, getDebtOverview } = require('../controllers/paymentController');
+router.get('/projects/:projectId/payments',              requireAuth, getProjectPayments);
+router.post('/projects/:projectId/payments',              requireAuth, requireRole('owner','accounting'), addPayment);
+router.delete('/projects/:projectId/payments/:paymentId', requireAuth, requireRole('owner','accounting'), deletePayment);
+router.get('/debt',                                       requireAuth, requireRole('owner','accounting'), getDebtOverview);
 
 // ── CSV/Excel Export ───────────────────────────────────────
 router.get('/export/products',    requireAuth, exportProducts);

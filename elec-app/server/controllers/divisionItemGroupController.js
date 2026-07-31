@@ -7,6 +7,7 @@ async function addGroupToDivision(req, res, next) {
   try {
     const { divisionId } = req.params;
     const { item_group_id, quantity } = req.body;
+    if (!item_group_id) return res.status(400).json({ error: 'item_group_id required' });
     const groupQty = Math.max(1, parseInt(quantity) || 1);
 
     // Verify group exists
@@ -22,6 +23,9 @@ async function addGroupToDivision(req, res, next) {
        WHERE pd.id = ?`, [divisionId]
     );
     if (!div) return res.status(404).json({ error: 'Division not found' });
+
+    const hasAccess = await checkProjectAccess(req, res, div.project_id);
+    if (!hasAccess) return;
 
     // Get project exchange rate for EUR↔USD conversion
     const [[proj]] = await db.execute('SELECT exchange_rate_eur_usd FROM projects WHERE id = ?', [div.project_id]);
@@ -241,6 +245,15 @@ async function removeGroupInstance(req, res, next) {
 async function getDivisionGroupInstances(req, res, next) {
   try {
     const { divisionId } = req.params;
+
+    const [[div]] = await db.execute(
+      `SELECT pcp.project_id FROM panel_divisions pd
+       JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+       WHERE pd.id = ?`, [divisionId]
+    );
+    if (!div) return res.status(404).json({ error: 'Division not found' });
+    const hasAccess = await checkProjectAccess(req, res, div.project_id);
+    if (!hasAccess) return;
 
     const [instances] = await db.execute(
       `SELECT dig.*, ig.name as group_name

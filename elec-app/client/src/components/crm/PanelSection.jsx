@@ -34,7 +34,7 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
 
   const [editing, setEditing] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
-  const [form, setForm] = useState({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false });
+  const [form, setForm] = useState({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false, onedrive_link: panel.onedrive_link || '' });
 
   const handleSavePanel = async () => {
     await onUpdatePanel(panel.id, form);
@@ -73,6 +73,13 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
               </>
             );
           })()}
+          {panel.onedrive_link && (
+            <a href={panel.onedrive_link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+              style={{ fontSize: 11, color: '#fff', background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: 10, textDecoration: 'none', flexShrink: 0 }}
+              title="Open OneDrive link">
+              ☁️ OneDrive
+            </a>
+          )}
           {panel.updated_by_name && (
             <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
               Last edit: {panel.updated_by_name}
@@ -83,7 +90,7 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
           {editing ? (
             <>
               <button className="btn btn-sm btn-primary" onClick={e => { e.stopPropagation(); handleSavePanel(); }}>Save</button>
-              <button className="btn btn-sm btn-secondary" onClick={e => { e.stopPropagation(); setEditing(false); setForm({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false }); }}>Cancel</button>
+              <button className="btn btn-sm btn-secondary" onClick={e => { e.stopPropagation(); setEditing(false); setForm({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false, onedrive_link: panel.onedrive_link || '' }); }}>Cancel</button>
             </>
           ) : (
             <>
@@ -92,7 +99,7 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
                 {panel.is_completed ? '✓ Complete' : '☐ Mark Complete'}
               </button>
               <button className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}
-                onClick={e => { e.stopPropagation(); setEditing(true); setForm({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false }); }}>Edit Panel</button>
+                onClick={e => { e.stopPropagation(); setEditing(true); setForm({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false, onedrive_link: panel.onedrive_link || '' }); }}>Edit Panel</button>
             </>
           )}
           <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.25)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}
@@ -130,6 +137,12 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
                 <input type="checkbox" checked={form.show_note_in_client_pdf} onChange={e => setForm(f => ({ ...f, show_note_in_client_pdf: e.target.checked }))} />
                 Show note in Client PDF
               </label>
+            </div>
+          </div>
+          <div className="form-row" style={{ gap: 12, marginTop: 10 }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="form-label">☁️ OneDrive Link (optional)</label>
+              <input className="form-input" type="url" value={form.onedrive_link} onChange={e => setForm(f => ({ ...f, onedrive_link: e.target.value }))} placeholder="Paste a OneDrive folder/file share link for this panel..." />
             </div>
           </div>
         </div>

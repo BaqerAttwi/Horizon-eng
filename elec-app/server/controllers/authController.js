@@ -12,8 +12,8 @@ const JWT_EXPIRES = '12h'; // session lasts 12 hours
  * Role permissions — what each role can access
  */
 const ROLE_PERMISSIONS = {
-  owner:      ['products','upload','projects','workers','clients','reservations','reports','discounts','requests','analytics','price-changes','item-groups','messages'],
-  accounting: ['products','projects','clients','reservations','reports'],
+  owner:      ['products','upload','projects','workers','clients','reservations','reports','discounts','requests','analytics','price-changes','item-groups','messages','debt'],
+  accounting: ['products','projects','clients','reservations','reports','debt'],
   engineer:   ['products','projects','reservations','requests','item-groups','messages','clients'],
   secretary:  ['products','clients','reservations','messages'],
   technician: ['execution'],

@@ -29,6 +29,7 @@ const MessagesPage     = lazy(() => import('./pages/MessagesPage'));
 const CalendarPage     = lazy(() => import('./pages/CalendarPage'));
 const TechnicianProjectsPage = lazy(() => import('./pages/TechnicianProjectsPage'));
 const TechnicianExecutionPage = lazy(() => import('./pages/TechnicianExecutionPage'));
+const DebtPage = lazy(() => import('./pages/DebtPage'));
 
 // Role badge colors
 const ROLE_COLORS = { owner:'#a78bfa', accounting:'#60a5fa', engineer:'#4ade80', secretary:'#fbbf24', technician:'#94a3b8' };
@@ -53,6 +54,7 @@ const NAV = [
   { to: '/upload',       icon: '⬆️', label: 'Import Excel',    perm: 'upload',   group: 'admin' },
   { to: '/discounts',    icon: '🏷️', label: 'Brand Discounts', perm: 'discounts', group: 'admin' },
   { to: '/analytics',    icon: '📈', label: 'Analytics',      perm: 'analytics', group: 'admin' },
+  { to: '/debt',         icon: '💸', label: 'Debt',           perm: 'debt',     group: 'admin' },
   { to: '/workers',      icon: '👷', label: 'Workers',        perm: 'workers',  group: 'admin' },
   { to: '/clients',      icon: '🏢', label: 'Clients',        perm: 'clients',  group: 'admin' },
 ];
@@ -168,6 +170,20 @@ function AppLayout() {
     document.documentElement.classList.toggle('light-mode', theme === 'light');
   }, [theme]);
 
+  // Surface the result of the OneDrive OAuth redirect (lands back here from
+  // /api/onedrive/callback) as a toast, then strip the query params so a
+  // page refresh doesn't re-show it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const onedrive = params.get('onedrive');
+    if (!onedrive) return;
+    if (onedrive === 'connected') toast.success('✅ OneDrive connected');
+    else if (onedrive === 'error') toast.error('❌ OneDrive connection failed: ' + (params.get('message') || 'unknown error'));
+    params.delete('onedrive'); params.delete('message');
+    const rest = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (rest ? `?${rest}` : ''));
+  }, []);
+
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
@@ -220,6 +236,7 @@ function AppLayout() {
               <Route path="/workers"   element={<AnimatedPage><ProtectedRoute perm="workers"><WorkersPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/clients"   element={<AnimatedPage><ProtectedRoute perm="clients"><ClientsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/analytics" element={<AnimatedPage><ProtectedRoute perm="analytics"><AnalyticsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/debt"      element={<AnimatedPage><ProtectedRoute perm="debt"><DebtPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/notifications" element={<AnimatedPage><ProtectedRoute><NotificationsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/my-projects"     element={<AnimatedPage><ProtectedRoute perm="execution"><TechnicianProjectsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/my-projects/:id" element={<AnimatedPage><ProtectedRoute perm="execution"><TechnicianExecutionPage /></ProtectedRoute></AnimatedPage>} />

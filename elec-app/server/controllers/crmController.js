@@ -91,10 +91,10 @@ async function updatePanel(req, res, next) {
     const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
     if (!hasAccess) return;
 
-    const { panel_name, markupP, markupM, manpower_pct, note, show_note_in_client_pdf } = req.body;
+    const { panel_name, markupP, markupM, manpower_pct, note, show_note_in_client_pdf, onedrive_link } = req.body;
     await db.execute(
-      'UPDATE project_crm_panels SET panel_name=?, markupP=?, markupM=?, manpower_pct=?, note=?, show_note_in_client_pdf=?, updated_by=? WHERE id=? AND project_id=?',
-      [panel_name||null, markupP||0, markupM||0, manpower_pct||0, note||null, show_note_in_client_pdf ? 1 : 0, req.worker.id, req.params.panelId, req.params.projectId]
+      'UPDATE project_crm_panels SET panel_name=?, markupP=?, markupM=?, manpower_pct=?, note=?, show_note_in_client_pdf=?, onedrive_link=?, updated_by=? WHERE id=? AND project_id=?',
+      [panel_name||null, markupP||0, markupM||0, manpower_pct||0, note||null, show_note_in_client_pdf ? 1 : 0, onedrive_link||null, req.worker.id, req.params.panelId, req.params.projectId]
     );
 
     // Cascade panel markups to items and divisions

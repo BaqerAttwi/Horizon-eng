@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import api from '../api/client';
 import { FadeIn, StaggerContainer, StaggerItem } from '../components/AnimatedPage';
+import DebtList from '../components/DebtList';
 
 const STATUS_COLORS = { completed: 'var(--success)', active: 'var(--accent)', draft: 'var(--muted)' };
 
@@ -202,6 +203,10 @@ export default function AnalyticsPage() {
   const topCli = summary?.top_client;
   const monthlyData = summary?.monthly_revenue || [];
   const engComparison = summary?.engineer_comparison || [];
+  const outstanding = summary?.outstanding || [];
+  const monthlyByProject = summary?.monthly_by_project || [];
+  const latestMonth = monthlyData.length ? monthlyData[monthlyData.length - 1].month : null;
+  const latestMonthBreakdown = monthlyByProject.filter(m => m.month === latestMonth);
 
   return (
     <div className="page">
@@ -234,11 +239,14 @@ export default function AnalyticsPage() {
           <div className="stats-row" style={{ marginBottom: 24 }}>
             <SummaryCard icon="🔧" label="Total Projects" value={totals.total_projects || 0}
               sub={`${totals.completed_projects || 0} completed`} color="var(--accent)" />
-            <SummaryCard icon="💰" label="Total Revenue" value={`$${parseFloat(totals.total_revenue || 0).toFixed(0)}`}
-              color="var(--primary)" />
-            <SummaryCard icon="📈" label="Total Profit" value={`$${parseFloat(totals.total_profit || 0).toFixed(0)}`}
+            <SummaryCard icon="💰" label="Revenue Collected" value={`$${parseFloat(totals.total_revenue || 0).toFixed(0)}`}
+              sub="Actual payments received" color="var(--primary)" />
+            <SummaryCard icon="📈" label="Profit (Recognized)" value={`$${parseFloat(totals.total_profit || 0).toFixed(0)}`}
               sub={parseFloat(totals.total_profit) >= 0 ? 'Positive' : 'Negative'}
               color={parseFloat(totals.total_profit) >= 0 ? 'var(--success)' : 'var(--danger)'} />
+            <SummaryCard icon="💸" label="Outstanding" value={`$${parseFloat(totals.total_outstanding || 0).toFixed(0)}`}
+              sub={`${outstanding.length} project${outstanding.length === 1 ? '' : 's'} owe money`}
+              color={parseFloat(totals.total_outstanding) > 0 ? 'var(--danger)' : 'var(--success)'} />
             <SummaryCard icon="🏆" label="Top Engineer" value={topEng?.name || '—'}
               sub={topEng ? `$${parseFloat(topEng.profit).toFixed(0)} profit` : ''} color="var(--accent2)" />
             <SummaryCard icon="🏢" label="Top Client" value={topCli?.name || '—'}
@@ -278,7 +286,15 @@ export default function AnalyticsPage() {
         <div className={`tab${tab === 'summary' ? ' active' : ''}`} onClick={() => setTab('summary')}>📊 Summary</div>
         <div className={`tab${tab === 'engineers' ? ' active' : ''}`} onClick={() => setTab('engineers')}>👷 Engineers</div>
         <div className={`tab${tab === 'clients' ? ' active' : ''}`} onClick={() => setTab('clients')}>🏢 Clients</div>
+        <div className={`tab${tab === 'debt' ? ' active' : ''}`} onClick={() => setTab('debt')}>💸 Debt</div>
       </div>
+
+      {/* Debt Tab */}
+      {tab === 'debt' && (
+        <FadeIn>
+          <DebtList />
+        </FadeIn>
+      )}
 
       {/* Engineers Table */}
       {tab === 'engineers' && (
@@ -364,13 +380,16 @@ export default function AnalyticsPage() {
             <div className="card">
               <div className="card-body">
                 <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)', marginBottom: 12 }}>💰 Financial Overview</h3>
+                <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 8 }}>
+                  Based on payments actually received, not full contract value
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>Total Revenue</span>
+                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>Revenue Collected</span>
                     <span className="mono" style={{ fontWeight: 700, color: 'var(--primary)' }}>${parseFloat(totals.total_revenue || 0).toFixed(0)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>Total Cost</span>
+                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>Recognized Cost</span>
                     <span className="mono" style={{ fontWeight: 700 }}>${parseFloat(totals.total_cost || 0).toFixed(0)}</span>
                   </div>
                   <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
@@ -384,6 +403,12 @@ export default function AnalyticsPage() {
                     <span style={{ fontSize: 12, color: 'var(--muted)' }}>Profit Margin</span>
                     <span className="mono" style={{ fontWeight: 700, color: parseFloat(totals.total_profit) >= 0 ? 'var(--success)' : 'var(--danger)' }}>
                       {totals.total_revenue > 0 ? ((parseFloat(totals.total_profit) / parseFloat(totals.total_revenue)) * 100).toFixed(1) : 0}%
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>Still Outstanding</span>
+                    <span className="mono" style={{ fontWeight: 700, color: parseFloat(totals.total_outstanding) > 0 ? 'var(--danger)' : 'var(--success)' }}>
+                      ${parseFloat(totals.total_outstanding || 0).toFixed(0)}
                     </span>
                   </div>
                 </div>
@@ -408,6 +433,44 @@ export default function AnalyticsPage() {
               </div>
             </div>
           </div>
+
+          {latestMonthBreakdown.length > 0 && (
+            <div className="card" style={{ marginTop: 16 }}>
+              <div className="card-body">
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)', marginBottom: 12 }}>
+                  📅 Payments in {latestMonth} — by Project
+                </h3>
+                <div className="table-wrap" style={{ border: 'none' }}>
+                  <table>
+                    <thead><tr><th>Project</th><th>Client</th><th>Amount</th></tr></thead>
+                    <tbody>
+                      {latestMonthBreakdown.map(m => (
+                        <tr key={m.project_id}>
+                          <td style={{ fontWeight: 600, color: 'var(--white)' }}>{m.project_name}</td>
+                          <td style={{ color: 'var(--muted)' }}>{m.client_name || '—'}</td>
+                          <td className="mono" style={{ fontWeight: 700, color: 'var(--success)' }}>${parseFloat(m.amount).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {outstanding.length > 0 && (
+            <div className="card" style={{ marginTop: 16, cursor: 'pointer' }} onClick={() => setTab('debt')}>
+              <div className="card-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)', margin: 0 }}>
+                    💸 {outstanding.length} project{outstanding.length === 1 ? '' : 's'} with outstanding balance
+                  </h3>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>Click for full payment history per project</div>
+                </div>
+                <span style={{ color: 'var(--accent)', fontSize: 13, fontWeight: 600 }}>View Debt tab →</span>
+              </div>
+            </div>
+          )}
         </FadeIn>
       )}
     </div>

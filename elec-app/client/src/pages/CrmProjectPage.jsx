@@ -8,6 +8,7 @@ import SummaryTesting from '../components/SummaryTesting';
 import PanelSection from '../components/crm/PanelSection';
 import ExecutionPanel from '../components/crm/ExecutionPanel';
 import ProjectTechnicians from '../components/crm/ProjectTechnicians';
+import ProjectPayments from '../components/crm/ProjectPayments';
 import useCrmProject from '../hooks/useCrmProject';
 import { useAuth } from '../context/AuthContext';
 
@@ -50,7 +51,7 @@ export default function CrmProjectPage() {
   const navigate = useNavigate();
   const { isRole } = useAuth();
   const {
-    project, panels, loading,
+    project, setProject, panels, loading,
     pendingPriceChanges,
     showAddPanel, setShowAddPanel,
     showCopyPanel, setShowCopyPanel, copyStep, setCopyStep,
@@ -153,6 +154,12 @@ export default function CrmProjectPage() {
           <button onClick={() => setActiveTab('execution')}
             style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'execution' ? 'var(--success)' : 'var(--muted)', borderBottom: activeTab === 'execution' ? '2px solid var(--success)' : '2px solid transparent', cursor: 'pointer' }}>
             🔧 Execution
+          </button>
+        )}
+        {(isRole('owner') || isRole('accounting')) && (
+          <button onClick={() => setActiveTab('payments')}
+            style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'payments' ? 'var(--success)' : 'var(--muted)', borderBottom: activeTab === 'payments' ? '2px solid var(--success)' : '2px solid transparent', cursor: 'pointer' }}>
+            💰 Payments
           </button>
         )}
         <button onClick={() => setActiveTab('activity')}
@@ -558,6 +565,10 @@ export default function CrmProjectPage() {
           hideCost={hideCost} exchangeRate={exchangeRate} />
       )}
 
+      {activeTab === 'payments' && (isRole('owner') || isRole('accounting')) && (
+        <ProjectPayments projectId={project.id} />
+      )}
+
       {activeTab === 'activity' && (
         <div className="card">
           <div className="card-body">
@@ -571,7 +582,7 @@ export default function CrmProjectPage() {
         <div className="card">
           <div className="card-body">
             <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)', marginBottom: 12 }}>📎 File Attachments</h3>
-            <FileAttachments projectId={project.id} panels={panels} />
+            <FileAttachments projectId={project.id} panels={panels} project={project} onProjectUpdate={setProject} />
           </div>
         </div>
       )}

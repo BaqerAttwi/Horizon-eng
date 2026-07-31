@@ -52,7 +52,10 @@ async function getProjects(req, res, next) {
               ) as crm_panels,
               COALESCE(
                 ROUND((p.completed_panels / NULLIF(p.total_panels, 0)) * 100, 1), 0
-              ) as progress_pct
+              ) as progress_pct,
+              COALESCE((SELECT SUM(pp.amount) FROM project_payments pp WHERE pp.project_id=p.id), 0) as total_paid,
+              GREATEST(0, COALESCE(NULLIF(p.total_with_vat, 0), p.total_price) -
+                COALESCE((SELECT SUM(pp.amount) FROM project_payments pp WHERE pp.project_id=p.id), 0)) as outstanding_balance
        FROM projects p
        LEFT JOIN workers w ON p.engineer_id=w.id
        LEFT JOIN clients c ON p.client_id=c.id
@@ -90,7 +93,10 @@ async function getProject(req, res, next) {
     }
 
     const [rows] = await db.execute(
-      `SELECT p.*, w.name as engineer_name, c.name as client_name
+      `SELECT p.*, w.name as engineer_name, c.name as client_name,
+              COALESCE((SELECT SUM(pp.amount) FROM project_payments pp WHERE pp.project_id=p.id), 0) as total_paid,
+              GREATEST(0, COALESCE(NULLIF(p.total_with_vat, 0), p.total_price) -
+                COALESCE((SELECT SUM(pp.amount) FROM project_payments pp WHERE pp.project_id=p.id), 0)) as outstanding_balance
        FROM projects p
        LEFT JOIN workers w ON p.engineer_id=w.id
        LEFT JOIN clients c ON p.client_id=c.id
@@ -171,7 +177,12 @@ async function updateProject(req, res, next) {
     const hasAccess = await checkProjectAccess(req, res, req.params.id);
     if (!hasAccess) return;
 
-    const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, client_pdf_note, status, client_approval, client_rejection_note, admin_approval, rejection_note, total_panels, completed_panels, vat_pct, project_discount_pct, payment_terms } = req.body;
+    const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, client_pdf_note, status, client_approval, client_rejection_note, admin_approval, rejection_note, total_panels, completed_panels, vat_pct, project_discount_pct, payment_terms, onedrive_folder_link, payment_deadline } = req.body;
+
+    if (payment_deadline !== undefined && req.worker.role !== 'owner') {
+      return res.status(403).json({ error: 'Only an owner can set the payment deadline' });
+    }
+
     const fields = [], params = [];
     if (project_name       !== undefined) { fields.push('project_name=?');    params.push(project_name); }
     if (engineer_id        !== undefined) { fields.push('engineer_id=?');     params.push(engineer_id||null); }
@@ -189,9 +200,11 @@ async function updateProject(req, res, next) {
     if (completed_panels   !== undefined) { fields.push('completed_panels=?'); params.push(completed_panels||0); }
     if (req.body.ready_for_review !== undefined) { fields.push('ready_for_review=?'); params.push(req.body.ready_for_review ? 1 : 0); }
     if (req.body.execution_deadline !== undefined) { fields.push('execution_deadline=?'); params.push(req.body.execution_deadline || null); }
+    if (payment_deadline !== undefined) { fields.push('payment_deadline=?'); params.push(payment_deadline || null); }
     if (vat_pct !== undefined) { fields.push('vat_pct=?'); params.push(parseFloat(vat_pct) || 0); }
     if (project_discount_pct !== undefined) { fields.push('project_discount_pct=?'); params.push(parseFloat(project_discount_pct) || 0); }
     if (payment_terms !== undefined) { fields.push('payment_terms=?'); params.push(payment_terms); }
+    if (onedrive_folder_link !== undefined) { fields.push('onedrive_folder_link=?'); params.push(onedrive_folder_link || null); }
     // Fetch old values before update
     const [oldProj] = await db.execute('SELECT client_approval, admin_approval, ready_for_review FROM projects WHERE id=?', [req.params.id]);
     const oldClientApproval = oldProj.length ? oldProj[0].client_approval : null;

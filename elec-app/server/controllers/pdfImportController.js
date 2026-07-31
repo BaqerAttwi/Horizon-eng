@@ -197,7 +197,7 @@ async function createFromImport(req, res, next) {
       const p = panels[pi];
       const [panelResult] = await db.execute(
         'INSERT INTO project_crm_panels(project_id,panel_number,panel_name) VALUES(?,?,?)',
-        [projectId, p.panel_number, p.panel_name||null]
+        [projectId, p.panel_number || (pi + 1), p.panel_name||null]
       );
       const panelId = panelResult.insertId;
 
@@ -211,7 +211,7 @@ async function createFromImport(req, res, next) {
       for (const div of panelDivs) {
         const [divResult] = await db.execute(
           'INSERT INTO panel_divisions(panel_id,division_type) VALUES(?,?)',
-          [panelId, div.division_type]
+          [panelId, div.division_type || 'INCOMING']
         );
         const divisionId = divResult.insertId;
 

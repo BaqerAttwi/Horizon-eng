@@ -1,6 +1,7 @@
 const db = require('../db/connection');
 const path = require('path');
 const fs = require('fs');
+const oneDrive = require('../utils/oneDrive');
 
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 
@@ -10,24 +11,20 @@ function ensureDir() {
 
 async function uploadAttachment(req, res, next) {
   try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
     const { projectId } = req.params;
+    const { link_url, name } = req.body;
     const panelId = req.body.panel_id || null;
     const userId = req.worker.id;
 
-    ensureDir();
+    if (!link_url || !link_url.trim()) return res.status(400).json({ error: 'link_url is required' });
+    try { new URL(link_url); } catch { return res.status(400).json({ error: 'That doesn\'t look like a valid URL' }); }
 
-    const ext = path.extname(req.file.originalname);
-    const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-    const filePath = path.join(UPLOAD_DIR, safeName);
-
-    fs.writeFileSync(filePath, req.file.buffer);
+    const displayName = (name && name.trim()) || link_url;
 
     const [result] = await db.execute(
-      `INSERT INTO attachments (project_id, panel_id, file_name, stored_name, file_size, mime_type, uploaded_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [projectId, panelId, req.file.originalname, safeName, req.file.size, req.file.mimetype, userId]
+      `INSERT INTO attachments (project_id, panel_id, file_name, stored_name, file_size, mime_type, uploaded_by, storage, link_url)
+       VALUES (?, ?, ?, NULL, 0, NULL, ?, 'link', ?)`,
+      [projectId, panelId, displayName, userId, link_url.trim()]
     );
 
     const [[attachment]] = await db.execute(
@@ -47,6 +44,9 @@ async function uploadAttachment(req, res, next) {
 async function getAttachments(req, res, next) {
   try {
     const { projectId } = req.params;
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, projectId);
+    if (!hasAccess) return;
 
     const [attachments] = await db.execute(
       `SELECT a.*, w.name as uploader_name
@@ -69,6 +69,17 @@ async function downloadAttachment(req, res, next) {
 
     const [[attachment]] = await db.execute('SELECT * FROM attachments WHERE id = ?', [attachmentId]);
     if (!attachment) return res.status(404).json({ error: 'Attachment not found' });
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, attachment.project_id);
+    if (!hasAccess) return;
+
+    if (attachment.storage === 'link') {
+      return res.redirect(attachment.link_url);
+    }
+    if (attachment.storage === 'onedrive') {
+      const url = await oneDrive.getDownloadUrl(attachment.onedrive_item_id);
+      return res.redirect(url);
+    }
 
     const filePath = path.join(UPLOAD_DIR, attachment.stored_name);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found on disk' });
@@ -87,9 +98,17 @@ async function deleteAttachment(req, res, next) {
 
     const [[attachment]] = await db.execute('SELECT * FROM attachments WHERE id = ?', [attachmentId]);
     if (!attachment) return res.status(404).json({ error: 'Attachment not found' });
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, attachment.project_id);
+    if (!hasAccess) return;
 
-    const filePath = path.join(UPLOAD_DIR, attachment.stored_name);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    if (attachment.storage === 'onedrive') {
+      await oneDrive.deleteFile(attachment.onedrive_item_id);
+    } else if (attachment.storage === 'local') {
+      const filePath = path.join(UPLOAD_DIR, attachment.stored_name);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+    // storage === 'link': nothing to clean up, just the DB row below
 
     await db.execute('DELETE FROM attachments WHERE id = ?', [attachmentId]);
     res.json({ message: 'Attachment deleted' });

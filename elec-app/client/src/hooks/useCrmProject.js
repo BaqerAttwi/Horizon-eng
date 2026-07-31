@@ -502,7 +502,7 @@ export default function useCrmProject() {
   const projectTotalWithVat = netAfterDisc + vatAmt;
 
   return {
-    project, panels, loading, setLoading,
+    project, setProject, panels, loading, setLoading,
     pendingPriceChanges,
     showAddPanel, setShowAddPanel,
     showCopyPanel, setShowCopyPanel, copyStep, setCopyStep,

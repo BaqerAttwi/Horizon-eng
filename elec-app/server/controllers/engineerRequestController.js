@@ -118,6 +118,10 @@ async function deleteRequest(req, res, next) {
 
 async function getEngineersOnProject(req, res, next) {
   try {
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, req.params.projectId);
+    if (!hasAccess) return;
+
     const [rows] = await db.execute(
       `SELECT er.target_engineer_id AS id, w.name
        FROM project_engineer_requests er
