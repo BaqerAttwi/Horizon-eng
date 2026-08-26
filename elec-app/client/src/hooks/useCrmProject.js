@@ -31,26 +31,26 @@ export default function useCrmProject() {
   const [applyingBrandDisc, setApplyingBrandDisc] = useState(false);
   const [activeTab, setActiveTab] = useState('items');
   const [editView, setEditView] = useState(false);
+  const [divisionTypes,setDivisionTypes]=useState([]);
 
   const hideCost = isRole('engineer');
-  const showCr = isRole('owner');
-  const exchangeRate = project?.exchange_rate_eur_usd ?? 1.08;
+  const showCr = isRole('owner', 'head_engineer');
+  const exchangeRate = project?.exchange_rate_eur_usd ?? 1.18;
 
   const load = useCallback(async () => {
     try {
-      const [crmRes, pcRes, exRes] = await Promise.all([
+      const [crmRes, exRes, divisionTypeRes] = await Promise.all([
         api.get(`/projects/${id}/crm`),
-        api.get(`/price-changes/project/${id}`),
-        api.get(`/projects/${id}/execution`)
+        api.get(`/projects/${id}/execution`),
+        api.get('/division-types')
       ]);
       setProject(crmRes.data);
       setPanels(crmRes.data.panels || []);
 
-      const map = {};
-      pcRes.data.forEach(req => { map[req.item_id] = req; });
-      setPendingPriceChanges(map);
+      setPendingPriceChanges({});
 
       setExecutionData(exRes.data);
+      setDivisionTypes(divisionTypeRes.data);
     } catch (e) { toast.error(e.message); }
     finally { setLoading(false); }
   }, [id]);
@@ -134,10 +134,12 @@ export default function useCrmProject() {
 
   const updatePanel = useCallback(async (panelId, form) => {
     try {
-      const r = await api.patch(`/projects/${id}/panels/${panelId}`, form);
-      setPanels(p => p.map(x => x.id === panelId ? recalcPanelTotal({ ...x, ...r.data }) : x));
+      await api.patch(`/projects/${id}/panels/${panelId}`, form);
+      // Reload nested divisions/items because panel markup cascades on the server.
+      // Merging only the returned panel row left the first/overridden item stale.
+      await load();
     } catch (e) { toast.error(e.message); }
-  }, [id]);
+  }, [id, load]);
 
   const deletePanel = useCallback(async (panelId) => {
     if (!confirm('Delete this panel and all its items?')) return;
@@ -286,6 +288,16 @@ export default function useCrmProject() {
     } catch (e) { toast.error(e.message); }
   }, []);
 
+  const handleGroupInstanceDescriptionChange = useCallback(async (instanceId, description) => {
+    try {
+      await api.patch(`/group-instances/${instanceId}`, { description });
+      setPanels(p => p.map(panel => ({ ...panel, divisions: (panel.divisions || []).map(d => ({
+        ...d, group_instances: (d.group_instances || []).map(gi => gi.id === instanceId ? { ...gi, description } : gi)
+      })) })));
+      toast.success('Group description updated');
+    } catch (e) { toast.error(e.message); }
+  }, []);
+
   const handleGroupInstanceRemove = useCallback(async (instanceId) => {
     if (!confirm('Remove this group instance and all its items?')) return;
     try {
@@ -296,6 +308,7 @@ export default function useCrmProject() {
               ...panel,
               divisions: (panel.divisions || []).map(d => ({
                 ...d,
+                items: (d.items || []).filter(item => String(item.source_group_instance_id) !== String(instanceId)),
                 group_instances: (d.group_instances || []).filter(gi => gi.id !== instanceId)
               }))
             })
@@ -475,7 +488,7 @@ export default function useCrmProject() {
           const ref = item.is_manual
             ? (item.custom_name || 'Manual')
             : (item.reference || 'Unknown');
-          flat.push({ panel_number: panel.panel_number, reference: ref, qty: item.qty ?? 1 });
+          flat.push({ panel_number: panel.panel_number, reference: ref, qty: (item.qty ?? 1) * (Number(panel.quantity) || 1) });
         }
       }
     }
@@ -502,7 +515,7 @@ export default function useCrmProject() {
   const projectTotalWithVat = netAfterDisc + vatAmt;
 
   return {
-    project, setProject, panels, loading, setLoading,
+    project, setProject, panels, loading, setLoading,divisionTypes,
     pendingPriceChanges,
     showAddPanel, setShowAddPanel,
     showCopyPanel, setShowCopyPanel, copyStep, setCopyStep,
@@ -526,7 +539,7 @@ export default function useCrmProject() {
     addDivision, deleteDivision,
     addItem, updateItem, deleteItem,
     toggleExecutionPanel, toggleExecutionItem,
-    handleGroupInstanceQtyChange, handleGroupInstanceRemove,
+    handleGroupInstanceQtyChange, handleGroupInstanceDescriptionChange, handleGroupInstanceRemove,
     handleReadyForReview, handleBulkEdit, clearSelection,
     toggleSelectItem, selectAllForDivision,
     openBrandPreview, handleConfirmBrandDiscount,

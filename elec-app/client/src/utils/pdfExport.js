@@ -52,7 +52,191 @@ function finalizeDoc(doc, pw, logoPng, project) {
   return totalPages;
 }
 
-export async function exportProjectPdf(projectId, type = 'owner') {
+const BLUE = [0, 137, 180];
+const BORDER = [35, 35, 35];
+
+function clean(value, fallback = '') {
+  const text = String(value ?? '').trim();
+  return text || fallback;
+}
+
+function money(value, currency = '$') {
+  return `${currency}${(Number(value) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function activePanels(project) {
+  return (project.panels || [])
+    .filter(panel => (panel.divisions || []).some(div => (div.items || []).some(item => item.visible_in_client_pdf !== 0)))
+    .sort((a, b) => Number(a.panel_number) - Number(b.panel_number));
+}
+
+function drawQuotation(project, fields, logoPng) {
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const pw = doc.internal.pageSize.getWidth();
+  // A quotation is a commercial panel summary. Include every priced/named CRM
+  // panel even when its individual technical items are hidden from client PDFs.
+  const panels = (project.panels || [])
+    .filter(panel => panel.panel_name || Number(panel.total_price) !== 0)
+    .sort((a, b) => Number(a.panel_number) - Number(b.panel_number));
+  const currency = clean(fields.currency, '$');
+  const quoteNo = clean(fields.quoteNumber, `Q-${project.id}`);
+  const panelTotal = panels.reduce((sum, panel) => sum + (Number(panel.total_price) || 0), 0);
+  const discountPct = Number(project.project_discount_pct) || 0;
+  const subtotal = panelTotal * (1 - discountPct / 100);
+  const vatPct = fields.vatPctOverride !== '' && fields.vatPctOverride !== undefined
+    ? Math.max(0, Number(fields.vatPctOverride) || 0)
+    : (Number(project.vat_pct) || 0);
+  // These values are maintained by Edit Project / server pricing. Prefer the
+  // stored amounts so the quotation always agrees with the project screen.
+  const storedVat = Number(project.total_vat);
+  const overrideVat = fields.vatAmountOverride !== '' && fields.vatAmountOverride !== undefined ? Number(fields.vatAmountOverride) : NaN;
+  const vat = Number.isFinite(overrideVat) ? Math.max(0, overrideVat) : Number.isFinite(storedVat) && (storedVat !== 0 || vatPct === 0) && fields.vatPctOverride === undefined
+    ? storedVat
+    : subtotal * vatPct / 100;
+  const storedTotal = Number(project.total_with_vat);
+  const overrideTotal = fields.totalOverride !== '' && fields.totalOverride !== undefined ? Number(fields.totalOverride) : NaN;
+  const total = Number.isFinite(overrideTotal) ? Math.max(0, overrideTotal) : Number.isFinite(storedTotal) && (storedTotal !== 0 || subtotal === 0) && fields.vatPctOverride === undefined && fields.vatAmountOverride === undefined
+    ? storedTotal
+    : subtotal + vat;
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.text('QUOTATION', pw / 2, 13, { align: 'center' });
+  doc.setDrawColor(...BORDER); doc.setLineWidth(0.25);
+  doc.rect(8, 18, 194, 49);
+  doc.line(120, 18, 120, 67);
+  doc.setFontSize(10); doc.text('Horizon Power Solution', 11, 24);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+  doc.text(['Verdun - Miraj Center - GF', 'Beirut, Lebanon', '+961 1 741030', 'MOF #: 3890959'], 11, 29, { lineHeightFactor: 1.35 });
+  if (logoPng) doc.addImage(logoPng, 'PNG', 73, 25, 36, 31);
+  const topRows = [
+    ['Quote #', quoteNo, 'Date', clean(fields.quoteDate)],
+    ['Project', clean(fields.projectName, project.project_name || '-'), 'Expiry', clean(fields.expiryDate)],
+    ['Pages', '1', '', ''],
+  ];
+  topRows.forEach((row, index) => {
+    const y = 24 + index * 12;
+    doc.setFont('helvetica', 'bold'); doc.text(row[0], 123, y); doc.text(row[2], 165, y);
+    doc.setFont('helvetica', 'normal'); doc.text(row[1], 140, y); doc.text(row[3], 178, y);
+  });
+
+  autoTable(doc, {
+    startY: 70, margin: { left: 8, right: 8 }, theme: 'grid',
+    head: [['BUYER', '', 'PAYMENT TERMS', '']],
+    body: [
+      ['Name', clean(fields.buyerName, project.client_name || '-'), 'Payment', clean(fields.paymentTerms, project.payment_terms || '-')],
+      ['Address', clean(fields.buyerAddress, '-'), 'Validity', clean(fields.validity, '2 weeks')],
+      ['Phone', clean(fields.buyerPhone, '-'), 'Delivery', clean(fields.deliveryTime, 'TBD')],
+      ['Contact', clean(fields.buyerContact, '-'), 'Currency', clean(fields.currency, 'USD')],
+      ['Email', clean(fields.buyerEmail, '-'), 'Incoterms', clean(fields.incoterm, 'Ex-works')],
+      ['VAT #', clean(fields.buyerVat, '-'), '', ''],
+    ],
+    styles: { fontSize: 7, cellPadding: 1.2, lineColor: BORDER, lineWidth: 0.2, textColor: 20 },
+    headStyles: { fillColor: BLUE, textColor: 255, fontStyle: 'bold' },
+    columnStyles: { 0: { cellWidth: 18, fontStyle: 'bold' }, 1: { cellWidth: 76 }, 2: { cellWidth: 20, fontStyle: 'bold' }, 3: { cellWidth: 80 } },
+  });
+
+  const rows = panels.map((panel, index) => {
+    const quantity = Math.max(1, Number(panel.quantity || panel.qty) || 1);
+    const amount = Number(panel.total_price) || 0;
+    return [
+      index + 1,
+      `Panel #${panel.panel_number}${panel.panel_name ? ` - ${panel.panel_name}` : ''}`,
+      String(quantity), 'Nos.', money(amount / quantity, currency), money(amount, currency),
+    ];
+  });
+  autoTable(doc, {
+    startY: doc.lastAutoTable.finalY + 3, margin: { left: 8, right: 8, bottom: 72 }, theme: 'grid',
+    head: [['S/N', 'Description', 'Unit Quantity', 'Unit Type', 'Price', 'Amount']],
+    body: rows.length ? rows : [['', 'No priced panels', '', '', '', '']],
+    styles: { fontSize: 7, cellPadding: 1.5, lineColor: BORDER, lineWidth: 0.2, textColor: 20 },
+    headStyles: { fillColor: BLUE, textColor: 255, halign: 'center' },
+    columnStyles: { 0: { cellWidth: 10, halign: 'center' }, 1: { cellWidth: 82 }, 2: { cellWidth: 20, halign: 'center' }, 3: { cellWidth: 18, halign: 'center' }, 4: { cellWidth: 28, halign: 'right' }, 5: { cellWidth: 28, halign: 'right' } },
+  });
+
+  let y = Math.min(doc.lastAutoTable.finalY + 3, 207);
+  const totals = [['Consignment Total', panelTotal], ...(discountPct ? [[`Discount (${discountPct}%)`, panelTotal - subtotal]] : []), [`VAT (${vatPct}%)`, vat], ['TOTAL', total]];
+  totals.forEach(([label, value], index) => {
+    doc.setFont('helvetica', index === totals.length - 1 ? 'bold' : 'normal');
+    doc.setFontSize(8); doc.text(label, 145, y + index * 5); doc.text(money(value, currency), 199, y + index * 5, { align: 'right' });
+  });
+  y += totals.length * 5 + 3;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.text('Additional Info', 9, y);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
+  const notes = clean(fields.additionalInfo, `Offer valid ${clean(fields.validity, '2 weeks')}\nDelivery Time ${clean(fields.deliveryTime, 'TBD')}\nAttachment Technical Offer\n${clean(fields.incoterm, 'Ex-work workshop in Beirut')}`).split('\n').filter(Boolean);
+  doc.text(notes.map(note => `- ${note}`), 10, y + 5, { lineHeightFactor: 1.25 });
+  const bankY = Math.min(y + 28, 240);
+  doc.setFont('helvetica', 'bold'); doc.text('Banking Details', 9, bankY);
+  doc.setFont('helvetica', 'normal');
+  doc.text([
+    clean(fields.signatoryCompany, 'Horizon Power Solution'),
+    `A/C No: ${clean(fields.bankAccount, '3254067424002')}`,
+    `IBAN: ${clean(fields.bankIban, 'LB93003900000003254067424002')}`,
+    `Bank Name: ${clean(fields.bankName, 'BYBLOS BANK')}`,
+    `Branch: ${clean(fields.bankBranch, 'Ghobeiry Branch')}`,
+    clean(fields.bankAddress, 'Ghobeiry Old Airport Highway - Jawharat El Kasr BLDG - Ground Floor'),
+    `Country: ${clean(fields.bankCountry, 'Lebanon')}   Swift Code: ${clean(fields.bankSwift, 'BYBALBBX')}`,
+  ], 9, bankY + 5, { lineHeightFactor: 1.2 });
+  doc.setFont('helvetica', 'bold'); doc.text(`Incoterms 2020: ${clean(fields.incotermCode, 'EXW Beirut - Workshop')}`, 145, bankY);
+  doc.text(`Currency: ${clean(fields.currencyName, 'USD')}`, 145, bankY + 5);
+  doc.text('Signatory', 145, bankY + 11);
+  doc.setFont('helvetica', 'normal'); doc.text(`Company: ${clean(fields.signatoryCompany, 'Horizon Power Solutions')}`, 145, bankY + 16);
+  doc.text(`Name: ${clean(fields.signatoryName, 'Khodor Sharaf')}`, 145, bankY + 21);
+  doc.text(clean(fields.signatureText, 'Signature'), 145, bankY + 27);
+  doc.line(145, bankY + 33, 198, bankY + 33);
+  doc.setDrawColor(0); doc.line(8, 278, 202, 278);
+  doc.setFontSize(6.5);
+  doc.text(clean(fields.footerLine1, 'www.horizonpowerlb.com'), pw / 2, 282, { align: 'center' });
+  doc.text(clean(fields.footerLine2, 'Verdun - Miraj Center - GF, Beirut, Lebanon'), pw / 2, 286, { align: 'center' });
+  doc.text(clean(fields.footerLine3, 'Tel: +961 1 741030 | Email: info@horizonpowerlb.com'), pw / 2, 290, { align: 'center' });
+  return { doc, filename: `${quoteNo.replace(/[^a-z0-9_-]/gi, '_')}_quotation.pdf` };
+}
+
+function drawTechnicalQuotation(project, fields, logoPng) {
+  // Technical BOMs contain several wide text columns. Landscape prevents
+  // autoTable from squeezing/overflowing the requested column widths.
+  const doc = new jsPDF('l', 'mm', 'letter');
+  const pw = doc.internal.pageSize.getWidth();
+  const quoteNo = clean(fields.quoteNumber, `Q-${project.id}`);
+  const panels = activePanels(project);
+  const drawHeader = () => {
+    doc.setDrawColor(...BORDER); doc.setLineWidth(0.25); doc.rect(7, 7, pw - 14, 22);
+    doc.line(52, 7, 52, 29); doc.line(pw - 50, 7, pw - 50, 29);
+    if (logoPng) doc.addImage(logoPng, 'PNG', 10, 9, 38, 17);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text('HORIZON POWER SOLUTION', pw / 2, 14, { align: 'center' });
+    doc.setFontSize(15); doc.text('TECHNICAL OFFER', pw / 2, 23, { align: 'center' });
+    doc.setFontSize(6.5); doc.text(clean(fields.documentCode, 'HPS-COM-PR02-L02'), pw - 47, 12);
+    doc.text(`Edition ${clean(fields.edition, '1')}`, pw - 47, 18);
+    doc.text(`Quote # ${quoteNo}`, pw - 47, 24);
+  };
+  drawHeader();
+  const body = [];
+  panels.forEach(panel => {
+    body.push([{ content: `Panel #${panel.panel_number} - ${clean(panel.panel_name, 'Panel')}`, colSpan: 6, styles: { fillColor: BLUE, textColor: 255, fontStyle: 'bold' } }]);
+    let number = 1;
+    (panel.divisions || []).forEach(div => {
+      // Keep the same database/CRM order and include group-instance items too:
+      // the technical offer is the complete bill of materials for each panel.
+      (div.items || []).filter(item => item.visible_in_client_pdf !== 0).forEach(item => {
+        body.push([
+          number++, clean(panel.panel_name, `Panel ${panel.panel_number}`), clean(div.division_type, '-'),
+          clean(item.is_manual ? item.custom_name : item.reference, '-'),
+          clean(item.custom_desc || item.product_desc || item.description, '-'), clean(item.qty, '1'),
+        ]);
+      });
+    });
+  });
+  autoTable(doc, {
+    startY: 32, margin: { left: 7, right: 7, top: 32, bottom: 10 }, theme: 'grid',
+    head: [['#', 'Panel name', 'Division', 'Part number', 'Description', 'QTY']],
+    body: body.length ? body : [['', '', '', '', 'No technical items', '']],
+    styles: { fontSize: 5.8, cellPadding: 0.8, lineColor: BORDER, lineWidth: 0.15, textColor: 10, overflow: 'linebreak' },
+    headStyles: { fillColor: BLUE, textColor: 255, fontStyle: 'bold', halign: 'center' },
+    columnStyles: { 0: { cellWidth: 8, halign: 'center' }, 1: { cellWidth: 42 }, 2: { cellWidth: 31 }, 3: { cellWidth: 42 }, 4: { cellWidth: 120 }, 5: { cellWidth: 10, halign: 'center' } },
+    didDrawPage: ({ pageNumber }) => { if (pageNumber > 1) drawHeader(); },
+  });
+  return { doc, filename: `${quoteNo.replace(/[^a-z0-9_-]/gi, '_')}_technical_quotation.pdf` };
+}
+
+export async function exportProjectPdf(projectId, type = 'owner', fields = {}) {
   const { data } = await api.get(`/projects/${projectId}/crm`);
   const project = data;
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -61,6 +245,14 @@ export async function exportProjectPdf(projectId, type = 'owner') {
   const panels = project.panels || [];
   let grandTotal = 0;
   let grandCost = 0;
+
+  if (type === 'quotation' || type === 'technical') {
+    const output = type === 'quotation'
+      ? drawQuotation(project, fields, logoPng)
+      : drawTechnicalQuotation(project, fields, logoPng);
+    output.doc.save(output.filename);
+    return;
+  }
 
   // ────────────────────────────────────────────────────────────────
   // CLIENT PDF — redesigned quotation-style layout
@@ -144,7 +336,8 @@ export async function exportProjectPdf(projectId, type = 'owner') {
     const summaryRows = activePanels.map(p => {
       const price = parseFloat(p.total_price) || 0;
       panelGrand += price;
-      return [`Panel #${p.panel_number}${p.panel_name ? ' — ' + p.panel_name : ''}`, '1', `$${price.toFixed(2)}`, `$${price.toFixed(2)}`];
+      const quantity = Math.max(1, Number(p.quantity) || 1);
+      return [`Panel #${p.panel_number}${p.panel_name ? ' — ' + p.panel_name : ''}`, String(quantity), `$${(price / quantity).toFixed(2)}`, `$${price.toFixed(2)}`];
     });
 
     autoTable(doc, {
@@ -351,7 +544,7 @@ export async function exportProjectPdf(projectId, type = 'owner') {
     doc.text(`Progress: ${project.completed_panels}/${project.total_panels} panels (${pct}%)`, 14, y);
     y += 6;
   }
-  doc.text(`Exchange Rate: 1 EUR = ${project.exchange_rate_eur_usd || 1.08} USD`, 14, y);
+  doc.text(`Exchange Rate: 1 EUR = ${project.exchange_rate_eur_usd || 1.18} USD`, 14, y);
   y += 8;
 
   for (const panel of panels) {

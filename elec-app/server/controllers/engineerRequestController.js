@@ -42,6 +42,17 @@ async function createRequest(req, res, next) {
     if (target_engineer_id == req.worker.id) {
       return res.status(400).json({ error: 'Cannot request yourself' });
     }
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, project_id);
+    if (!hasAccess) return;
+
+    const [[target]] = await db.execute(
+      "SELECT id FROM workers WHERE id=? AND role='engineer'",
+      [target_engineer_id]
+    );
+    if (!target) {
+      return res.status(400).json({ error: 'Target worker must be an engineer' });
+    }
     const [existing] = await db.execute(
       'SELECT id, status FROM project_engineer_requests WHERE project_id=? AND target_engineer_id=?',
       [project_id, target_engineer_id]
@@ -53,6 +64,15 @@ async function createRequest(req, res, next) {
       if (existing[0].status === 'pending') {
         return res.status(400).json({ error: 'Request already sent to this engineer' });
       }
+      await db.execute(
+        'UPDATE project_engineer_requests SET requested_by=?,status=\'pending\',rejection_reason=NULL WHERE id=?',
+        [req.worker.id, existing[0].id]
+      );
+      const [[project]] = await db.execute('SELECT project_name FROM projects WHERE id=?', [project_id]);
+      await createNotification(target_engineer_id, 'request', `Collaboration invite: ${project?.project_name || `project #${project_id}`}`,
+        `${req.worker.name} invited you to collaborate`, '/requests');
+      const [[resent]] = await db.execute('SELECT * FROM project_engineer_requests WHERE id=?', [existing[0].id]);
+      return res.status(200).json(resent);
     }
     const [r] = await db.execute(
       'INSERT INTO project_engineer_requests(project_id,requested_by,target_engineer_id) VALUES(?,?,?)',

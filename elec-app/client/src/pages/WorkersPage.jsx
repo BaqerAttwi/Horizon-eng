@@ -3,11 +3,13 @@ import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
-const ROLES = ['owner','accounting','engineer','secretary','technician'];
-const ROLE_BADGE = { owner:'badge-purple', accounting:'badge-blue', engineer:'badge-green', secretary:'badge-yellow', technician:'badge-gray' };
-const ROLE_ICON  = { owner:'👑', accounting:'💼', engineer:'⚙️', secretary:'📋', technician:'🛠️' };
+const ROLES = ['owner','head_engineer','stock_manager','accounting','engineer','secretary','technician'];
+const ROLE_BADGE = { owner:'badge-purple', head_engineer:'badge-blue', stock_manager:'badge-yellow', accounting:'badge-blue', engineer:'badge-green', secretary:'badge-yellow', technician:'badge-gray' };
+const ROLE_ICON  = { owner:'👑', head_engineer:'🧭', stock_manager:'📦', accounting:'💼', engineer:'⚙️', secretary:'📋', technician:'🛠️' };
 
 function WorkerModal({ worker, onClose, onSaved }) {
+  const { isRole } = useAuth();
+  const allowedRoles = isRole('head_engineer') ? ['engineer'] : ROLES;
   const isNew = !worker?.id;
   const [form, setForm] = useState({ name:'', email:'', phone:'', role:'engineer', ...worker, password: '' });
   const [saving, setSaving] = useState(false);
@@ -47,7 +49,7 @@ function WorkerModal({ worker, onClose, onSaved }) {
             <div className="form-group">
               <label className="form-label">Role *</label>
               <select className="form-select" {...f('role')}>
-                {ROLES.map(r=><option key={r} value={r}>{ROLE_ICON[r]} {r.charAt(0).toUpperCase()+r.slice(1)}</option>)}
+                {allowedRoles.map(r=><option key={r} value={r}>{ROLE_ICON[r]} {r.charAt(0).toUpperCase()+r.slice(1)}</option>)}
               </select>
             </div>
           </div>
@@ -204,9 +206,9 @@ export default function WorkersPage() {
                   <td style={{color:'var(--muted)'}}>{w.email||'—'}</td>
                   <td className="mono">{w.phone||'—'}</td>
                   <td style={{display:'flex',gap:6}}>
-                    <button className="btn-icon" title="Edit" onClick={()=>setModal(w)}>✏️</button>
+                    {(isRole('owner') || w.role === 'engineer') && <button className="btn-icon" title="Edit" onClick={()=>setModal(w)}>✏️</button>}
                     {isRole('owner') && <button className="btn-icon" title="Set Password" onClick={()=>setSetPassFor(w)}>🔑</button>}
-                    <button className="btn-icon" title="Delete" onClick={()=>del(w)} style={{color:'var(--danger)'}}>🗑</button>
+                    {(isRole('owner') || w.role === 'engineer') && <button className="btn-icon" title="Delete" onClick={()=>del(w)} style={{color:'var(--danger)'}}>🗑</button>}
                   </td>
                 </tr>
               ))}

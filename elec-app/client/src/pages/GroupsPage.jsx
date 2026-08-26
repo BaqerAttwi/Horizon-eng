@@ -19,6 +19,7 @@ function priceDisplay(usd, eur) {
 function GroupModal({ group, onClose, onSaved }) {
   const [form, setForm] = useState({
     name: group?.name || '',
+    description: group?.description || '',
     is_public: group?.is_public || false,
   });
   const [saving, setSaving] = useState(false);
@@ -51,6 +52,10 @@ function GroupModal({ group, onClose, onSaved }) {
           <div className="form-group">
             <label className="form-label">Group Name *</label>
             <input className="form-input" placeholder="e.g. Standard Panel Kit" value={form.name} onChange={handleChange('name')} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Group Description</label>
+            <textarea className="form-textarea" rows={3} placeholder="Describe this reusable group..." value={form.description} onChange={handleChange('description')} />
           </div>
           <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <label className="form-label" style={{ marginBottom: 0 }}>Public</label>

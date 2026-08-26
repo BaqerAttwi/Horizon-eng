@@ -129,6 +129,12 @@ async function togglePanelExecution(req, res, next) {
     if (!hasAccess) return;
     const { is_completed, description } = req.body;
 
+    const [[panel]] = await db.execute(
+      'SELECT id FROM project_crm_panels WHERE id=? AND project_id=?',
+      [panelId, projectId]
+    );
+    if (!panel) return res.status(404).json({ error: 'Panel not found in this project' });
+
     const hasCompleted = is_completed !== undefined ? (is_completed ? 1 : 0) : undefined;
 
     const [[existing]] = await db.execute(
@@ -234,14 +240,21 @@ async function toggleItemExecution(req, res, next) {
     if (!hasAccess) return;
     const { is_completed, qty_done, execution_notes } = req.body;
 
+    const [[projectItem]] = await db.execute(
+      `SELECT i.id, i.qty
+       FROM panel_crm_items i
+       JOIN panel_divisions d ON d.id=i.division_id
+       JOIN project_crm_panels p ON p.id=d.panel_id
+       WHERE i.id=? AND p.project_id=?`,
+      [itemId, projectId]
+    );
+    if (!projectItem) return res.status(404).json({ error: 'Item not found in this project' });
+
     // If qty_done provided, derive is_completed from item's qty
     let finalIsCompleted = is_completed ? 1 : 0;
     let finalQtyDone = undefined;
     if (qty_done !== undefined) {
-      const [[item]] = await db.execute(
-        'SELECT qty FROM panel_crm_items WHERE id = ?', [itemId]
-      );
-      const itemQty = item ? (parseInt(item.qty) || 1) : 1;
+      const itemQty = parseInt(projectItem.qty) || 1;
       finalQtyDone = Math.min(Math.max(0, parseInt(qty_done) || 0), itemQty);
       finalIsCompleted = finalQtyDone >= itemQty ? 1 : 0;
     }

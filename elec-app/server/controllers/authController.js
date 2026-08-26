@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const db     = require('../db/connection');
+const { ROLE_PERMISSIONS } = require('../utils/rolePolicy');
 
 const JWT_SECRET  = process.env.JWT_SECRET || (() => {
   console.warn('\x1b[33m[SECURITY] ⚠️ JWT_SECRET not set in .env — using insecure fallback. Set JWT_SECRET in .env for production.\x1b[0m');
@@ -11,14 +12,6 @@ const JWT_EXPIRES = '12h'; // session lasts 12 hours
 /**
  * Role permissions — what each role can access
  */
-const ROLE_PERMISSIONS = {
-  owner:      ['products','upload','projects','workers','clients','reservations','reports','discounts','requests','analytics','price-changes','item-groups','messages','debt'],
-  accounting: ['products','projects','clients','reservations','reports','debt'],
-  engineer:   ['products','projects','reservations','requests','item-groups','messages','clients'],
-  secretary:  ['products','clients','reservations','messages'],
-  technician: ['execution'],
-};
-
 /**
  * POST /api/auth/login
  * Body: { email, password }
@@ -97,7 +90,7 @@ async function register(req, res, next) {
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
-    const validRoles = ['owner','accounting','engineer','secretary','technician'];
+    const validRoles = ['owner','head_engineer','stock_manager','accounting','engineer','secretary','technician'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
     }

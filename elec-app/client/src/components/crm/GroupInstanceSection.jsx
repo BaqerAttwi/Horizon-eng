@@ -1,10 +1,12 @@
 import { useState, useEffect, memo } from 'react';
 import CrmItemRow from './CrmItemRow';
 
-const GroupInstanceSection = memo(function GroupInstanceSection({ instance, division, panel, exchangeRate, onInstanceQtyChange, onInstanceRemove, onItemUpdate, onItemDelete, hideCost, showCr, pendingPriceChanges, selectedItems, onToggleItem, editView }) {
+const GroupInstanceSection = memo(function GroupInstanceSection({ instance, division, panel, exchangeRate, onInstanceQtyChange, onInstanceDescriptionChange, onInstanceRemove, onItemUpdate, onItemDelete, hideCost, showCr, pendingPriceChanges, selectedItems, onToggleItem, editView }) {
   const [localQty, setLocalQty] = useState(instance.quantity);
+  const [description, setDescription] = useState(instance.description || '');
 
   useEffect(() => { setLocalQty(instance.quantity); }, [instance.quantity]);
+  useEffect(() => { setDescription(instance.description || ''); }, [instance.description]);
 
   return (
     <div style={{ margin: '8px 12px', border: '1px dashed var(--accent2)', borderRadius: 6, background: 'rgba(245,158,11,0.04)' }}>
@@ -20,6 +22,12 @@ const GroupInstanceSection = memo(function GroupInstanceSection({ instance, divi
         </div>
         <button className="btn-icon" style={{ color: 'var(--danger)', fontSize: 12 }}
           onClick={() => onInstanceRemove(instance.id)}>✕</button>
+      </div>
+      <div style={{ padding: '6px 10px', borderBottom: '1px dashed var(--border)' }}>
+        <label style={{ display: 'block', fontSize: 10, color: 'var(--muted)', marginBottom: 3 }}>Group Description</label>
+        <textarea className="form-input" rows={2} value={description} placeholder="Add a description for this group..."
+          onChange={e => setDescription(e.target.value)}
+          onBlur={() => { if (description !== (instance.description || '')) onInstanceDescriptionChange(instance.id, description); }} />
       </div>
       {instance.items?.length > 0 && (
         <div className="table-wrap" style={{ overflowX: 'auto' }}>

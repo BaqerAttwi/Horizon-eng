@@ -5,7 +5,7 @@ import api from '../api/client';
 
 export default function DiscountsPage() {
   const { isRole } = useAuth();
-  const isOwner = isRole('owner');
+  const canManage = isRole('owner','head_engineer');
   const [discounts, setDiscounts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,10 +97,10 @@ export default function DiscountsPage() {
           <div className="page-subtitle">{brandDiscounts.length} brand discounts • {productDiscounts.length} product-specific discounts</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {isOwner && <button className={`btn ${bulkMode ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setBulkMode(b => !b)}>
+          {canManage && <button className={`btn ${bulkMode ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setBulkMode(b => !b)}>
             {bulkMode ? '✕ Cancel Bulk' : '📊 Bulk Edit All Brands'}
           </button>}
-          {isOwner && !bulkMode && <button className="btn btn-primary" onClick={() => setShowForm(s => !s)}>
+          {canManage && !bulkMode && <button className="btn btn-primary" onClick={() => setShowForm(s => !s)}>
             {showForm ? '✕ Cancel' : '+ Add Brand Discount'}
           </button>}
         </div>
@@ -170,12 +170,12 @@ export default function DiscountsPage() {
             <thead>
               <tr>
                 <th>Brand</th><th>Discount %</th><th>Notes</th><th>Created</th>
-                {isOwner && <th></th>}
+                {canManage && <th></th>}
               </tr>
             </thead>
             <tbody>
               {!brandDiscounts.length && !loading && (
-                <tr><td colSpan={isOwner ? 5 : 4}><div className="empty"><p>No brand discounts. Add one above.</p></div></td></tr>
+                <tr><td colSpan={canManage ? 5 : 4}><div className="empty"><p>No brand discounts. Add one above.</p></div></td></tr>
               )}
               {brandDiscounts.map(d => (
                 <tr key={d.id}>
@@ -183,7 +183,7 @@ export default function DiscountsPage() {
                   <td className="mono" style={{ color: 'var(--danger)', fontWeight: 700 }}>{d.discount_pct}%</td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{d.notes || '—'}</td>
                   <td className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{d.created_at?.split('T')[0] || '—'}</td>
-                  {isOwner && <td>
+                  {canManage && <td>
                     <button className="btn-icon" style={{ color: 'var(--danger)' }}
                       onClick={() => del(d.id)}>🗑</button>
                   </td>}

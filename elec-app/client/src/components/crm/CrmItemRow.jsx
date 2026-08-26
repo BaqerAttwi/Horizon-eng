@@ -36,11 +36,11 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
   const nProfit = final - crAmount;
 
   const convertEurEdit = (euro) => {
-    const rate = exchangeRate ?? 1.08;
+    const rate = exchangeRate ?? 1.18;
     setForm(f => ({ ...f, base_price_euro: euro, base_price_usd: euro ? (parseFloat(euro) * rate).toFixed(2) : '' }));
   };
   const convertUsdEdit = (usd) => {
-    const rate = exchangeRate ?? 1.08;
+    const rate = exchangeRate ?? 1.18;
     setForm(f => ({ ...f, base_price_usd: usd, base_price_euro: usd ? (parseFloat(usd) / rate).toFixed(4) : '' }));
   };
 
@@ -51,6 +51,25 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave(); }
   };
+
+  if (hideCost) {
+    const updatePercent = (field, value) => onUpdate(item.id, { [field]: parseFloat(value) || 0 });
+    return (
+      <tr className="crm-item-row">
+        <td style={{ textAlign: 'center' }}><input type="checkbox" checked={!!isSelected} onChange={() => onToggleSelect?.(item.id)} /></td>
+        <td style={{ textAlign: 'center' }}>{item.visible_in_client_pdf ? '👁' : '🚫'}</td>
+        <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>{name}</td>
+        <td><input type="number" min="1" className="form-input" style={{ width: 64 }} defaultValue={item.qty || 1}
+          onBlur={e => { const next = Math.max(1, parseInt(e.target.value, 10) || 1); if (next !== Number(item.qty)) onUpdate(item.id, { qty: next }); }} /></td>
+        <td>{desc}</td><td>{brand || '—'}</td>
+        {['discount_pct','markupP_pct','manpower_pct','markupM_pct'].map(field => <td key={field}>
+          <input type="number" min="0" step="0.1" className="form-input crm-percent-input" defaultValue={item[field] || 0}
+            onBlur={e => { if (Number(e.target.value) !== Number(item[field] || 0)) updatePercent(field, e.target.value); }} />
+        </td>)}
+        <td className="crm-actions-column"><button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }} onClick={() => onDelete(item.id)}>✕</button></td>
+      </tr>
+    );
+  }
 
   if (editing) {
     return (
@@ -160,7 +179,7 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
       {!hideCost && <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>{profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>}
       {showCr && <td className="mono" style={{ color: 'var(--accent2)' }}>${crAmount.toFixed(2)}</td>}
       {showCr && <td className="mono" style={{ fontWeight: 700, color: nProfit >= 0 ? 'var(--success)' : 'var(--danger)' }}>${nProfit.toFixed(2)}</td>}
-      <td onClick={e => e.stopPropagation()}>
+      <td className="crm-actions-column" onClick={e => e.stopPropagation()}>
         <button className="btn-icon" title="Edit" onClick={() => setEditing(true)}>✏️</button>
         <button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }}
           onClick={() => onDelete(item.id)}>✕</button>

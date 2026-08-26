@@ -48,6 +48,8 @@ async function updateReservedQty(req, res, next) {
     }
 
     await db.execute('UPDATE products SET reserved_qty = ? WHERE id = ?', [newReserved, productId]);
+    await db.execute(`INSERT INTO reservation_history(product_id,old_qty,new_qty,change_qty,reason,changed_by)
+      VALUES(?,?,?,?,?,?)`, [productId, product.reserved_qty, newReserved, newReserved-product.reserved_qty, action === 'reserve' ? 'manual_reserve' : 'manual_release', req.worker.id]);
 
     res.json({
       product_id: parseInt(productId),
@@ -58,6 +60,21 @@ async function updateReservedQty(req, res, next) {
     console.error('[Reservations] ❌ updateReservedQty:', err.message);
     next(err);
   }
+}
+
+async function getReservationHistory(req, res, next) {
+  try {
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 100));
+    const params = [];
+    let where = '';
+    if (req.query.product_id) { where = 'WHERE h.product_id=?'; params.push(req.query.product_id); }
+    params.push(limit);
+    const [rows] = await db.query(`SELECT h.*,p.reference,p.description,pr.project_name,pcp.panel_name,w.name changed_by_name
+      FROM reservation_history h JOIN products p ON p.id=h.product_id
+      LEFT JOIN projects pr ON pr.id=h.project_id LEFT JOIN project_crm_panels pcp ON pcp.id=h.panel_id
+      LEFT JOIN workers w ON w.id=h.changed_by ${where} ORDER BY h.created_at DESC,h.id DESC LIMIT ?`, params);
+    res.json(rows);
+  } catch (err) { next(err); }
 }
 
 /**
@@ -82,7 +99,7 @@ async function getAllReservations(req, res, next) {
         pr.stock_qty,
         pr.reserved_qty,
         (pr.stock_qty - pr.reserved_qty) AS available_qty,
-        pci.qty        AS demanded_qty,
+        (pci.qty * COALESCE(pcp.quantity, 1)) AS demanded_qty,
         p.id           AS project_id,
         p.project_name,
         p.status       AS project_status,
@@ -101,6 +118,7 @@ async function getAllReservations(req, res, next) {
       LEFT JOIN workers w ON p.engineer_id = w.id
       LEFT JOIN clients c ON p.client_id = c.id
       WHERE p.status NOT IN ('completed','cancelled')
+        AND p.project_stage IN ('design','quotation','approval','procurement')
         AND pci.product_id IS NOT NULL
         ${engFilter ? engFilter.clause : ''}
       ORDER BY pr.reference, p.id
@@ -198,7 +216,7 @@ async function getProductDemand(req, res, next) {
 
     const [demands] = await db.execute(`
       SELECT
-        pci.qty,
+        (pci.qty * COALESCE(pcp.quantity, 1)) AS qty,
         p.id           AS project_id,
         p.project_name,
         p.status,
@@ -214,6 +232,7 @@ async function getProductDemand(req, res, next) {
       LEFT JOIN workers w ON p.engineer_id = w.id
       LEFT JOIN clients c ON p.client_id   = c.id
       WHERE pci.product_id = ? AND p.status NOT IN ('completed','cancelled')
+        AND p.project_stage IN ('design','quotation','approval','procurement')
         ${engFilter ? engFilter.clause : ''}
       ORDER BY p.deadline ASC
     `, engFilter ? [productId, ...engFilter.params] : [productId]);
@@ -235,4 +254,4 @@ async function getProductDemand(req, res, next) {
   }
 }
 
-module.exports = { getAllReservations, getProductDemand, updateReservedQty };
+module.exports = { getAllReservations, getProductDemand, updateReservedQty, getReservationHistory };

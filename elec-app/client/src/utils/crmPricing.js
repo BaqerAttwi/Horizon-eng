@@ -25,14 +25,12 @@ export const calcItemCurrentPrice = (item) => {
 export const recalcPanelTotal = (panel) => {
   let total = 0;
   for (const div of panel.divisions || []) {
+    // The CRM API keeps every database item in division.items. Group-instance
+    // items are references to those same objects, not an additional charge.
     for (const item of div.items || []) {
       total += calcItemCurrentPrice(item);
     }
-    for (const gi of div.group_instances || []) {
-      for (const item of gi.items || []) {
-        total += calcItemCurrentPrice(item);
-      }
-    }
   }
-  return { ...panel, total_price: total };
+  const quantity = Math.max(1, parseInt(panel.quantity, 10) || 1);
+  return { ...panel, quantity, total_price: total * quantity };
 };

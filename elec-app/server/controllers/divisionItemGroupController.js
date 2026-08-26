@@ -4,9 +4,11 @@ const { recalcDivisionTotals, recalcPanelTotals } = require('../utils/pricing');
 const { checkProjectAccess } = require('./crmController');
 
 async function addGroupToDivision(req, res, next) {
+  let conn;
+  let committed = false;
   try {
     const { divisionId } = req.params;
-    const { item_group_id, quantity } = req.body;
+    const { item_group_id, quantity, description } = req.body;
     if (!item_group_id) return res.status(400).json({ error: 'item_group_id required' });
     const groupQty = Math.max(1, parseInt(quantity) || 1);
 
@@ -29,21 +31,24 @@ async function addGroupToDivision(req, res, next) {
 
     // Get project exchange rate for EUR↔USD conversion
     const [[proj]] = await db.execute('SELECT exchange_rate_eur_usd FROM projects WHERE id = ?', [div.project_id]);
-    const rate = parseFloat(proj?.exchange_rate_eur_usd) || 1.08;
+    const rate = parseFloat(proj?.exchange_rate_eur_usd) || 1.18;
 
     // Inherit markup from division or fallback to panel
     const markupP = parseFloat(div.markupP) || parseFloat(div.panel_markupP) || 0;
     const markupM = parseFloat(div.markupM) || parseFloat(div.panel_markupM) || 0;
     const manpower = parseFloat(div.manpower_pct) || parseFloat(div.panel_manpower_pct) || 0;
 
-    const [instanceResult] = await db.execute(
-      'INSERT INTO division_item_group_instances (division_id, item_group_id, quantity) VALUES (?, ?, ?)',
-      [divisionId, item_group_id, groupQty]
+    conn = await db.getConnection();
+    await conn.beginTransaction();
+
+    const [instanceResult] = await conn.execute(
+      'INSERT INTO division_item_group_instances (division_id, item_group_id, quantity, description) VALUES (?, ?, ?, ?)',
+      [divisionId, item_group_id, groupQty, description?.trim() || group.description || null]
     );
     const instanceId = instanceResult.insertId;
 
     // Get group items
-    const [groupItems] = await db.execute(
+    const [groupItems] = await conn.execute(
       `SELECT gi.*, COALESCE(gi.price_usd, p.price_usd) as effective_price_usd,
               COALESCE(gi.price_euro, p.price_euro) as effective_price_euro
        FROM item_group_items gi
@@ -62,7 +67,7 @@ async function addGroupToDivision(req, res, next) {
       // Look up brand discount for this item's product
       let discPct = 0;
       if (grpItem.product_id) {
-        const [[bd]] = await db.execute(
+        const [[bd]] = await conn.execute(
           `SELECT pd.discount_pct FROM product_discounts pd
            JOIN products p ON p.brand_id = pd.brand_id
            WHERE p.id = ? AND pd.product_id IS NULL
@@ -72,7 +77,7 @@ async function addGroupToDivision(req, res, next) {
         discPct = parseFloat(bd?.discount_pct) || 0;
       }
 
-      await db.execute(
+      await conn.execute(
         `INSERT INTO panel_crm_items (
           division_id, product_id, is_manual, custom_name, custom_desc,
           base_price_usd, base_price_euro, qty,
@@ -94,7 +99,10 @@ async function addGroupToDivision(req, res, next) {
       );
     }
 
-    // Recalc totals (this also computes pricing for all items)
+    await conn.commit();
+    committed = true;
+
+    // Recalc totals after commit so the pool helpers see the inserted items.
     await recalcDivisionTotals(divisionId);
     await recalcPanelTotals(div.panel_id);
     const { recalcReservedQty } = require('./projectController');
@@ -116,20 +124,25 @@ async function addGroupToDivision(req, res, next) {
       division_id: divisionId,
       item_group_id,
       quantity: groupQty,
+      description: description?.trim() || group.description || null,
       group_name: group.name,
       items_count: groupItems.length
     });
   } catch (err) {
+    if (conn && !committed) await conn.rollback();
     console.error('[DivisionItemGroup] ❌ addGroupToDivision:', err.message);
     next(err);
+  } finally {
+    if (conn) conn.release();
   }
 }
 
 async function updateGroupInstanceQuantity(req, res, next) {
+  let conn;
+  let committed = false;
   try {
     const { instanceId } = req.params;
-    const { quantity } = req.body;
-    const newQty = Math.max(1, parseInt(quantity) || 1);
+    const { quantity, description } = req.body;
 
     const [[instance]] = await db.execute(
       `SELECT dig.*, pd.panel_id, pcp.project_id
@@ -143,21 +156,25 @@ async function updateGroupInstanceQuantity(req, res, next) {
     if (!hasAccess) return;
 
     const oldQty = instance.quantity;
+    const newQty = quantity === undefined ? oldQty : Math.max(1, parseInt(quantity) || 1);
 
-    // Get all items linked to this instance
-    const [items] = await db.execute(
+    conn = await db.getConnection();
+    await conn.beginTransaction();
+
+    // Description-only edits should not rewrite item quantities.
+    const [items] = await conn.execute(
       'SELECT * FROM panel_crm_items WHERE source_group_instance_id = ?',
       [instanceId]
     );
 
     // Get the group items to know base qty per item
-    const [groupItems] = await db.execute(
+    const [groupItems] = await conn.execute(
       'SELECT * FROM item_group_items WHERE group_id = ?',
       [instance.item_group_id]
     );
 
     // Update each item's quantity
-    for (const item of items) {
+    for (const item of quantity === undefined ? [] : items) {
       // Find matching group item by product_id or custom_name
       const match = groupItems.find(gi =>
         (gi.product_id && gi.product_id === item.product_id) ||
@@ -165,10 +182,15 @@ async function updateGroupInstanceQuantity(req, res, next) {
       );
       const baseQty = match ? (match.qty ?? 1) : 1;
       const newItemQty = baseQty * newQty;
-      await db.execute('UPDATE panel_crm_items SET qty = ? WHERE id = ?', [newItemQty, item.id]);
+      await conn.execute('UPDATE panel_crm_items SET qty = ? WHERE id = ?', [newItemQty, item.id]);
     }
 
-    await db.execute('UPDATE division_item_group_instances SET quantity = ? WHERE id = ?', [newQty, instanceId]);
+    await conn.execute(
+      'UPDATE division_item_group_instances SET quantity=?, description=COALESCE(?, description) WHERE id=?',
+      [newQty, description === undefined ? null : (String(description).trim() || null), instanceId]
+    );
+    await conn.commit();
+    committed = true;
 
     // Recalc totals
     await recalcDivisionTotals(instance.division_id);
@@ -190,15 +212,21 @@ async function updateGroupInstanceQuantity(req, res, next) {
     res.json({
       id: instanceId,
       quantity: newQty,
+      description: description === undefined ? instance.description : (String(description).trim() || null),
       items_updated: items.length
     });
   } catch (err) {
+    if (conn && !committed) await conn.rollback();
     console.error('[DivisionItemGroup] ❌ updateGroupInstanceQuantity:', err.message);
     next(err);
+  } finally {
+    if (conn) conn.release();
   }
 }
 
 async function removeGroupInstance(req, res, next) {
+  let conn;
+  let committed = false;
   try {
     const { instanceId } = req.params;
 
@@ -213,11 +241,16 @@ async function removeGroupInstance(req, res, next) {
     const hasAccess = await checkProjectAccess(req, res, instance.project_id);
     if (!hasAccess) return;
 
+    conn = await db.getConnection();
+    await conn.beginTransaction();
+
     // Delete child items
-    await db.execute('DELETE FROM panel_crm_items WHERE source_group_instance_id = ?', [instanceId]);
+    await conn.execute('DELETE FROM panel_crm_items WHERE source_group_instance_id = ?', [instanceId]);
 
     // Delete instance
-    await db.execute('DELETE FROM division_item_group_instances WHERE id = ?', [instanceId]);
+    await conn.execute('DELETE FROM division_item_group_instances WHERE id = ?', [instanceId]);
+    await conn.commit();
+    committed = true;
 
     logActivity({
       project_id: instance.project_id,
@@ -237,8 +270,11 @@ async function removeGroupInstance(req, res, next) {
 
     res.json({ message: 'Group instance removed', items_deleted: true });
   } catch (err) {
+    if (conn && !committed) await conn.rollback();
     console.error('[DivisionItemGroup] ❌ removeGroupInstance:', err.message);
     next(err);
+  } finally {
+    if (conn) conn.release();
   }
 }
 

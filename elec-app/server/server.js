@@ -10,6 +10,14 @@ const { initMailer } = require('./utils/emailService');
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
+if (process.env.NODE_ENV === 'production') {
+  const required = ['JWT_SECRET', 'OWNER_PASSWORD', 'DB_PASSWORD'];
+  const missing = required.filter(name => !process.env[name]);
+  if (missing.length) {
+    throw new Error(`Missing required production environment variables: ${missing.join(', ')}`);
+  }
+}
+
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
 app.use(cookieParser());
@@ -29,8 +37,11 @@ app.get('*', (req, res, next) => {
 
 app.use((err, req, res, _next) => {
   console.error('[Server] 💥', err.message, err.stack);
-  const status = err.status || 500;
-  const message = status >= 500 ? 'Internal server error' : err.message;
+  const isUploadLimit = err.code === 'LIMIT_FILE_SIZE';
+  const status = isUploadLimit ? 413 : (err.status || 500);
+  const message = isUploadLimit
+    ? 'PDF is too large. Maximum upload size is 20 MB.'
+    : (status >= 500 ? 'Internal server error' : err.message);
   res.status(status).json({ error: message });
 });
 

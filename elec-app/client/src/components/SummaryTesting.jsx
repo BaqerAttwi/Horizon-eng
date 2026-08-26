@@ -150,7 +150,7 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
   const currentMetrics = useMemo(() => selectedItem ? calcMetrics(selectedItem) : null, [selectedItem]);
   const altMetrics = useMemo(() => {
   if (!alternative) return null;
-  const rate = exchangeRate || 1.08;
+  const rate = exchangeRate || 1.18;
   const usd = parseFloat(alternative.price_usd) || (parseFloat(alternative.price_euro) * rate) || 0;
   const eur = parseFloat(alternative.price_euro) || (usd / rate) || 0;
   const altCost = parseFloat(alternative.price_cost) || parseFloat(alternative.cost) || 0;
@@ -174,7 +174,7 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
     if (!selectedItem || !alternative) return;
     setApplying(true);
     try {
-      const rate = exchangeRate || 1.08;
+      const rate = exchangeRate || 1.18;
       const usd = parseFloat(alternative.price_usd) || (parseFloat(alternative.price_euro) * rate) || 0;
       const eur = parseFloat(alternative.price_euro) || (usd / rate) || 0;
 
@@ -230,7 +230,7 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
 
   // Resolve display price from product fields using project exchange rate
   const displayPrice = (p) => {
-    const rate = exchangeRate || 1.08;
+    const rate = exchangeRate || 1.18;
     let eur = parseFloat(p.price_euro);
     let usd = parseFloat(p.price_usd);
     if (usd && !eur) eur = usd / rate;
@@ -462,7 +462,7 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
               </div>
             </div>
             {panelA && panelB && (projectA !== projectB || panelA !== panelB) && (() => {
-              const rate = exchangeRate || 1.08;
+              const rate = exchangeRate || 1.18;
               const a = panelsA.find(p => p.id === parseInt(panelA));
               const b = panelsB.find(p => p.id === parseInt(panelB));
               if (!a || !b) return <div style={{ textAlign:'center', padding:20, color:'var(--muted)', fontSize:12 }}>Panel not found</div>;

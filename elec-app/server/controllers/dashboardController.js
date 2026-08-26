@@ -91,7 +91,7 @@ async function getDashboard(req, res, next) {
 
     // Low stock alerts (for owner/accounting)
     let lowStock = [];
-    if (userRole === 'owner' || userRole === 'accounting') {
+    if (userRole === 'owner' || userRole === 'head_engineer' || userRole === 'accounting') {
       const [stock] = await pool.query(`
         SELECT id, reference, description, stock_qty, reserved_qty,
                stock_qty - reserved_qty as available
@@ -130,11 +130,14 @@ async function getDashboard(req, res, next) {
 
     // Owner-specific: engineer performance snapshot
     let engineerSummary = [];
-    if (userRole === 'owner') {
+    if (userRole === 'owner' || userRole === 'head_engineer') {
       const [engineers] = await pool.query(`
         SELECT w.id, w.name,
                COUNT(DISTINCT p.id) as project_count,
                COUNT(DISTINCT CASE WHEN p.status = 'completed' THEN p.id END) as completed,
+               COUNT(DISTINCT CASE WHEN p.project_stage <> 'delivered' THEN p.id END) as active_projects,
+               COUNT(DISTINCT CASE WHEN p.deadline < CURDATE() AND p.project_stage <> 'delivered' THEN p.id END) as overdue_projects,
+               COALESCE(AVG(COALESCE((p.completed_panels/NULLIF(p.total_panels,0))*100,0)),0) as avg_progress,
                COALESCE(SUM(p.total_price - p.total_cost), 0) as total_profit
         FROM workers w
         LEFT JOIN projects p ON p.engineer_id = w.id AND p.deleted_at IS NULL AND p.admin_approval = 'approved' AND p.client_approval = 'approved'

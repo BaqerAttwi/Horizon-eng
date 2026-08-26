@@ -66,9 +66,10 @@ function ReservationModal({ productId, reference, onClose }) {
   );
 }
 
-function EditModal({ product, onClose, onSaved }) {
+function EditModal({ product, onClose, onSaved, stockOnly = false }) {
   const [form, setForm] = useState({
     stock_qty:   product.stock_qty ?? 0,
+    min_stock_level: product.min_stock_level ?? 0,
     price_cost:  product.price_cost ?? '',
     price_euro:  product.price_euro ?? '',
     price_usd:   product.price_usd  ?? '',
@@ -80,7 +81,8 @@ function EditModal({ product, onClose, onSaved }) {
   const save = async () => {
     setSaving(true);
     try {
-      const r = await api.patch(`/products/${product.id}`, form);
+      const payload = stockOnly ? { stock_qty: form.stock_qty, min_stock_level: form.min_stock_level, description: form.description, smart_code: form.smart_code } : form;
+      const r = await api.patch(`/products/${product.id}`, payload);
       toast.success(`✅ Product ${product.reference} updated`);
       onSaved(r.data);
       onClose();
@@ -113,14 +115,18 @@ function EditModal({ product, onClose, onSaved }) {
               <input type="number" className="form-input" value={form.stock_qty}
                 onChange={e=>setForm(f=>({...f,stock_qty:e.target.value}))} />
             </div>
-            <div className="form-group">
+            {!stockOnly && <div className="form-group">
               <label className="form-label">Cost Price</label>
               <input type="number" step="0.01" className="form-input" value={form.price_cost}
                 placeholder="Purchase cost"
                 onChange={e=>setForm(f=>({...f,price_cost:e.target.value}))} />
+            </div>}
+            <div className="form-group">
+              <label className="form-label">Minimum Stock Alert</label>
+              <input type="number" min="0" className="form-input" value={form.min_stock_level} onChange={e=>setForm(f=>({...f,min_stock_level:e.target.value}))} />
             </div>
           </div>
-          <div className="form-row">
+          {!stockOnly && <div className="form-row">
             <div className="form-group">
               <label className="form-label">Price (EUR €)</label>
               <input type="number" step="0.01" className="form-input" value={form.price_euro}
@@ -131,7 +137,7 @@ function EditModal({ product, onClose, onSaved }) {
               <input type="number" step="0.01" className="form-input" value={form.price_usd}
                 onChange={e=>setForm(f=>({...f,price_usd:e.target.value}))} />
             </div>
-          </div>
+          </div>}
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
@@ -158,7 +164,8 @@ export default function ProductsPage() {
   const debouncedSearch = useDebounce(search, 300);
   const LIMIT = 50;
 
-  const hideCost = isRole('engineer');
+  const hideCost = isRole('engineer', 'stock_manager');
+  const stockOnly = isRole('stock_manager');
 
   // ── Manual product request state ──
   const [showManualForm, setShowManualForm] = useState(false);
@@ -177,7 +184,7 @@ export default function ProductsPage() {
   const isEngineer = isRole('engineer');
 
   useEffect(() => {
-    if (!isEngineer) loadPending();
+    if (!isEngineer && !stockOnly) loadPending();
   }, [loadPending, isEngineer]);
 
   const handleManualSubmit = async () => {
@@ -248,9 +255,10 @@ export default function ProductsPage() {
           <div className="page-subtitle">{total} products across {brands.length} brands</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary" onClick={() => setShowManualForm(!showManualForm)}>
+          {!stockOnly && <button className="btn btn-secondary" onClick={() => setShowManualForm(!showManualForm)}>
             {showManualForm ? '✕ Close' : '➕ Manual Product'}
-          </button>
+          </button>}
+          {stockOnly && <button className="btn btn-primary" onClick={async()=>{const smart_code=prompt('Smart code for new stock item:');if(!smart_code)return;const qty=parseInt(prompt('Starting stock quantity:')||'0',10)||0;try{await api.post('/products/provision',{smart_code,qty});toast.success('Stock item created');load();}catch(e){toast.error(e.response?.data?.error||e.message);}}}>➕ Add Stock Item</button>}
           <a href="/api/export/products" className="btn btn-secondary" style={{ textDecoration: 'none' }}>
             📥 CSV
           </a>
@@ -311,7 +319,7 @@ export default function ProductsPage() {
       )}
 
       {/* ── Pending Approvals (owner only) ── */}
-      {!isRole('engineer') && pendingRequests.length > 0 && (
+      {!isRole('engineer','stock_manager') && pendingRequests.length > 0 && (
         <motion.div className="card" style={{ marginBottom: 16, border: '1px solid rgba(245,158,11,0.3)' }}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -400,18 +408,17 @@ export default function ProductsPage() {
                 <th>Brand</th>
                 <th>Smart Code</th>
                 {!hideCost && <th>Cost</th>}
-                <th>Euro €</th>
-                <th>USD $</th>
+                {!hideCost && <><th>Euro €</th><th>USD $</th></>}
                 <th>Stock</th>
                 <th>Reserved</th>
                 <th>Available</th>
                 <th>Date Imported</th>
-                {!hideCost && <th>Actions</th>}
+                {!isEngineer && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {products.length === 0 && !loading && (
-                <tr><td colSpan={hideCost ? 10 : 12}>
+                <tr><td colSpan={hideCost ? 9 : 12}>
                   <div className="empty">
                     <div className="empty-icon">📭</div>
                     <p>No products found. Import an Excel file to get started.</p>
@@ -425,8 +432,7 @@ export default function ProductsPage() {
                   <td><span className="badge badge-purple">{p.brand_name||'—'}</span></td>
                   <td className="mono" style={{fontSize:12,color:'var(--muted)'}}>{p.smart_code || '—'}</td>
                   {!hideCost && <td className="mono">{fmt(p.price_cost,'')}</td>}
-                  <td className="mono">{fmt(p.price_euro,'€')}</td>
-                  <td className="mono">{fmt(p.price_usd,'$')}</td>
+                  {!hideCost && <><td className="mono">{fmt(p.price_euro,'€')}</td><td className="mono">{fmt(p.price_usd,'$')}</td></>}
                   <td className="mono">{p.stock_qty}</td>
                   <td>
                     {p.reserved_qty > 0
@@ -441,7 +447,7 @@ export default function ProductsPage() {
                   <td className="mono" style={{fontSize:12,color:'var(--muted)'}}>
                     {p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
                   </td>
-                  {!hideCost && (
+                  {!isEngineer && (
                     <td>
                       <button className="btn-icon" title="Edit" onClick={()=>setEditing(p)}>✏️</button>
                     </td>
@@ -462,7 +468,7 @@ export default function ProductsPage() {
         )}
       </motion.div>
 
-      {editing  && <EditModal product={editing} onClose={()=>setEditing(null)} onSaved={onSaved} />}
+      {editing  && <EditModal product={editing} stockOnly={stockOnly} onClose={()=>setEditing(null)} onSaved={onSaved} />}
     </div>
   );
 }

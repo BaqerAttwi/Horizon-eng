@@ -39,12 +39,12 @@ async function getGroup(req, res, next) {
 
 async function createGroup(req, res, next) {
   try {
-    const { name, is_public } = req.body;
+    const { name, description, is_public } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ error: 'Group name required' });
 
     const [result] = await db.execute(
-      'INSERT INTO item_groups (name, created_by, is_public) VALUES (?, ?, ?)',
-      [name.trim(), req.worker.id, is_public ? 1 : 0]
+      'INSERT INTO item_groups (name, description, created_by, is_public) VALUES (?, ?, ?, ?)',
+      [name.trim(), description?.trim() || null, req.worker.id, is_public ? 1 : 0]
     );
 
     const [rows] = await db.execute(
@@ -62,7 +62,7 @@ async function createGroup(req, res, next) {
 async function updateGroup(req, res, next) {
   try {
     const { id } = req.params;
-    const { name, is_public } = req.body;
+    const { name, description, is_public } = req.body;
 
     const [existing] = await db.execute(
       'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role=\'owner\'))',
@@ -76,6 +76,9 @@ async function updateGroup(req, res, next) {
     }
     if (is_public !== undefined) {
       await db.execute('UPDATE item_groups SET is_public=? WHERE id=?', [is_public ? 1 : 0, id]);
+    }
+    if (description !== undefined) {
+      await db.execute('UPDATE item_groups SET description=? WHERE id=?', [description?.trim() || null, id]);
     }
 
     const [rows] = await db.execute(
@@ -144,8 +147,8 @@ async function addGroupItem(req, res, next) {
 
     let finalUsd = price_usd || null;
     let finalEur = price_euro || null;
-    if (!finalUsd && finalEur) finalUsd = parseFloat(finalEur) * 1.08;
-    if (!finalEur && finalUsd) finalEur = parseFloat(finalUsd) / 1.08;
+    if (!finalUsd && finalEur) finalUsd = parseFloat(finalEur) * 1.18;
+    if (!finalEur && finalUsd) finalEur = parseFloat(finalUsd) / 1.18;
 
     const [result] = await db.execute(
       'INSERT INTO item_group_items (group_id, product_id, is_manual, custom_name, description, price_usd, price_euro, qty) VALUES (?,?,?,?,?,?,?,?)',

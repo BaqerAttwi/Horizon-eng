@@ -70,8 +70,18 @@ async function getMyProjects(req, res, next) {
   try {
     const [rows] = await db.execute(
       `SELECT p.id, p.project_name, p.status, p.deadline, p.execution_deadline,
-              p.total_panels, p.completed_panels, c.name as client_name,
-              COALESCE(ROUND((p.completed_panels / NULLIF(p.total_panels, 0)) * 100, 1), 0) as progress_pct
+              p.total_panels, c.name as client_name,
+              COALESCE((
+                SELECT ROUND(
+                  100 * SUM(LEAST(COALESCE(ic.qty_done, IF(ic.is_completed=1, pci.qty, 0)), pci.qty))
+                  / NULLIF(SUM(pci.qty), 0), 1
+                )
+                FROM project_crm_panels pcp
+                JOIN panel_divisions pd ON pd.panel_id=pcp.id
+                JOIN panel_crm_items pci ON pci.division_id=pd.id
+                LEFT JOIN item_completion ic ON ic.project_id=p.id AND ic.item_id=pci.id
+                WHERE pcp.project_id=p.id
+              ), 0) AS progress_pct
        FROM project_technicians pt
        JOIN projects p ON pt.project_id = p.id
        LEFT JOIN clients c ON p.client_id = c.id

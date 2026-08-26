@@ -1,7 +1,14 @@
 const db = require('../db/connection');
 const { logActivity } = require('./activityController');
-const { createNotification, notifyOwners } = require('./notificationController');
+const { createNotification, notifyOwners, notifyRoles } = require('./notificationController');
 const { recalcPanelTotals } = require('../utils/pricing');
+
+const PRICE_FIELDS = ['total_cost','total_price','project_discount_amount','total_vat','total_with_vat','vat_pct','project_discount_pct','exchange_rate_eur_usd','total_paid','outstanding_balance'];
+function hideProjectPricing(project) {
+  const safe = { ...project };
+  for (const field of PRICE_FIELDS) safe[field] = null;
+  return safe;
+}
 
 async function recalcReservedQty() {
   await db.execute(`
@@ -12,23 +19,51 @@ async function recalcReservedQty() {
         FROM project_items pi
         JOIN projects prj ON pi.project_id = prj.id
         WHERE prj.status NOT IN ('completed', 'cancelled') AND prj.deleted_at IS NULL
+          AND prj.project_stage IN ('design','quotation','approval','procurement')
         UNION ALL
-        SELECT pci.qty, pci.product_id
+        SELECT (pci.qty * COALESCE(pcp.quantity, 1)) AS qty, pci.product_id
         FROM panel_crm_items pci
         JOIN panel_divisions pd ON pci.division_id = pd.id
         JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
         JOIN projects prj ON pcp.project_id = prj.id
         WHERE pci.product_id IS NOT NULL
           AND prj.status NOT IN ('completed', 'cancelled') AND prj.deleted_at IS NULL
+          AND prj.project_stage IN ('design','quotation','approval','procurement')
       ) sub WHERE sub.product_id = p.id
     ), 0)
   `);
 }
 
+async function recalcLegacyProjectTotals(projectId) {
+  const [[totals]] = await db.execute(
+    `SELECT COALESCE(SUM(qty*unit_cost),0) AS total_cost,
+            COALESCE(SUM(qty*unit_price),0) AS total_price
+     FROM project_items WHERE project_id=?`,
+    [projectId]
+  );
+  const [[project]] = await db.execute(
+    'SELECT vat_pct, project_discount_pct FROM projects WHERE id=?',
+    [projectId]
+  );
+  if (!project) return;
+  const totalCost = parseFloat(totals.total_cost) || 0;
+  const totalPrice = parseFloat(totals.total_price) || 0;
+  const discountPct = parseFloat(project.project_discount_pct) || 0;
+  const discountAmount = totalPrice * discountPct / 100;
+  const netAfterDiscount = totalPrice - discountAmount;
+  const vatPct = parseFloat(project.vat_pct) || 0;
+  const totalVat = netAfterDiscount * vatPct / 100;
+  await db.execute(
+    `UPDATE projects SET total_cost=?, total_price=?, project_discount_amount=?,
+       total_vat=?, total_with_vat=? WHERE id=?`,
+    [totalCost, totalPrice, discountAmount, totalVat, netAfterDiscount + totalVat, projectId]
+  );
+}
+
 async function getProjects(req, res, next) {
   try {
     const user = req.worker;
-    if (user.role === 'technician') {
+    if (user.role === 'technician' || user.role === 'stock_manager') {
       return res.status(403).json({ error: 'Access denied — use /technicians/my-projects instead' });
     }
     let whereClause = 'WHERE p.deleted_at IS NULL';
@@ -66,7 +101,7 @@ async function getProjects(req, res, next) {
          p.created_at DESC`,
       params
     );
-    res.json(projects);
+    res.json(user.role === 'engineer' ? projects.map(hideProjectPricing) : projects);
   } catch (err) { console.error('[Projects] ❌ getAll:', err.message); next(err); }
 }
 
@@ -75,7 +110,7 @@ async function getProject(req, res, next) {
     const user = req.worker;
     const projectId = req.params.id;
 
-    if (user.role === 'technician') {
+    if (user.role === 'technician' || user.role === 'stock_manager') {
       return res.status(403).json({ error: 'Access denied — use the Execution view instead' });
     }
 
@@ -115,24 +150,31 @@ async function getProject(req, res, next) {
       [projectId]
     );
 
+    if (user.role === 'engineer') {
+      for (const item of items) { item.unit_cost = null; item.unit_price = null; }
+      return res.json({ ...hideProjectPricing(rows[0]), items });
+    }
     res.json({ ...rows[0], items });
   } catch (err) { console.error('[Projects] ❌ getOne:', err.message); next(err); }
 }
 
 async function createProject(req, res, next) {
   try {
-    const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, items = [], total_panels = 0, vat_pct, project_discount_pct, payment_terms } = req.body;
+    const { project_name, quote_number, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, items = [], total_panels = 0, vat_pct, project_discount_pct, payment_terms } = req.body;
     if (!project_name) return res.status(400).json({ error: 'project_name is required' });
 
     // Auto-assign engineer to themselves
     const assignedEngineer = req.worker.role === 'engineer' ? req.worker.id : (engineer_id || null);
 
     const [result] = await db.execute(
-      `INSERT INTO projects(project_name,engineer_id,client_id,exchange_rate_eur_usd,deadline,notes,total_panels,vat_pct,project_discount_pct,payment_terms)
-       VALUES(?,?,?,?,?,?,?,?,?,?)`,
-      [project_name, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.08, deadline||null, notes||null, total_panels||0, vat_pct ?? 0, parseFloat(project_discount_pct) || 0, payment_terms || null]
+      `INSERT INTO projects(project_name,quote_number,engineer_id,client_id,exchange_rate_eur_usd,deadline,notes,total_panels,vat_pct,project_discount_pct,payment_terms)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
+      [project_name, quote_number?.trim() || null, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.18, deadline||null, notes||null, total_panels||0, vat_pct ?? 0, parseFloat(project_discount_pct) || 0, payment_terms || null]
     );
     const projectId = result.insertId;
+    if (!quote_number?.trim()) {
+      await db.execute('UPDATE projects SET quote_number=? WHERE id=?', [`Q-${String(projectId).padStart(6, '0')}`, projectId]);
+    }
 
     let totalCost = 0, totalPrice = 0;
 
@@ -157,18 +199,24 @@ async function createProject(req, res, next) {
       if (price !== null) totalPrice += (price * (item.qty||1));
     }
 
+    const pDiscountPct = parseFloat(project_discount_pct) || 0;
+    const pDiscountAmount = totalPrice * (pDiscountPct / 100);
+    const pNetAfterDiscount = totalPrice - pDiscountAmount;
     const pVatPct = parseFloat(req.body.vat_pct) || 0;
-    const pTotalVat = totalPrice * (pVatPct / 100);
+    const pTotalVat = pNetAfterDiscount * (pVatPct / 100);
     await db.execute(
-      'UPDATE projects SET total_cost=?, total_price=?, total_vat=?, total_with_vat=? WHERE id=?',
-      [totalCost, totalPrice, pTotalVat, totalPrice + pTotalVat, projectId]
+      'UPDATE projects SET total_cost=?, total_price=?, project_discount_amount=?, total_vat=?, total_with_vat=? WHERE id=?',
+      [totalCost, totalPrice, pDiscountAmount, pTotalVat, pNetAfterDiscount + pTotalVat, projectId]
     );
 
     await recalcReservedQty();
 
     const [created] = await db.execute('SELECT * FROM projects WHERE id=?', [projectId]);
     res.status(201).json(created[0]);
-  } catch (err) { console.error('[Projects] ❌ create:', err.message); next(err); }
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Quotation number already belongs to another project' });
+    console.error('[Projects] ❌ create:', err.message); next(err);
+  }
 }
 
 async function updateProject(req, res, next) {
@@ -177,17 +225,27 @@ async function updateProject(req, res, next) {
     const hasAccess = await checkProjectAccess(req, res, req.params.id);
     if (!hasAccess) return;
 
-    const { project_name, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, client_pdf_note, status, client_approval, client_rejection_note, admin_approval, rejection_note, total_panels, completed_panels, vat_pct, project_discount_pct, payment_terms, onedrive_folder_link, payment_deadline } = req.body;
+    const { project_name, quote_number, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, client_pdf_note, status, client_approval, client_rejection_note, admin_approval, rejection_note, total_panels, completed_panels, vat_pct, project_discount_pct, margin_warning_pct, payment_terms, onedrive_folder_link, payment_deadline } = req.body;
 
-    if (payment_deadline !== undefined && req.worker.role !== 'owner') {
-      return res.status(403).json({ error: 'Only an owner can set the payment deadline' });
+    const ownerOnlyFields = {
+      engineer_id,
+      admin_approval,
+      rejection_note,
+      payment_deadline,
+      margin_warning_pct,
+    };
+    const forbiddenField = Object.entries(ownerOnlyFields)
+      .find(([, value]) => value !== undefined)?.[0];
+    if (forbiddenField && !['owner','head_engineer'].includes(req.worker.role)) {
+      return res.status(403).json({ error: `Only an owner or Head of Engineering can update ${forbiddenField}` });
     }
 
     const fields = [], params = [];
     if (project_name       !== undefined) { fields.push('project_name=?');    params.push(project_name); }
+    if (quote_number       !== undefined) { fields.push('quote_number=?');    params.push(quote_number?.trim() || `Q-${String(req.params.id).padStart(6, '0')}`); }
     if (engineer_id        !== undefined) { fields.push('engineer_id=?');     params.push(engineer_id||null); }
     if (client_id          !== undefined) { fields.push('client_id=?');       params.push(client_id||null); }
-    if (exchange_rate_eur_usd !== undefined) { fields.push('exchange_rate_eur_usd=?'); params.push(exchange_rate_eur_usd||1.08); }
+    if (exchange_rate_eur_usd !== undefined) { fields.push('exchange_rate_eur_usd=?'); params.push(exchange_rate_eur_usd||1.18); }
     if (deadline           !== undefined) { fields.push('deadline=?');        params.push(deadline||null); }
     if (notes              !== undefined) { fields.push('notes=?');           params.push(notes); }
     if (client_pdf_note    !== undefined) { fields.push('client_pdf_note=?'); params.push(client_pdf_note); }
@@ -203,6 +261,7 @@ async function updateProject(req, res, next) {
     if (payment_deadline !== undefined) { fields.push('payment_deadline=?'); params.push(payment_deadline || null); }
     if (vat_pct !== undefined) { fields.push('vat_pct=?'); params.push(parseFloat(vat_pct) || 0); }
     if (project_discount_pct !== undefined) { fields.push('project_discount_pct=?'); params.push(parseFloat(project_discount_pct) || 0); }
+    if (margin_warning_pct !== undefined) { fields.push('margin_warning_pct=?'); params.push(Math.max(0, parseFloat(margin_warning_pct) || 0)); }
     if (payment_terms !== undefined) { fields.push('payment_terms=?'); params.push(payment_terms); }
     if (onedrive_folder_link !== undefined) { fields.push('onedrive_folder_link=?'); params.push(onedrive_folder_link || null); }
     // Fetch old values before update
@@ -220,8 +279,10 @@ async function updateProject(req, res, next) {
     // Recalc project totals when discount or VAT changes
     if (project_discount_pct !== undefined || vat_pct !== undefined) {
       const [panels] = await db.execute('SELECT id FROM project_crm_panels WHERE project_id=?', [req.params.id]);
-      for (const pa of panels) {
-        await recalcPanelTotals(pa.id);
+      if (panels.length) {
+        for (const pa of panels) await recalcPanelTotals(pa.id);
+      } else {
+        await recalcLegacyProjectTotals(req.params.id);
       }
     }
 
@@ -232,7 +293,10 @@ async function updateProject(req, res, next) {
 
     const [rows] = await db.execute('SELECT * FROM projects WHERE id=?', [req.params.id]);
     res.json(rows[0]);
-  } catch (err) { console.error('[Projects] ❌ update:', err.message); next(err); }
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Quotation number already belongs to another project' });
+    console.error('[Projects] ❌ update:', err.message); next(err);
+  }
 }
 
 async function addProjectItem(req, res, next) {
@@ -258,12 +322,7 @@ async function addProjectItem(req, res, next) {
       [req.params.id, product_id, qty||1, cost, price, curr, notes||null]
     );
 
-    const [totals] = await db.execute(
-      `SELECT SUM(qty*unit_cost) as tc, SUM(qty*unit_price) as tp FROM project_items WHERE project_id=?`,
-      [req.params.id]
-    );
-    await db.execute('UPDATE projects SET total_cost=?,total_price=? WHERE id=?',
-      [totals[0].tc||0, totals[0].tp||0, req.params.id]);
+    await recalcLegacyProjectTotals(req.params.id);
 
     await recalcReservedQty();
 
@@ -284,12 +343,7 @@ async function removeProjectItem(req, res, next) {
 
     await db.execute('DELETE FROM project_items WHERE id=? AND project_id=?', [req.params.itemId, req.params.id]);
 
-    const [totals] = await db.execute(
-      `SELECT SUM(qty*unit_cost) as tc, SUM(qty*unit_price) as tp FROM project_items WHERE project_id=?`,
-      [req.params.id]
-    );
-    await db.execute('UPDATE projects SET total_cost=?,total_price=? WHERE id=?',
-      [totals[0].tc||0, totals[0].tp||0, req.params.id]);
+    await recalcLegacyProjectTotals(req.params.id);
 
     await recalcReservedQty();
 
@@ -313,7 +367,7 @@ async function markReadyForReview(req, res, next) {
     if (!hasAccess) return;
     await db.execute('UPDATE projects SET ready_for_review=TRUE WHERE id=?', [id]);
     logActivity({ project_id: id, action: 'ready_for_review', field_name: 'ready_for_review', new_value: 'true', performed_by: req.worker.id });
-    await notifyOwners('status', `Ready for Review: Project #${id}`, `${req.worker.name} marked project as ready for review`, `/projects/${id}`);
+    await notifyRoles(['owner','head_engineer'], 'status', `Ready for Review: Project #${id}`, `${req.worker.name} marked project as ready for review`, `/projects/${id}`);
     res.json({ message: 'Project marked as ready for review' });
   } catch (err) { console.error('[Projects] ❌ markReadyForReview:', err.message); next(err); }
 }
@@ -329,6 +383,8 @@ async function adminApproval(req, res, next) {
     await recalcReservedQty();
     logActivity({ project_id: req.params.id, action: 'admin_approval', field_name: 'admin_approval', old_value: 'pending', new_value: admin_approval, performed_by: req.worker.id });
     const [rows] = await db.execute('SELECT * FROM projects WHERE id=?', [req.params.id]);
+    if (rows[0]?.engineer_id) await createNotification(rows[0].engineer_id, 'approval', `Project ${admin_approval}`, rows[0].project_name, `/projects/${req.params.id}`);
+    if (admin_approval === 'approved') await notifyRoles(['stock_manager'], 'stock', `Approved project: ${rows[0].project_name}`, 'Review upcoming material demand', '/reservations');
     res.json(rows[0]);
   } catch (err) { console.error('[Projects] ❌ adminApproval:', err.message); next(err); }
 }
@@ -370,4 +426,4 @@ async function getDraftNotifications(req, res, next) {
   } catch (err) { console.error('[Projects] ❌ getDraftNotifications:', err.message); next(err); }
 }
 
-module.exports = { getProjects, getProject, createProject, updateProject, addProjectItem, removeProjectItem, deleteProject, adminApproval, markReadyForReview, getDraftNotifications, recalcReservedQty };
+module.exports = { getProjects, getProject, createProject, updateProject, addProjectItem, removeProjectItem, deleteProject, adminApproval, markReadyForReview, getDraftNotifications, recalcReservedQty, recalcLegacyProjectTotals };

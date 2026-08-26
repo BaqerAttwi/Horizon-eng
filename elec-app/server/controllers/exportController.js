@@ -1,4 +1,5 @@
 const db = require('../db/connection');
+const { canViewPrices, canExportProjectFinancials } = require('../utils/rolePolicy');
 
 function escapeCsv(val) {
   if (val === null || val === undefined) return '';
@@ -28,7 +29,7 @@ async function exportProducts(req, res, next) {
         ORDER BY p.reference`
     );
 
-    const columns = [
+    let columns = [
       { key: 'id', label: 'ID' },
       { key: 'reference', label: 'Reference' },
       { key: 'description', label: 'Description' },
@@ -40,6 +41,7 @@ async function exportProducts(req, res, next) {
       { key: 'brand_name', label: 'Brand' },
       { key: 'created_at', label: 'Created At' },
     ];
+    if (!canViewPrices(req.worker.role)) columns = columns.filter(c => !['price_usd','price_euro'].includes(c.key));
 
     const csv = toCsv(products, columns);
     res.setHeader('Content-Type', 'text/csv');
@@ -52,6 +54,9 @@ async function exportProducts(req, res, next) {
 
 async function exportProjects(req, res, next) {
   try {
+    if (!canExportProjectFinancials(req.worker.role)) {
+      return res.status(403).json({ error: 'Financial project export is restricted to management and accounting' });
+    }
     const [projects] = await db.execute(
       `SELECT p.id, p.project_name, p.status, p.total_price, p.total_cost,
               p.admin_approval, p.client_approval,
@@ -147,7 +152,7 @@ async function exportReservations(req, res, next) {
         pr.stock_qty,
         pr.reserved_qty,
         (pr.stock_qty - pr.reserved_qty) AS available_qty,
-        pci.qty          AS demanded_qty,
+        (pci.qty * COALESCE(pcp.quantity, 1)) AS demanded_qty,
         p.id             AS project_id,
         p.project_name,
         p.status         AS project_status,
@@ -165,6 +170,7 @@ async function exportReservations(req, res, next) {
       LEFT JOIN workers w ON p.engineer_id = w.id
       LEFT JOIN clients c ON p.client_id = c.id
       WHERE p.status NOT IN ('completed','cancelled')
+        AND p.project_stage IN ('design','quotation','approval','procurement')
         AND pci.product_id IS NOT NULL
         ${engFilter ? engFilter.clause : ''}
       ORDER BY pr.reference, p.id
@@ -212,7 +218,7 @@ async function exportCrm(req, res, next) {
         pd.division_type,
         COALESCE(i.custom_name, pr.reference) AS reference,
         COALESCE(i.custom_desc, pr.description) AS description,
-        i.qty
+        (i.qty * COALESCE(pcp.quantity, 1)) AS qty
       FROM panel_crm_items i
       JOIN panel_divisions pd ON i.division_id = pd.id
       JOIN project_crm_panels pcp ON pd.panel_id = pcp.id

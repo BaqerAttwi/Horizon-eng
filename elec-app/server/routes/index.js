@@ -2,6 +2,7 @@ const express  = require('express');
 const multer   = require('multer');
 const rateLimit = require('express-rate-limit');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { lockAfterClientApproval } = require('../middleware/commercialLock');
 const { validate } = require('../middleware/validate');
 
 const { login, register, changePassword, setPassword, logout, me } = require('../controllers/authController');
@@ -12,7 +13,7 @@ const { getClients, createClient, updateClient, deleteClient } = require('../con
 const { getProjects, getProject, createProject, updateProject,
         addProjectItem, removeProjectItem, deleteProject, adminApproval,
         getDraftNotifications, markReadyForReview } = require('../controllers/projectController');
-const { getAllReservations, getProductDemand, updateReservedQty } = require('../controllers/reservationController');
+const { getAllReservations, getProductDemand, updateReservedQty, getReservationHistory } = require('../controllers/reservationController');
 const { getDiscounts, createDiscount, updateDiscount, deleteDiscount, bulkUpdateBrandDiscounts } = require('../controllers/discountController');
 const { previewImport, createFromImport } = require('../controllers/pdfImportController');
 const {
@@ -31,6 +32,7 @@ const {
   getEngineerStats, getClientStats, getSummary, getProjectTeam,
 } = require('../controllers/analyticsController');
 const { getDashboard } = require('../controllers/dashboardController');
+const { updateProjectStage, getStageHistory, createQuotationRevision, getQuotationRevisions, getQuotationRevisionSnapshot, restoreQuotationRevision, getEngineerWorkload } = require('../controllers/workflowController');
 const { getActivityLogs } = require('../controllers/activityController');
 const { uploadAttachment, getAttachments, downloadAttachment, deleteAttachment } = require('../controllers/attachmentController');
 const { exportProducts, exportProjects, exportAnalytics, exportReservations, exportCrm } = require('../controllers/exportController');
@@ -84,31 +86,32 @@ router.post('/upload', requireAuth, requireRole('owner','accounting'), uploadExc
 
 // ── Products (all roles) ─────────────────────────────────────
 router.get('/products',                   requireAuth, getProducts);
-router.post('/products/provision',        requireAuth, requireRole('owner'), provisionProduct);
+router.post('/products/provision',        requireAuth, requireRole('owner','stock_manager'), provisionProduct);
 router.get('/products/:id',               requireAuth, getProduct);
-router.patch('/products/:id',             requireAuth, requireRole('owner','accounting'), updateProduct);
+router.patch('/products/:id',             requireAuth, requireRole('owner','stock_manager','accounting'), updateProduct);
 router.get('/brands',                     requireAuth, getBrands);
 
 // ── Discounts ────────────────────────────────────────────────
 router.get('/discounts',                      requireAuth, getDiscounts);
-router.post('/discounts',                     requireAuth, requireRole('owner','accounting'), validate('createDiscount'), createDiscount);
-router.patch('/discounts/:id',                requireAuth, requireRole('owner','accounting'), updateDiscount);
-router.delete('/discounts/:id',               requireAuth, requireRole('owner'), deleteDiscount);
-router.post('/discounts/bulk-brand',          requireAuth, requireRole('owner'), bulkUpdateBrandDiscounts);
+router.post('/discounts',                     requireAuth, requireRole('owner','head_engineer','accounting'), validate('createDiscount'), createDiscount);
+router.patch('/discounts/:id',                requireAuth, requireRole('owner','head_engineer','accounting'), updateDiscount);
+router.delete('/discounts/:id',               requireAuth, requireRole('owner','head_engineer'), deleteDiscount);
+router.post('/discounts/bulk-brand',          requireAuth, requireRole('owner','head_engineer'), bulkUpdateBrandDiscounts);
 
 // ── Reservations tracker (all roles) ────────────────────────
 router.get('/reservations',                    requireAuth, getAllReservations);
 router.get('/reservations/product/:productId', requireAuth, getProductDemand);
-router.patch('/reservations/product/:productId/reserved-qty', requireAuth, requireRole('owner','accounting','engineer'), updateReservedQty);
+router.get('/reservation-history', requireAuth, requireRole('owner','stock_manager','head_engineer'), getReservationHistory);
+router.patch('/reservations/product/:productId/reserved-qty', requireAuth, requireRole('owner','stock_manager','accounting','engineer'), updateReservedQty);
 
 // ── Workers (owner only for write) ──────────────────────────
-router.get('/workers',          requireAuth, getWorkers);
-router.post('/workers',         requireAuth, requireRole('owner'), validate('createWorker'), createWorker);
-router.patch('/workers/:id',    requireAuth, requireRole('owner'), updateWorker);
-router.delete('/workers/:id',   requireAuth, requireRole('owner'), deleteWorker);
+router.get('/workers',          requireAuth, requireRole('owner','head_engineer','engineer','accounting'), getWorkers);
+router.post('/workers',         requireAuth, requireRole('owner','head_engineer'), validate('createWorker'), createWorker);
+router.patch('/workers/:id',    requireAuth, requireRole('owner','head_engineer'), updateWorker);
+router.delete('/workers/:id',   requireAuth, requireRole('owner','head_engineer'), deleteWorker);
 
 // ── Clients (owner + accounting + secretary) ─────────────────
-router.get('/clients',          requireAuth, getClients);
+router.get('/clients',          requireAuth, requireRole('owner','head_engineer','accounting','secretary','engineer'), getClients);
 router.post('/clients',         requireAuth, requireRole('owner','accounting','secretary','engineer'), validate('createClient'), createClient);
 router.patch('/clients/:id',    requireAuth, requireRole('owner','accounting','secretary'), updateClient);
 router.delete('/clients/:id',   requireAuth, requireRole('owner'), deleteClient);
@@ -117,51 +120,58 @@ router.delete('/clients/:id',   requireAuth, requireRole('owner'), deleteClient)
 router.get('/projects',                      requireAuth, getProjects);
 router.get('/projects/draft-notifications', requireAuth, getDraftNotifications);
 router.get('/projects/:id',                  requireAuth, getProject);
-router.post('/projects',                     requireAuth, requireRole('owner','engineer'), validate('createProject'), createProject);
-router.post('/projects/import-pdf/preview',  requireAuth, requireRole('owner','engineer'), uploadPdf.single('file'), previewImport);
-router.post('/projects/import-pdf/create',   requireAuth, requireRole('owner','engineer'), createFromImport);
-router.patch('/projects/:id',                requireAuth, requireRole('owner','engineer'), updateProject);
-router.patch('/projects/:id/admin-approval',   requireAuth, requireRole('owner'), adminApproval);
-router.patch('/projects/:id/ready-for-review', requireAuth, requireRole('engineer','owner'), markReadyForReview);
+router.post('/projects',                     requireAuth, requireRole('owner','head_engineer','engineer'), validate('createProject'), createProject);
+router.post('/projects/import-pdf/preview',  requireAuth, requireRole('owner','head_engineer','engineer'), uploadPdf.single('file'), previewImport);
+router.post('/projects/import-pdf/create',   requireAuth, requireRole('owner','head_engineer','engineer'), createFromImport);
+router.patch('/projects/:id',                requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, updateProject);
+router.patch('/projects/:id/admin-approval',   requireAuth, requireRole('owner','head_engineer'), adminApproval);
+router.patch('/projects/:id/ready-for-review', requireAuth, requireRole('engineer','head_engineer','owner'), markReadyForReview);
+router.patch('/projects/:projectId/stage', requireAuth, requireRole('owner','head_engineer','engineer'), updateProjectStage);
+router.get('/projects/:projectId/stage-history', requireAuth, getStageHistory);
+router.post('/projects/:projectId/quotation-revisions', requireAuth, requireRole('owner','head_engineer'), createQuotationRevision);
+router.get('/projects/:projectId/quotation-revisions', requireAuth, getQuotationRevisions);
+router.get('/projects/:projectId/quotation-revisions/:revisionId/snapshot', requireAuth, requireRole('owner','head_engineer'), getQuotationRevisionSnapshot);
+router.post('/projects/:projectId/quotation-revisions/:revisionId/restore', requireAuth, requireRole('owner'), restoreQuotationRevision);
+router.get('/engineer-workload', requireAuth, requireRole('owner','head_engineer'), getEngineerWorkload);
 router.delete('/projects/:id',               requireAuth, requireRole('owner'), deleteProject);
-router.post('/projects/:id/items',           requireAuth, requireRole('owner','engineer'), addProjectItem);
-router.delete('/projects/:id/items/:itemId', requireAuth, requireRole('owner','engineer'), removeProjectItem);
+router.post('/projects/:id/items',           requireAuth, requireRole('owner','head_engineer','engineer'), addProjectItem);
+router.delete('/projects/:id/items/:itemId', requireAuth, requireRole('owner','head_engineer','engineer'), removeProjectItem);
 
 // ── CRM: Project Panels ─────────────────────────────────────
 router.get('/projects/:projectId/crm',                     requireAuth, getProjectCrm);
 router.get('/projects/:projectId/panels',                  requireAuth, getPanels);
-router.post('/projects/:projectId/panels',                 requireAuth, requireRole('owner','engineer'), createPanel);
-router.post('/projects/:projectId/panels/copy-from',       requireAuth, requireRole('owner','engineer'), copyPanelFromProject);
-router.patch('/projects/:projectId/panels/:panelId',       requireAuth, requireRole('owner','engineer'), updatePanel);
-router.patch('/projects/:projectId/panels/:panelId/complete', requireAuth, requireRole('owner','engineer'), togglePanelComplete);
-router.delete('/projects/:projectId/panels/:panelId',      requireAuth, requireRole('owner','engineer'), deletePanel);
+router.post('/projects/:projectId/panels',                 requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, createPanel);
+router.post('/projects/:projectId/panels/copy-from',       requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, copyPanelFromProject);
+router.patch('/projects/:projectId/panels/:panelId',       requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, updatePanel);
+router.patch('/projects/:projectId/panels/:panelId/complete', requireAuth, requireRole('owner','head_engineer','engineer'), togglePanelComplete);
+router.delete('/projects/:projectId/panels/:panelId',      requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, deletePanel);
 
 // ── CRM: Panel Divisions ────────────────────────────────────
 router.get('/projects/:projectId/panels/:panelId/divisions',              requireAuth, getDivisions);
-router.post('/projects/:projectId/panels/:panelId/divisions',             requireAuth, requireRole('owner','engineer'), createDivision);
-router.patch('/projects/:projectId/panels/:panelId/divisions/:divisionId', requireAuth, requireRole('owner','engineer'), updateDivision);
-router.delete('/projects/:projectId/panels/:panelId/divisions/:divisionId', requireAuth, requireRole('owner','engineer'), deleteDivision);
+router.post('/projects/:projectId/panels/:panelId/divisions',             requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, createDivision);
+router.patch('/projects/:projectId/panels/:panelId/divisions/:divisionId', requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, updateDivision);
+router.delete('/projects/:projectId/panels/:panelId/divisions/:divisionId', requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, deleteDivision);
 
 // ── CRM: Manual Products ─────────────────────────────────────
 router.get('/projects/:projectId/manual-products',        requireAuth, getManualProducts);
-router.post('/projects/:projectId/manual-products',       requireAuth, requireRole('owner','engineer'), createManualProduct);
-router.delete('/projects/:projectId/manual-products/:productId', requireAuth, requireRole('owner','engineer'), deleteManualProduct);
+router.post('/projects/:projectId/manual-products',       requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, createManualProduct);
+router.delete('/projects/:projectId/manual-products/:productId', requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, deleteManualProduct);
 
 // ── CRM: Items ───────────────────────────────────────────────
 router.get('/projects/:projectId/panels/:panelId/divisions/:divisionId/items',        requireAuth, getCrmItems);
-router.post('/projects/:projectId/panels/:panelId/divisions/:divisionId/items',       requireAuth, requireRole('owner','engineer'), createCrmItem);
-router.patch('/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId', requireAuth, requireRole('owner','engineer'), updateCrmItem);
-router.delete('/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId', requireAuth, requireRole('owner','engineer'), deleteCrmItem);
-router.post('/projects/:projectId/items/bulk-update', requireAuth, requireRole('owner','engineer'), bulkUpdateItems);
-router.post('/projects/:projectId/items/bulk-replace', requireAuth, requireRole('owner','engineer'), bulkReplaceItem);
-router.post('/projects/:projectId/items/apply-brand-discount', requireAuth, requireRole('owner','engineer'), applyBrandDiscount);
+router.post('/projects/:projectId/panels/:panelId/divisions/:divisionId/items',       requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, createCrmItem);
+router.patch('/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId', requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, updateCrmItem);
+router.delete('/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId', requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, deleteCrmItem);
+router.post('/projects/:projectId/items/bulk-update', requireAuth, requireRole('owner'), bulkUpdateItems);
+router.post('/projects/:projectId/items/bulk-replace', requireAuth, requireRole('owner'), bulkReplaceItem);
+router.post('/projects/:projectId/items/apply-brand-discount', requireAuth, requireRole('owner','head_engineer'), applyBrandDiscount);
 
 // ── Engineer Collaboration Requests ──────────────────────────
 router.get('/engineer-requests/pending',   requireAuth, getMyPendingRequests);
 router.get('/engineer-requests/sent',      requireAuth, getMySentRequests);
-router.post('/engineer-requests',          requireAuth, requireRole('owner','engineer'), createRequest);
+router.post('/engineer-requests',          requireAuth, requireRole('owner','head_engineer','engineer'), createRequest);
 router.patch('/engineer-requests/:requestId/respond', requireAuth, respondToRequest);
-router.delete('/engineer-requests/:requestId', requireAuth, requireRole('owner','engineer'), deleteRequest);
+router.delete('/engineer-requests/:requestId', requireAuth, requireRole('owner','head_engineer','engineer'), deleteRequest);
 router.get('/projects/:projectId/engineers', requireAuth, getEngineersOnProject);
 
 // ── Analytics (owner only) ─────────────────────────────────
@@ -171,7 +181,7 @@ router.get('/analytics/clients',            requireAuth, requireRole('owner'), g
 router.get('/analytics/projects/:projectId/team', requireAuth, getProjectTeam);
 
 // ── Dashboard (all authenticated) ──────────────────────────
-router.get('/dashboard',                    requireAuth, getDashboard);
+router.get('/dashboard',                    requireAuth, requireRole('owner','head_engineer','accounting','engineer','secretary'), getDashboard);
 
 // ── Notifications ──────────────────────────────────────────
 router.get('/notifications',                requireAuth, getNotifications);
@@ -180,36 +190,36 @@ router.patch('/notifications/read-all',     requireAuth, markAllAsRead);
 router.delete('/notifications/:notificationId', requireAuth, deleteNotification);
 
 // ── Price Change Requests ─────────────────────────────────
-router.post('/price-changes',               requireAuth, requireRole('owner','engineer'), createPriceChangeRequest);
-router.get('/price-changes',                requireAuth, requireRole('owner'), getPendingRequests);
+router.post('/price-changes',               requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, createPriceChangeRequest);
+router.get('/price-changes',                requireAuth, requireRole('owner','head_engineer'), getPendingRequests);
 router.get('/price-changes/my',             requireAuth, getMyRequests);
 router.get('/price-changes/project/:projectId', requireAuth, getPendingForProject);
-router.patch('/price-changes/:requestId/approve', requireAuth, requireRole('owner'), approveRequest);
-router.patch('/price-changes/:requestId/reject',  requireAuth, requireRole('owner'), rejectRequest);
+router.patch('/price-changes/:requestId/approve', requireAuth, requireRole('owner','head_engineer'), approveRequest);
+router.patch('/price-changes/:requestId/reject',  requireAuth, requireRole('owner','head_engineer'), rejectRequest);
 
 // ── Item Groups (reusable product sets) ────────────────────
 router.get('/item-groups',              requireAuth, getGroups);
 router.get('/item-groups/:id',          requireAuth, getGroup);
-router.post('/item-groups',             requireAuth, requireRole('owner','engineer'), createGroup);
-router.patch('/item-groups/:id',        requireAuth, requireRole('owner','engineer'), updateGroup);
-router.delete('/item-groups/:id',       requireAuth, requireRole('owner','engineer'), deleteGroup);
+router.post('/item-groups',             requireAuth, requireRole('owner','head_engineer','engineer'), createGroup);
+router.patch('/item-groups/:id',        requireAuth, requireRole('owner','head_engineer','engineer'), updateGroup);
+router.delete('/item-groups/:id',       requireAuth, requireRole('owner','head_engineer','engineer'), deleteGroup);
 router.get('/item-groups/:id/items',    requireAuth, getGroupItems);
-router.post('/item-groups/:id/items',   requireAuth, requireRole('owner','engineer'), addGroupItem);
-router.delete('/item-groups/:id/items/:itemId', requireAuth, requireRole('owner','engineer'), removeGroupItem);
+router.post('/item-groups/:id/items',   requireAuth, requireRole('owner','head_engineer','engineer'), addGroupItem);
+router.delete('/item-groups/:id/items/:itemId', requireAuth, requireRole('owner','head_engineer','engineer'), removeGroupItem);
 
 // ── Execution Phase ──────────────────────────────────────────
 const { getExecutionStatus, togglePanelExecution, toggleItemExecution, getExecutionView } = require('../controllers/executionController');
 
 router.get('/projects/:projectId/execution',                                 requireAuth, getExecutionStatus);
 router.get('/projects/:projectId/execution/view',                            requireAuth, getExecutionView);
-router.patch('/projects/:projectId/execution/panels/:panelId',               requireAuth, requireRole('owner','engineer','technician'), togglePanelExecution);
-router.patch('/projects/:projectId/execution/items/:itemId',                 requireAuth, requireRole('owner','engineer','technician'), toggleItemExecution);
+router.patch('/projects/:projectId/execution/panels/:panelId',               requireAuth, requireRole('owner','head_engineer','engineer','technician'), togglePanelExecution);
+router.patch('/projects/:projectId/execution/items/:itemId',                 requireAuth, requireRole('owner','head_engineer','engineer','technician'), toggleItemExecution);
 
 // ── Technicians (execution-only field workers, assigned per project) ──
 const { getProjectTechnicians, assignTechnician, removeTechnician, getMyProjects } = require('../controllers/technicianController');
 
 router.get('/technicians/my-projects',                requireAuth, requireRole('technician'), getMyProjects);
-router.get('/projects/:projectId/technicians',         requireAuth, requireRole('owner','engineer'), getProjectTechnicians);
+router.get('/projects/:projectId/technicians',         requireAuth, requireRole('owner','head_engineer','engineer'), getProjectTechnicians);
 router.post('/projects/:projectId/technicians',        requireAuth, requireRole('owner'), assignTechnician);
 router.delete('/projects/:projectId/technicians/:workerId', requireAuth, requireRole('owner'), removeTechnician);
 
@@ -218,9 +228,9 @@ const {
   addGroupToDivision, updateGroupInstanceQuantity, removeGroupInstance, getDivisionGroupInstances
 } = require('../controllers/divisionItemGroupController');
 
-router.post('/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances',   requireAuth, requireRole('owner','engineer'), addGroupToDivision);
-router.patch('/group-instances/:instanceId', requireAuth, requireRole('owner','engineer'), updateGroupInstanceQuantity);
-router.delete('/group-instances/:instanceId', requireAuth, requireRole('owner','engineer'), removeGroupInstance);
+router.post('/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances',   requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, addGroupToDivision);
+router.patch('/group-instances/:instanceId', requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, updateGroupInstanceQuantity);
+router.delete('/group-instances/:instanceId', requireAuth, requireRole('owner','head_engineer','engineer'), lockAfterClientApproval, removeGroupInstance);
 router.get('/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances',    requireAuth, getDivisionGroupInstances);
 
 // ── Manual Product Requests (engineer adds → owner approves) ─
@@ -229,8 +239,8 @@ const {
   approveManualProductRequest, rejectManualProductRequest,
 } = require('../controllers/manualProductRequestController');
 
-router.post('/manual-product-requests',          requireAuth, requireRole('owner','engineer'), createManualProductRequest);
-router.get('/manual-product-requests',            requireAuth, getManualProductRequests);
+router.post('/manual-product-requests',          requireAuth, requireRole('owner','head_engineer','engineer'), createManualProductRequest);
+router.get('/manual-product-requests',            requireAuth, requireRole('owner','head_engineer','engineer'), getManualProductRequests);
 router.patch('/manual-product-requests/:id/approve', requireAuth, requireRole('owner'), approveManualProductRequest);
 router.patch('/manual-product-requests/:id/reject',  requireAuth, requireRole('owner'), rejectManualProductRequest);
 
@@ -239,9 +249,9 @@ router.get('/projects/:projectId/activity', requireAuth, getActivityLogs);
 
 // ── File Attachments ────────────────────────────────────────
 router.get('/projects/:projectId/attachments',            requireAuth, getAttachments);
-router.post('/projects/:projectId/attachments',           requireAuth, requireRole('owner','engineer'), uploadAttachment);
+router.post('/projects/:projectId/attachments',           requireAuth, requireRole('owner','head_engineer','engineer'), uploadAttachment);
 router.get('/attachments/:attachmentId/download',         requireAuth, downloadAttachment);
-router.delete('/projects/:projectId/attachments/:attachmentId', requireAuth, requireRole('owner','engineer'), deleteAttachment);
+router.delete('/projects/:projectId/attachments/:attachmentId', requireAuth, requireRole('owner','head_engineer','engineer'), deleteAttachment);
 
 // ── OneDrive connection (owner-only one-time sign-in) ───────
 const { connect: onedriveConnect, callback: onedriveCallback, status: onedriveStatus, disconnect: onedriveDisconnect } = require('../controllers/oneDriveAuthController');
@@ -252,7 +262,7 @@ router.post('/onedrive/disconnect', requireAuth, requireRole('owner'), onedriveD
 
 // ── Project Payments (partial/installment payments) ─────────
 const { getProjectPayments, addPayment, deletePayment, getDebtOverview } = require('../controllers/paymentController');
-router.get('/projects/:projectId/payments',              requireAuth, getProjectPayments);
+router.get('/projects/:projectId/payments',              requireAuth, requireRole('owner','accounting'), getProjectPayments);
 router.post('/projects/:projectId/payments',              requireAuth, requireRole('owner','accounting'), addPayment);
 router.delete('/projects/:projectId/payments/:paymentId', requireAuth, requireRole('owner','accounting'), deletePayment);
 router.get('/debt',                                       requireAuth, requireRole('owner','accounting'), getDebtOverview);
@@ -262,7 +272,7 @@ router.get('/export/products',    requireAuth, exportProducts);
 router.get('/export/projects',    requireAuth, exportProjects);
 router.get('/export/analytics',   requireAuth, requireRole('owner'), exportAnalytics);
 router.get('/export/reservations', requireAuth, exportReservations);
-router.get('/export/crm/:projectId', requireAuth, requireRole('owner','engineer'), exportCrm);
+router.get('/export/crm/:projectId', requireAuth, requireRole('owner','head_engineer','engineer'), exportCrm);
 
 // ── Messages / Announcements ────────────────────────────────
 const { getMessages, createMessage, deleteMessage } = require('../controllers/messageController');
@@ -270,5 +280,24 @@ const { getMessages, createMessage, deleteMessage } = require('../controllers/me
 router.get('/messages',    requireAuth, getMessages);
 router.post('/messages',   requireAuth, requireRole('owner','secretary'), createMessage);
 router.delete('/messages/:id', requireAuth, deleteMessage);
+
+// ── Product Updates / What's New ──────────────────────────
+const { getUpdates, markUpdateRead, markAllUpdatesRead, createUpdate } = require('../controllers/updateController');
+router.get('/updates', requireAuth, getUpdates);
+router.post('/updates', requireAuth, requireRole('owner'), createUpdate);
+router.patch('/updates/read-all', requireAuth, markAllUpdatesRead);
+router.patch('/updates/:updateId/read', requireAuth, markUpdateRead);
+
+// ── Managed CRM division types ─────────────────────────────
+const { getDivisionTypes,createDivisionType,updateDivisionType,deleteDivisionType }=require('../controllers/divisionTypeController');
+router.get('/division-types',requireAuth,getDivisionTypes);
+router.post('/division-types',requireAuth,requireRole('owner','head_engineer'),createDivisionType);
+router.patch('/division-types/:id',requireAuth,requireRole('owner','head_engineer'),updateDivisionType);
+router.delete('/division-types/:id',requireAuth,requireRole('owner','head_engineer'),deleteDivisionType);
+
+const {getProcurementQueue,reviewProcurement,receiveProcurementStock}=require('../controllers/procurementController');
+router.get('/procurement/projects',requireAuth,requireRole('owner','head_engineer','stock_manager'),getProcurementQueue);
+router.patch('/procurement/projects/:projectId/review',requireAuth,requireRole('owner','head_engineer','stock_manager'),reviewProcurement);
+router.patch('/procurement/projects/:projectId/products/:productId/receive',requireAuth,requireRole('owner','head_engineer','stock_manager'),receiveProcurementStock);
 
 module.exports = router;

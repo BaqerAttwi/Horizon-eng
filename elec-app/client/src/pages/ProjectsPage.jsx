@@ -8,6 +8,45 @@ import { useDebounce } from '../hooks/useDebounce';
 const STATUS_BADGE = { draft:'badge-gray', active:'badge-blue', completed:'badge-green', cancelled:'badge-red' };
 const APPROVAL_BADGE = { pending:'badge-yellow', approved:'badge-green', rejected:'badge-red' };
 const ADMIN_APPROVAL_BADGE = { pending:'badge-yellow', approved:'badge-green', rejected:'badge-red' };
+const PROJECT_STAGES = ['design','quotation','approval','procurement','assembly','testing','delivered'];
+
+function ProjectStageBar({ project, onChanged, canManage }) {
+  const current = PROJECT_STAGES.indexOf(project.project_stage || 'design');
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+  const change = async stage => {
+    setSaving(true);
+    try { const r = await api.patch(`/projects/${project.id}/stage`, { stage, note: note.trim() || null }); onChanged(r.data); setNote(''); toast.success(`Project moved to ${stage}`); }
+    catch (e) { toast.error(e.response?.data?.error || e.message); }
+    finally { setSaving(false); }
+  };
+  const nextStage = PROJECT_STAGES[current + 1];
+  const engineerCanAdvance = current < PROJECT_STAGES.indexOf('quotation');
+  const awaitingStock = project.project_stage === 'procurement' && project.procurement_status !== 'approved';
+  const canAdvance = nextStage && (canManage || engineerCanAdvance) && !awaitingStock;
+  return <section className="workflow-card" aria-label="Project workflow">
+    <div className="workflow-heading">
+      <div><span className="workflow-eyebrow">Project workflow</span><strong>{PROJECT_STAGES[current]}</strong></div>
+      <span className="badge badge-blue">Step {current + 1} of {PROJECT_STAGES.length}</span>
+    </div>
+    <div className="workflow-track">
+      {PROJECT_STAGES.map((stage,index)=><div key={stage} className={`workflow-step ${index<current?'complete':''} ${index===current?'current':''}`}>
+        <span className="workflow-dot">{index < current ? '✓' : index + 1}</span><span>{stage}</span>
+      </div>)}
+    </div>
+    {nextStage ? <div className="workflow-action">
+      <input className="form-input" value={note} onChange={e=>setNote(e.target.value)} placeholder="Optional progress note…" aria-label="Stage progress note" />
+      <button className="btn btn-primary" disabled={!canAdvance || saving} onClick={()=>change(nextStage)}>
+        {saving ? <><span className="spinner"/> Saving</> : `Move to ${nextStage} →`}
+      </button>
+      {!canAdvance && !awaitingStock && <span className="workflow-lock">Management approval is required for the next stage.</span>}
+      {awaitingStock && <span className="workflow-lock">📦 Waiting for Stock Manager approval{project.procurement_status==='rejected'&&project.procurement_note?`: ${project.procurement_note}`:''}.</span>}
+      {canManage && current > 0 && <select className="form-select workflow-back" defaultValue="" disabled={saving} onChange={e=>{ if(e.target.value) change(e.target.value); e.target.value=''; }} aria-label="Move project to an earlier stage">
+        <option value="">Move back…</option>{PROJECT_STAGES.slice(0,current).map(stage=><option key={stage} value={stage}>{stage}</option>)}
+      </select>}
+    </div> : <div className="workflow-complete">✓ Workflow complete — project delivered</div>}
+  </section>;
+}
 
 // ── Notification Bell ────────────────────────────────────────
 function DraftNotification() {
@@ -15,7 +54,7 @@ function DraftNotification() {
   const [notify, setNotify] = useState(null);
 
   useEffect(() => {
-    if (isRole('engineer', 'owner')) {
+    if (isRole('engineer', 'head_engineer', 'owner')) {
       api.get('/projects/draft-notifications')
         .then(r => { if (r.data.count > 0) setNotify(r.data); })
         .catch(() => {});
@@ -45,20 +84,22 @@ function ProjectModal({ project, onClose, onSaved }) {
   const [clients, setClients] = useState([]);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    project_name: '', engineer_id: '', client_id: '',
-    exchange_rate_eur_usd: 1.08, deadline: '', notes: '', total_panels: 0, vat_pct: 0,
-      project_discount_pct: 0, payment_terms: '70% at order, 30% after inspection', client_pdf_note: '',
+    project_name: '', quote_number: '', engineer_id: '', client_id: '',
+    exchange_rate_eur_usd: 1.18, deadline: '', notes: '', total_panels: 0, vat_pct: 0,
+      project_discount_pct: 0, margin_warning_pct: 10, payment_terms: '70% at order, 30% after inspection', client_pdf_note: '',
     ...(project ? {
       project_name: project.project_name,
+      quote_number: project.quote_number || '',
       engineer_id: project.engineer_id || '',
       client_id: project.client_id || '',
-      exchange_rate_eur_usd: project.exchange_rate_eur_usd || 1.08,
+      exchange_rate_eur_usd: project.exchange_rate_eur_usd || 1.18,
       deadline: project.deadline?.split('T')[0] || '',
       notes: project.notes || '',
       client_pdf_note: project.client_pdf_note || '',
       total_panels: project.total_panels || 0,
       vat_pct: parseFloat(project.vat_pct) || 0,
       project_discount_pct: parseFloat(project.project_discount_pct) || 0,
+      margin_warning_pct: parseFloat(project.margin_warning_pct) || 10,
       payment_terms: project.payment_terms || '70% at order, 30% after inspection',
     } : {}),
   });
@@ -81,9 +122,12 @@ function ProjectModal({ project, onClose, onSaved }) {
     if (!form.project_name.trim()) { toast.error('Project name is required'); return; }
     setSaving(true);
     try {
+      const payload = isEngineer
+        ? Object.fromEntries(Object.entries(form).filter(([key]) => !['engineer_id','margin_warning_pct'].includes(key)))
+        : form;
       const r = project?.id
-        ? await api.patch(`/projects/${project.id}`, form)
-        : await api.post('/projects', form);
+        ? await api.patch(`/projects/${project.id}`, payload)
+        : await api.post('/projects', payload);
       toast.success(`✅ Project "${form.project_name}" ${project?.id ? 'updated' : 'created'}`);
       onSaved(r.data, !!project?.id);
       onClose();
@@ -104,6 +148,11 @@ function ProjectModal({ project, onClose, onSaved }) {
           <div className="form-group">
             <label className="form-label">Project Name *</label>
             <input className="form-input" placeholder="e.g. Hospital Electrical Upgrade 2025..." {...f('project_name')} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Quotation Number</label>
+            <input className="form-input" placeholder="Leave blank to generate automatically" {...f('quote_number')} />
+            <small style={{ color: 'var(--muted)' }}>Must be unique across all projects.</small>
           </div>
           <div className="form-row">
             <div className="form-group">
@@ -136,7 +185,7 @@ function ProjectModal({ project, onClose, onSaved }) {
             <div className="form-group">
               <label className="form-label">EUR→USD Rate</label>
               <input type="number" step="0.0001" className="form-input" value={form.exchange_rate_eur_usd}
-                onChange={e => setForm(p => ({ ...p, exchange_rate_eur_usd: parseFloat(e.target.value) || 1.08 }))} />
+                onChange={e => setForm(p => ({ ...p, exchange_rate_eur_usd: parseFloat(e.target.value) || 1.18 }))} />
             </div>
             <div className="form-group">
               <label className="form-label">VAT (%)</label>
@@ -148,6 +197,7 @@ function ProjectModal({ project, onClose, onSaved }) {
               <input type="number" step="0.01" min="0" max="100" className="form-input" value={form.project_discount_pct}
                 onChange={e => setForm(p => ({ ...p, project_discount_pct: parseFloat(e.target.value) || 0 }))} />
             </div>
+            {isRole('owner','head_engineer') && <div className="form-group"><label className="form-label">Low Margin Warning (%)</label><input type="number" min="0" max="100" step="0.1" className="form-input" value={form.margin_warning_pct} onChange={e=>setForm(p=>({...p,margin_warning_pct:parseFloat(e.target.value)||0}))}/></div>}
           </div>
           <div className="form-group">
             <label className="form-label">Payment Terms</label>
@@ -186,16 +236,28 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
   const [showEdit, setShowEdit] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
   const [pdfType, setPdfType] = useState(null);
+  const [showClientExport, setShowClientExport] = useState(false);
+  const [clientExport, setClientExport] = useState({
+    format: 'quotation', quoteNumber: '', quoteDate: new Date().toISOString().slice(0, 10), expiryDate: '',
+    projectName: '', buyerName: '', buyerAddress: '', buyerPhone: '', buyerContact: '', buyerEmail: '', buyerVat: '',
+    paymentTerms: '', validity: '2 weeks', deliveryTime: 'TBD', currency: '$', incoterm: 'Ex-work workshop in Beirut',
+    additionalInfo: '', signatoryName: '', documentCode: 'HPS-COM-PR02-L02', edition: '1',
+  });
   const [clientRejectNote, setClientRejectNote] = useState('');
   const [collaborators, setCollaborators] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [inviteEngId, setInviteEngId] = useState('');
   const [inviting, setInviting] = useState(false);
+  const [revisions, setRevisions] = useState([]);
+  const [expandedRevision, setExpandedRevision] = useState(null);
+  const [restoringRevision, setRestoringRevision] = useState(null);
+  const [revisionSnapshots, setRevisionSnapshots] = useState({});
+  const [loadingSnapshot, setLoadingSnapshot] = useState(null);
 
   useEffect(() => {
     if (!project) return;
     api.get(`/projects/${projectId}/engineers`).then(r => setCollaborators(r.data)).catch(() => {});
-    if (isRole('owner','engineer')) {
+    if (isRole('owner','head_engineer','engineer')) {
       api.get('/workers').then(r => setWorkers(r.data.filter(w => w.role === 'engineer'))).catch(() => {});
     }
   }, [project?.id]);
@@ -216,22 +278,24 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
     try {
       const r = await api.get(`/projects/${projectId}`);
       setProject(r.data);
+      api.get(`/projects/${projectId}/quotation-revisions`).then(x=>setRevisions(x.data)).catch(()=>{});
     } catch (e) { toast.error(e.message); onClose(); }
     finally { setLoading(false); }
   }, [projectId]);
 
   useEffect(() => { load(); }, [load]);
 
-  const changeStatus = async (status) => {
-    setUpdating(true);
-    try {
-      const r = await api.patch(`/projects/${projectId}`, { status });
-      setProject(p => ({ ...p, ...r.data }));
-      onUpdated && onUpdated(r.data);
-      toast.success(`✅ Status → ${status}`);
-    } catch (e) { toast.error(e.message); }
-    finally { setUpdating(false); }
-  };
+  useEffect(() => {
+    if (!project) return;
+    const expiry = new Date(); expiry.setDate(expiry.getDate() + 14);
+    setClientExport(previous => ({ ...previous,
+      projectName: previous.projectName || project.project_name || '',
+      quoteNumber: previous.quoteNumber || project.quote_number || '',
+      buyerName: previous.buyerName || project.client_name || '',
+      paymentTerms: previous.paymentTerms || project.payment_terms || '',
+      expiryDate: previous.expiryDate || expiry.toISOString().slice(0, 10),
+    }));
+  }, [project?.id]);
 
   const changeClientApproval = async (client_approval) => {
     setUpdating(true);
@@ -260,21 +324,50 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
     finally { setUpdating(false); }
   };
 
-  const handleExportPdf = async (type) => {
+  const handleExportPdf = async (type, fields = {}) => {
     setPdfExporting(true);
     setPdfType(type);
     try {
       const { exportProjectPdf } = await import('../utils/pdfExport');
-      await exportProjectPdf(projectId, type);
+      await exportProjectPdf(projectId, type, fields);
       toast.success('✅ PDF exported');
     } catch (e) { toast.error('PDF export failed: ' + e.message); }
     finally { setPdfExporting(false); setPdfType(null); }
   };
 
+  const createRevision = async () => {
+    const notes = window.prompt('Revision notes (optional):') ?? null;
+    if (notes === null) return;
+    try { const r=await api.post(`/projects/${projectId}/quotation-revisions`,{notes}); setRevisions(v=>[r.data,...v]); toast.success(`Created ${project.quote_number}-R${r.data.revision_number}`); }
+    catch(e){ toast.error(e.response?.data?.error||e.message); }
+  };
+
+  const restoreRevision = async revision => {
+    if (!window.confirm(`Restore ${revision.quote_number}-R${revision.revision_number}? The current quotation will be backed up automatically first.`)) return;
+    setRestoringRevision(revision.id);
+    try {
+      const r = await api.post(`/projects/${projectId}/quotation-revisions/${revision.id}/restore`);
+      toast.success(r.data.message);
+      await load();
+    } catch (e) { toast.error(e.response?.data?.error || e.message); }
+    finally { setRestoringRevision(null); }
+  };
+
+  const toggleRevision = async revision => {
+    if (expandedRevision === revision.id) { setExpandedRevision(null); return; }
+    setExpandedRevision(revision.id);
+    if (!revision.has_snapshot || revisionSnapshots[revision.id]) return;
+    setLoadingSnapshot(revision.id);
+    try {
+      const r = await api.get(`/projects/${projectId}/quotation-revisions/${revision.id}/snapshot`);
+      setRevisionSnapshots(previous => ({ ...previous, [revision.id]: r.data }));
+    } catch (e) { toast.error(e.response?.data?.error || e.message); }
+    finally { setLoadingSnapshot(null); }
+  };
+
   if (loading) return <div className="modal-overlay"><div className="modal"><div className="modal-body" style={{ textAlign: 'center', padding: 40 }}><span className="spinner" />&nbsp; Loading...</div></div></div>;
   if (!project) return null;
 
-  const STATUS_FLOW = ['draft', 'active', 'completed', 'cancelled'];
   const progressPct = project.total_panels > 0 ? Math.round((project.completed_panels / project.total_panels) * 100) : 0;
 
   return (
@@ -291,6 +384,42 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
             <button className="btn-icon" onClick={onClose}>✕</button>
           </div>
           <div className="modal-body">
+
+            <div style={{fontSize:11,color:'var(--muted)'}}>Quotation: <strong>{project.quote_number}</strong>{revisions[0] ? ` • Latest revision R${revisions[0].revision_number}` : ''}</div>
+            <ProjectStageBar project={project} canManage={isRole('owner','head_engineer')} onChanged={p=>{setProject(v=>({...v,...p}));onUpdated?.(p);}} />
+            {isRole('owner','head_engineer') && revisions.length > 0 && <section className="revision-history">
+              <div className="revision-history-head">
+                <div><span className="workflow-eyebrow">Quotation records</span><strong>Revision History</strong></div>
+                <span className="badge badge-purple">{revisions.length} saved</span>
+              </div>
+              <div className="revision-list">
+                {revisions.map(revision => {
+                  const snapshot = revisionSnapshots[revision.id] || null;
+                  const panelCount = snapshot?.panels?.length || 0;
+                  const itemCount = snapshot?.panels?.reduce((sum,p)=>sum+(p.divisions||[]).reduce((s,d)=>s+(d.items||[]).length,0),0) || 0;
+                  const open = expandedRevision === revision.id;
+                  return <div className="revision-record" key={revision.id || revision.revision_number}>
+                    <div className="revision-item">
+                      <span className="revision-code">{revision.revision_number === 0 ? 'Original' : `R${revision.revision_number}`}</span>
+                      <div className="revision-info"><strong>{revision.quote_number}{revision.revision_number > 0 ? `-R${revision.revision_number}` : ''}</strong><span>{revision.notes || 'No revision note'}</span></div>
+                      <div className="revision-meta"><strong>${Number(revision.total_with_vat ?? revision.total_price ?? 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong><span>{revision.created_by_name || 'Management'} · {revision.created_at ? new Date(revision.created_at).toLocaleDateString() : 'Just now'}</span></div>
+                      <button className="btn btn-sm btn-secondary" onClick={()=>toggleRevision(revision)}>{open?'Hide':'View items'}</button>
+                    </div>
+                    {open && <div className="revision-detail">
+                      {loadingSnapshot === revision.id ? <div className="tint-box"><span className="spinner"/> Loading saved items…</div> : !revision.has_snapshot ? <div className="tint-box">This older revision saved totals only. Full item history starts with newly created revisions.</div> : !snapshot ? null : <>
+                        <div className="revision-summary"><span>{panelCount} panels</span><span>{itemCount} item lines</span><span>VAT {Number(snapshot.project?.vat_pct||0)}%</span><span>Discount {Number(snapshot.project?.project_discount_pct||0)}%</span></div>
+                        {(snapshot.panels||[]).map(panel=><div className="revision-panel" key={panel.id}>
+                          <strong>{panel.panel_name || `Panel ${panel.panel_number}`} × {panel.quantity || 1}</strong>
+                          {(panel.divisions||[]).map(div=><div key={div.id} className="revision-division"><span>{div.division_type}</span><ul>{(div.items||[]).slice(0,100).map(item=><li key={item.id}><span>{item.reference || item.custom_name || item.product_description || 'Manual item'}</span><b>× {item.qty}</b><em>${Number(item.totalfinalProduct||0).toFixed(2)}</em></li>)}</ul>{(div.items||[]).length>100&&<small>+ {(div.items||[]).length-100} more item lines</small>}</div>)}
+                        </div>)}
+                        {isRole('owner') && <button className="btn btn-danger btn-sm" disabled={restoringRevision===revision.id} onClick={()=>restoreRevision(revision)}>{restoringRevision===revision.id?'Restoring…':'Restore this version'}</button>}
+                      </>}
+                    </div>}
+                  </div>;
+                })}
+              </div>
+            </section>}
+            {isRole('owner','head_engineer') && Number(project.total_price)>0 && (()=>{const margin=((Number(project.total_price)-Number(project.total_cost||0))/Number(project.total_price))*100;return margin<Number(project.margin_warning_pct||10)?<div style={{padding:10,border:'1px solid var(--danger)',borderRadius:7,color:'var(--danger)',marginBottom:8}}>⚠ Margin {margin.toFixed(1)}% is below the {Number(project.margin_warning_pct||10)}% warning threshold.</div>:null;})()}
 
             {/* Stats summary */}
             <div className="stats-row">
@@ -353,7 +482,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
             )}
 
             {/* ── Owner: Admin Approval Section ── */}
-            {isRole('owner') && (
+            {isRole('owner','head_engineer') && (
               <div style={{ background: 'rgba(26,95,168,0.05)', borderRadius: 8, padding: 14, border: '1px solid rgba(26,95,168,0.2)' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--white)', marginBottom: 8 }}>👑 Owner Controls</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -403,20 +532,6 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
               </div>
             )}
 
-            {/* ── Status Tracking (only after admin approved) ── */}
-            {project.admin_approval === 'approved' && (
-              <div style={{ background: 'rgba(245,158,11,0.04)', borderRadius: 8, padding: 14, border: '1px solid rgba(245,158,11,0.15)' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--white)', marginBottom: 8 }}>📊 Status Tracking</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {STATUS_FLOW.map(s => (
-                    <button key={s} className={`btn btn-sm ${project.status === s ? 'btn-primary' : 'btn-secondary'}`}
-                      disabled={project.status === s || updating}
-                      onClick={() => changeStatus(s)}>{s}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* ── Collaborators ── */}
             <div style={{ background: 'rgba(99,102,241,0.04)', borderRadius: 8, padding: 14, border: '1px solid rgba(99,102,241,0.15)' }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--white)', marginBottom: 8 }}>🤝 Collaborators</div>
@@ -431,7 +546,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
               ) : (
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>No collaborators yet</div>
               )}
-              {isRole('owner','engineer') && (
+              {isRole('owner','head_engineer','engineer') && (
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <select className="form-input" style={{ flex: 1, fontSize: 12 }} value={inviteEngId} onChange={e => setInviteEngId(e.target.value)}>
                     <option value="">Select engineer...</option>
@@ -451,22 +566,45 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
               <button className="btn btn-primary" onClick={() => { onClose(); window.open(`/projects/${project.id}/crm`, '_blank'); }}>
                 📋 Open CRM Editor
               </button>
-              {isRole('owner', 'engineer') && (
+              {isRole('owner') || (isRole('head_engineer', 'engineer') && project.client_approval !== 'approved') ? (
                 <button className="btn btn-secondary" onClick={() => setShowEdit(true)}>
                   ✏️ Edit Project
                 </button>
-              )}
+              ) : null}
               {isRole('owner') && (
                 <button className="btn btn-secondary" onClick={() => handleExportPdf('owner')} disabled={pdfExporting}
                   style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)' }}>
                   {pdfExporting && pdfType === 'owner' ? <><span className="spinner" />Exporting...</> : '📄 Export PDF (Owner)'}
                 </button>
               )}
-              <button className="btn btn-secondary" onClick={() => handleExportPdf('client')} disabled={pdfExporting}
+              {isRole('owner','head_engineer') && <button className="btn btn-secondary" onClick={createRevision}>🧾 Create Quotation Revision</button>}
+              <button className="btn btn-secondary" onClick={() => window.open(`/projects/${project.id}/client-export`, '_blank')} disabled={pdfExporting}
                 style={{ background: 'rgba(26,95,168,0.1)', color: 'var(--accent)', border: '1px solid rgba(26,95,168,0.2)' }}>
-                {pdfExporting && pdfType === 'client' ? <><span className="spinner" />Exporting...</> : '📄 Export PDF (Client)'}
+                📄 Export for Client
               </button>
             </div>
+
+            {false && showClientExport && (
+              <div style={{ marginTop: 12, padding: 14, border: '1px solid rgba(26,95,168,0.3)', borderRadius: 8, background: 'rgba(26,95,168,0.05)' }}>
+                <div style={{ fontWeight: 700, marginBottom: 10 }}>Client PDF Export</div>
+                <div className="form-grid">
+                  <div className="form-group"><label className="form-label">Document Type</label><select className="form-input" value={clientExport.format} onChange={e => setClientExport(p => ({ ...p, format: e.target.value }))}><option value="quotation">Quotation</option><option value="technical">Technical Quotation</option></select></div>
+                  <div className="form-group"><label className="form-label">Quotation Number *</label><input className="form-input" value={clientExport.quoteNumber} placeholder="e.g. EQ260068" onChange={e => setClientExport(p => ({ ...p, quoteNumber: e.target.value }))} /></div>
+                  {clientExport.format === 'quotation' ? <>
+                    {[['quoteDate','Quotation Date','date'],['expiryDate','Expiry Date','date'],['projectName','Project'],['buyerName','Buyer Name'],['buyerAddress','Buyer Address'],['buyerPhone','Buyer Phone'],['buyerContact','Contact Person'],['buyerEmail','Buyer Email','email'],['buyerVat','Buyer VAT #'],['paymentTerms','Payment Terms'],['validity','Validity'],['deliveryTime','Delivery Time'],['currency','Currency Symbol'],['incoterm','Incoterm'],['signatoryName','Signatory Name']].map(([name, label, type = 'text']) => (
+                      <div className="form-group" key={name}><label className="form-label">{label}</label><input type={type} className="form-input" value={clientExport[name]} onChange={e => setClientExport(p => ({ ...p, [name]: e.target.value }))} /></div>
+                    ))}
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Additional Info (one item per line)</label><textarea className="form-textarea" rows={3} value={clientExport.additionalInfo} onChange={e => setClientExport(p => ({ ...p, additionalInfo: e.target.value }))} /></div>
+                  </> : <>
+                    <div className="form-group"><label className="form-label">Document Code</label><input className="form-input" value={clientExport.documentCode} onChange={e => setClientExport(p => ({ ...p, documentCode: e.target.value }))} /></div>
+                    <div className="form-group"><label className="form-label">Edition</label><input className="form-input" value={clientExport.edition} onChange={e => setClientExport(p => ({ ...p, edition: e.target.value }))} /></div>
+                  </>}
+                </div>
+                <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={pdfExporting || !clientExport.quoteNumber.trim()} onClick={() => handleExportPdf(clientExport.format, clientExport)}>
+                  {pdfExporting && pdfType === clientExport.format ? <><span className="spinner" />Exporting...</> : `Export ${clientExport.format === 'quotation' ? 'Quotation' : 'Technical Quotation'}`}
+                </button>
+              </div>
+            )}
 
           </div>
         </div>
@@ -490,6 +628,7 @@ export default function ProjectsPage() {
   const [detail, setDetail] = useState(null);
   const [importModal, setImportModal] = useState(false);
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState('progress');
 
   const filtered = projects.filter(p =>
     !search.trim() ||
@@ -547,7 +686,10 @@ export default function ProjectsPage() {
         </div>
         <button className="btn btn-primary" onClick={() => setModal({})}>+ New Project</button>
         <button className="btn btn-secondary" onClick={() => setImportModal(true)}>📄 Import PDF</button>
-        <a href="/api/export/projects" className="btn btn-secondary" style={{ textDecoration: 'none' }}>📥 CSV</a>
+        <button className="btn btn-secondary" onClick={() => setViewMode(v => v === 'progress' ? 'table' : 'progress')}>
+          {viewMode === 'progress' ? '☷ Table View' : '🧭 Progress Board'}
+        </button>
+        {isRole('owner','head_engineer','accounting') && <a href="/api/export/projects" className="btn btn-secondary" style={{ textDecoration: 'none' }}>📥 CSV</a>}
       </div>
 
       <div style={{ marginBottom: 16 }}>
@@ -555,13 +697,35 @@ export default function ProjectsPage() {
           value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      <div className="card">
+      {viewMode === 'progress' && <div className="project-progress-board">
+        {PROJECT_STAGES.map(stage => {
+          const stageProjects = filtered.filter(project => (project.project_stage || 'design') === stage);
+          return <section className="project-stage-column" key={stage}>
+            <header><span>{stage}</span><b>{stageProjects.length}</b></header>
+            <div className="project-stage-list">
+              {stageProjects.map(project => {
+                const progress = project.total_panels > 0 ? Math.round((project.completed_panels / project.total_panels) * 100) : 0;
+                return <button className="project-progress-card" key={project.id} onClick={() => setDetail(project.id)}>
+                  <strong>{project.project_name}</strong>
+                  <span>{project.engineer_name || 'Unassigned'} · {project.client_name || 'No client'}</span>
+                  <div className="project-mini-progress"><i style={{ width: `${progress}%` }} /></div>
+                  <small>{progress}% · {project.completed_panels || 0}/{project.total_panels || 0} panels</small>
+                  {project.deadline && <em>Due {project.deadline.split('T')[0]}</em>}
+                </button>;
+              })}
+              {!stageProjects.length && <div className="project-stage-empty">No projects</div>}
+            </div>
+          </section>;
+        })}
+      </div>}
+
+      {viewMode === 'table' && <div className="card">
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>ID</th><th>Project Name</th><th>Engineer</th><th>Client</th>
-                <th>Admin</th><th>Client</th><th>Status</th><th>Deadline</th>
+                <th>Admin</th><th>Client</th><th>Stage</th><th>Deadline</th>
                 <th>Priority</th><th>Progress</th><th>Panels</th><th>Total $</th><th>Actions</th>
               </tr>
             </thead>
@@ -576,13 +740,13 @@ export default function ProjectsPage() {
                   <tr key={p.id}>
                     <td className="mono" style={{ color: 'var(--muted)' }}>{p.id}</td>
                     <td style={{ fontWeight: 600, color: 'var(--white)', cursor: 'pointer' }} onClick={() => setDetail(p.id)}>
-                      {p.project_name}
+                      {p.project_name}<div style={{fontSize:10,color:'var(--muted)'}}>{p.quote_number}</div>
                     </td>
                     <td style={{ fontSize: 12 }}>{p.engineer_name || <span style={{ color: 'var(--muted)' }}>—</span>}</td>
                     <td style={{ fontSize: 12 }}>{p.client_name || <span style={{ color: 'var(--muted)' }}>—</span>}</td>
                     <td><span className={`badge ${ADMIN_APPROVAL_BADGE[p.admin_approval] || 'badge-gray'}`}>{p.admin_approval || 'pending'}</span></td>
                     <td><span className={`badge ${APPROVAL_BADGE[p.client_approval] || 'badge-gray'}`}>{p.client_approval}</span></td>
-                    <td><span className={`badge ${STATUS_BADGE[p.status] || 'badge-gray'}`}>{p.status}</span></td>
+                    <td><span className="badge badge-blue">{p.project_stage || 'design'}</span></td>
                     <td className="mono" style={{ fontSize: 12 }}>{p.deadline?.split('T')[0] || '—'}</td>
                     <td>{pri && <span style={{ fontSize: 11, color: pri.color, fontFamily: 'var(--font-mono)' }}>{pri.label}</span>}</td>
                     <td>
@@ -597,10 +761,11 @@ export default function ProjectsPage() {
                     </td>
                     <td className="mono" style={{ fontSize: 11 }}>{p.crm_panels || 0}/{p.total_panels || '—'}</td>
                     <td className="mono" style={{ color: 'var(--success)', fontSize: 12 }}>{p.total_price ? Number(p.total_price).toFixed(0) : '—'}</td>
-                    <td style={{ display: 'flex', gap: 6 }}>
+                    <td className="project-actions-cell"><div>
                       <button className="btn btn-sm btn-secondary" onClick={() => window.open(`/projects/${p.id}/crm`, '_blank')} style={{ fontSize: 11, padding: '2px 8px' }}>CRM</button>
                       <button className="btn-icon" title="View" onClick={() => setDetail(p.id)}>👁</button>
                       {isRole('owner') && <button className="btn-icon" title="Delete" onClick={() => del(p)} style={{ color: 'var(--danger)' }}>🗑</button>}
+                    </div>
                     </td>
                   </tr>
                 );
@@ -608,7 +773,7 @@ export default function ProjectsPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
 
       {modal !== null && (
         <ProjectModal project={modal.id ? modal : undefined} onClose={() => setModal(null)} onSaved={onSaved} />
@@ -629,7 +794,7 @@ function ImportPdfModal({ onClose, onCreated }) {
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [preview, setPreview] = useState(null);
-  const [form, setForm] = useState({ project_name: '', client_id: '', engineer_id: '', deadline: '', exchange_rate: 1.08, panel_count: '' });
+  const [form, setForm] = useState({ project_name: '', quote_number:'', client_id: '', engineer_id: '', deadline: '', exchange_rate: 1.18, panel_count: '', vat_pct:0, project_discount_pct:0, margin_warning_pct:10, payment_terms:'70% at order, 30% after inspection', client_pdf_note:'' });
   const [clients, setClients] = useState([]);
   const [engineers, setEngineers] = useState([]);
   const [unmatchedAction, setUnmatchedAction] = useState({});
@@ -650,6 +815,7 @@ function ImportPdfModal({ onClose, onCreated }) {
       fd.append('file', file);
       const r = await api.post('/projects/import-pdf/preview', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setPreview(r.data);
+      setForm(previous=>({...previous,project_name:previous.project_name||r.data.metadata?.project_name||'',quote_number:previous.quote_number||r.data.metadata?.quote_number||'',payment_terms:r.data.metadata?.payment_terms||previous.payment_terms}));
       setStep('preview');
       toast.success(`Found ${r.data.total_items} items (${r.data.matched.length} matched, ${r.data.unmatched.length} unmatched)`);
     } catch (err) { toast.error(err.response?.data?.error || err.message); }
@@ -662,8 +828,11 @@ function ImportPdfModal({ onClose, onCreated }) {
     try {
       const panelsWithItems = preview.panels.map(p => {
         const divs = {};
-        // Rebuild panel divisions with matched/unmatched items
-        for (const item of [...preview.matched, ...(preview.unmatched.filter(u => !unmatchedAction[u.name]?.skip))]) {
+        // Rebuild only this panel's divisions. Import preview preserves these
+        // fields so items no longer collapse into one INCOMING division.
+        const panelItems = [...preview.matched, ...(preview.unmatched.filter(u => !unmatchedAction[u.name]?.skip))]
+          .filter(item => Number(item.panel_number) === Number(p.panel_number));
+        for (const item of panelItems) {
           const divType = item.division_type || 'INCOMING';
           if (!divs[divType]) divs[divType] = { division_type: divType, items: [] };
           divs[divType].items.push({
@@ -674,7 +843,7 @@ function ImportPdfModal({ onClose, onCreated }) {
             discount: item.discount || 0,
           });
         }
-        return { ...p, divisions: Object.values(divs) };
+        return { ...p, quantity:Math.max(1,parseInt(p.quantity)||1), divisions: Object.values(divs) };
       });
 
       // Include unmatched items that aren't skipped
@@ -687,11 +856,17 @@ function ImportPdfModal({ onClose, onCreated }) {
 
       const res = await api.post('/projects/import-pdf/create', {
         project_name: form.project_name,
+        quote_number: form.quote_number.trim() || null,
         engineer_id: parseInt(form.engineer_id) || null,
         client_id: parseInt(form.client_id) || null,
-        exchange_rate_eur_usd: parseFloat(form.exchange_rate) || 1.08,
+        exchange_rate_eur_usd: parseFloat(form.exchange_rate) || 1.18,
         deadline: form.deadline || null,
         total_panels: parseInt(form.panel_count) || preview.panels.length,
+        vat_pct:parseFloat(form.vat_pct)||0,
+        project_discount_pct:parseFloat(form.project_discount_pct)||0,
+        margin_warning_pct:parseFloat(form.margin_warning_pct)||10,
+        payment_terms:form.payment_terms||null,
+        client_pdf_note:form.client_pdf_note||null,
         panels: panelsWithItems,
         matched_items: preview.matched,
         unmatched_items: finalUnmatched,
@@ -718,6 +893,10 @@ function ImportPdfModal({ onClose, onCreated }) {
           {step === 'form' && (
             <>
               <div className="form-row">
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Quotation Number</label>
+                  <input className="form-input" value={form.quote_number} onChange={e => setForm(f => ({ ...f, quote_number: e.target.value }))} placeholder="Automatic if empty" />
+                </div>
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Project Name *</label>
                   <input className="form-input" value={form.project_name} onChange={e => setForm(f => ({ ...f, project_name: e.target.value }))} placeholder="e.g. New Office Building" />
@@ -748,7 +927,11 @@ function ImportPdfModal({ onClose, onCreated }) {
                   <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Panel Count</label>
                   <input className="form-input" type="number" min={1} value={form.panel_count} onChange={e => setForm(f => ({ ...f, panel_count: e.target.value }))} placeholder="Auto from PDF" />
                 </div>
+                <div><label className="form-label">VAT %</label><input className="form-input" type="number" min="0" value={form.vat_pct} onChange={e=>setForm(f=>({...f,vat_pct:e.target.value}))}/></div>
+                <div><label className="form-label">Project Discount %</label><input className="form-input" type="number" min="0" value={form.project_discount_pct} onChange={e=>setForm(f=>({...f,project_discount_pct:e.target.value}))}/></div>
+                <div><label className="form-label">Margin Warning %</label><input className="form-input" type="number" min="0" value={form.margin_warning_pct} onChange={e=>setForm(f=>({...f,margin_warning_pct:e.target.value}))}/></div>
               </div>
+              <div className="form-row" style={{marginTop:12}}><div className="form-group"><label className="form-label">Payment Terms</label><textarea className="form-textarea" rows={2} value={form.payment_terms} onChange={e=>setForm(f=>({...f,payment_terms:e.target.value}))}/></div><div className="form-group"><label className="form-label">Client PDF Note</label><textarea className="form-textarea" rows={2} value={form.client_pdf_note} onChange={e=>setForm(f=>({...f,client_pdf_note:e.target.value}))}/></div></div>
               <div style={{ marginTop: 16 }}>
                 <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>PDF File *</label>
                 <input className="form-input" type="file" accept="application/pdf" onChange={handleFileAndPreview} disabled={uploading} />
@@ -761,11 +944,16 @@ function ImportPdfModal({ onClose, onCreated }) {
             <>
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--white)' }}>Preview: {preview.panels.length} panels, {preview.total_items} items</div>
+                <div className="tint-box" style={{marginTop:8}}>Quotation <strong>{form.quote_number||'will be generated automatically'}</strong> · VAT {form.vat_pct||0}% · Discount {form.project_discount_pct||0}% · Starts at Design stage</div>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
                   <span style={{ color: 'var(--success)' }}>{preview.matched.length} matched</span>
                   {preview.unmatched.length > 0 && <span style={{ color: 'var(--accent2)', marginLeft: 8 }}>{preview.unmatched.length} unmatched</span>}
                 </div>
               </div>
+
+              <div style={{marginBottom:12}}><div style={{fontSize:11,fontWeight:700,color:'var(--primary-light)',marginBottom:6}}>⚡ Imported Panels and Multipliers</div><div className="form-row">
+                {preview.panels.map((panel,index)=><div className="tint-box" key={panel.panel_number} style={{display:'grid',gridTemplateColumns:'1fr 90px',alignItems:'center',gap:8}}><div><strong style={{color:'var(--white)'}}>Panel #{panel.panel_number}</strong><div style={{fontSize:10,color:'var(--muted)'}}>{panel.panel_name||'Unnamed panel'}</div></div><div className="form-group"><label className="form-label">Quantity</label><input className="form-input" type="number" min="1" value={panel.quantity||1} onChange={e=>setPreview(previous=>({...previous,panels:previous.panels.map((p,i)=>i===index?{...p,quantity:Math.max(1,parseInt(e.target.value)||1)}:p)}))}/></div></div>)}
+              </div></div>
 
               {preview.matched.length > 0 && (
                 <div style={{ marginBottom: 12 }}>

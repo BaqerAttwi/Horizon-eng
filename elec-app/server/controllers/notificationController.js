@@ -130,6 +130,14 @@ async function notifyOwners(type, title, message, link) {
   }
 }
 
+async function notifyRoles(roles, type, title, message, link) {
+  try {
+    if (!roles?.length) return;
+    const [workers] = await pool.query('SELECT id FROM workers WHERE role IN (?)', [roles]);
+    for (const worker of workers) await createNotification(worker.id, type, title, message, link);
+  } catch (err) { console.error('[Notification] Failed to notify roles:', err.message); }
+}
+
 // ── Helper: Notify engineer about their project ───────────────
 async function notifyEngineer(projectId, type, title, message, link) {
   try {
@@ -250,16 +258,17 @@ async function checkPendingApprovals() {
 async function checkLowStock() {
   try {
     const [lowStock] = await pool.query(`
-      SELECT id, reference, description, stock_qty, reserved_qty
+      SELECT id, reference, description, stock_qty, reserved_qty, min_stock_level
       FROM products
-      WHERE stock_qty <= reserved_qty AND stock_qty <= 5
-      ORDER BY stock_qty ASC
+      WHERE (stock_qty-reserved_qty) <= min_stock_level
+      ORDER BY (stock_qty-reserved_qty) ASC
       LIMIT 20
     `);
 
     for (const p of lowStock) {
-      const severity = p.stock_qty === 0 ? 'OUT OF STOCK' : `Low: ${p.stock_qty} left`;
-      await notifyOwners(
+      const available = Number(p.stock_qty)-Number(p.reserved_qty);
+      const severity = available <= 0 ? 'OUT OF STOCK' : `Low: ${available} available`;
+      await notifyRoles(['owner','stock_manager'],
         'stock',
         `${severity}: ${p.reference}`,
         p.description || 'No description',
@@ -324,6 +333,6 @@ async function runNotificationChecks() {
 
 module.exports = {
   getNotifications, markAsRead, markAllAsRead, deleteNotification,
-  createNotification, notifyOwners, notifyEngineer,
+  createNotification, notifyOwners, notifyRoles, notifyEngineer,
   checkDeadlineWarnings, checkPendingApprovals, checkLowStock, checkOutstandingPayments, runNotificationChecks
 };

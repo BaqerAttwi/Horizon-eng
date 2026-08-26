@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS workers (
   name         VARCHAR(200) NOT NULL,
   email        VARCHAR(150),
   phone        VARCHAR(50),
-  role         ENUM('owner','accounting','engineer','secretary') NOT NULL,
+  role         ENUM('owner','head_engineer','stock_manager','accounting','engineer','secretary','technician') NOT NULL,
   password_hash VARCHAR(255) NOT NULL DEFAULT '',
   created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS products (
   smart_code   VARCHAR(100),
   stock_qty    INT DEFAULT 0,
   reserved_qty INT DEFAULT 0,
+  min_stock_level INT NOT NULL DEFAULT 0,
   created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE SET NULL,
@@ -104,9 +105,16 @@ CREATE TABLE IF NOT EXISTS order_items (
 CREATE TABLE IF NOT EXISTS projects (
   id              INT AUTO_INCREMENT PRIMARY KEY,
   project_name    VARCHAR(250) NOT NULL,
+  quote_number    VARCHAR(100) DEFAULT NULL,
+  project_stage   ENUM('design','quotation','approval','procurement','assembly','testing','delivered') NOT NULL DEFAULT 'design',
+  procurement_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  procurement_note TEXT DEFAULT NULL,
+  procurement_reviewed_by INT DEFAULT NULL,
+  procurement_reviewed_at DATETIME DEFAULT NULL,
+  margin_warning_pct DECIMAL(5,2) NOT NULL DEFAULT 10,
   engineer_id     INT,
   client_id       INT,
-  exchange_rate_eur_usd DECIMAL(10,4) DEFAULT 1.0800,
+  exchange_rate_eur_usd DECIMAL(10,4) DEFAULT 1.1800,
   client_approval ENUM('pending','approved','rejected') DEFAULT 'pending',
   admin_approval  ENUM('pending','approved','rejected') DEFAULT 'pending',
   rejection_note  TEXT,
@@ -124,7 +132,9 @@ CREATE TABLE IF NOT EXISTS projects (
   updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (engineer_id) REFERENCES workers(id) ON DELETE SET NULL,
   FOREIGN KEY (client_id)   REFERENCES clients(id) ON DELETE SET NULL,
-  INDEX idx_deleted_at (deleted_at)
+  FOREIGN KEY (procurement_reviewed_by) REFERENCES workers(id) ON DELETE SET NULL,
+  INDEX idx_deleted_at (deleted_at),
+  UNIQUE KEY uq_projects_quote_number (quote_number)
 );
 
 -- ── Project Items (legacy — old projects) ─────────────────────
@@ -161,6 +171,7 @@ CREATE TABLE IF NOT EXISTS project_crm_panels (
   project_id     INT NOT NULL,
   panel_number   INT NOT NULL,
   panel_name     VARCHAR(250),
+  quantity       INT NOT NULL DEFAULT 1,
   markupP        DECIMAL(5,2) DEFAULT 0,
   markupM        DECIMAL(5,2) DEFAULT 0,
   manpower_pct   DECIMAL(5,2) DEFAULT 0,
@@ -308,11 +319,25 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE TABLE IF NOT EXISTS item_groups (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   name        VARCHAR(250) NOT NULL,
+  description TEXT DEFAULT NULL,
   created_by  INT NOT NULL,
   is_public   BOOLEAN DEFAULT FALSE,
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (created_by) REFERENCES workers(id) ON DELETE CASCADE
 );
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='item_groups' AND COLUMN_NAME='description');
+SET @sql = IF(@exists=0, 'ALTER TABLE item_groups ADD COLUMN description TEXT DEFAULT NULL AFTER name', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ── Migration: unique automatic/manual quotation number per project ──
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='projects' AND COLUMN_NAME='quote_number');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN quote_number VARCHAR(100) DEFAULT NULL AFTER project_name', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+UPDATE projects SET quote_number=CONCAT('Q-', LPAD(id, 6, '0')) WHERE quote_number IS NULL OR quote_number='';
+SET @exists = (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='projects' AND INDEX_NAME='uq_projects_quote_number');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD UNIQUE KEY uq_projects_quote_number (quote_number)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS item_group_items (
   id          INT AUTO_INCREMENT PRIMARY KEY,
@@ -433,6 +458,12 @@ CREATE TABLE IF NOT EXISTS attachments (
 SET @t = 'projects';
 SET @db = DATABASE();
 
+-- Keep existing databases aligned with the current application fallback.
+-- This changes only the default for newly created projects; existing rows
+-- and their saved exchange rates are not modified.
+ALTER TABLE projects
+  MODIFY COLUMN exchange_rate_eur_usd DECIMAL(10,4) DEFAULT 1.1800;
+
 SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME=@t AND COLUMN_NAME='ready_for_review');
 SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN ready_for_review BOOLEAN DEFAULT FALSE AFTER deleted_at', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
@@ -504,10 +535,15 @@ CREATE TABLE IF NOT EXISTS division_item_group_instances (
   division_id   INT NOT NULL,
   item_group_id INT NOT NULL,
   quantity      INT DEFAULT 1,
+  description   TEXT DEFAULT NULL,
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (division_id) REFERENCES panel_divisions(id) ON DELETE CASCADE,
   FOREIGN KEY (item_group_id) REFERENCES item_groups(id) ON DELETE CASCADE
 );
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='division_item_group_instances' AND COLUMN_NAME='description');
+SET @sql = IF(@exists=0, 'ALTER TABLE division_item_group_instances ADD COLUMN description TEXT DEFAULT NULL AFTER quantity', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ── Migration: add source_group_instance_id ──────────────
 SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='panel_crm_items' AND COLUMN_NAME='source_group_instance_id');
@@ -532,7 +568,7 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 ALTER TABLE notifications MODIFY COLUMN type ENUM('deadline','approval','status','request','stock','general','info','manual_product','manual_product_approved','manual_product_rejected') NOT NULL DEFAULT 'general';
 
 -- ── Technician role (field worker — execution only, no pricing access) ──
-ALTER TABLE workers MODIFY COLUMN role ENUM('owner','accounting','engineer','secretary','technician') NOT NULL;
+ALTER TABLE workers MODIFY COLUMN role ENUM('owner','head_engineer','stock_manager','accounting','engineer','secretary','technician') NOT NULL;
 
 -- ── Project Technician Assignments (owner assigns technicians per project) ──
 CREATE TABLE IF NOT EXISTS project_technicians (
@@ -602,7 +638,150 @@ CREATE TABLE IF NOT EXISTS project_payments (
   FOREIGN KEY (recorded_by) REFERENCES workers(id) ON DELETE SET NULL
 );
 
+-- ── Project workflow and audit trail ─────────────────────────
+CREATE TABLE IF NOT EXISTS project_stage_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  from_stage VARCHAR(30) DEFAULT NULL,
+  to_stage VARCHAR(30) NOT NULL,
+  note TEXT DEFAULT NULL,
+  changed_by INT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (changed_by) REFERENCES workers(id) ON DELETE SET NULL,
+  INDEX idx_stage_history_project (project_id, created_at)
+);
+
+CREATE TABLE IF NOT EXISTS quotation_revisions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  revision_number INT NOT NULL,
+  quote_number VARCHAR(100) NOT NULL,
+  total_price DECIMAL(14,2) DEFAULT 0,
+  total_with_vat DECIMAL(14,2) DEFAULT 0,
+  notes TEXT DEFAULT NULL,
+  snapshot_json LONGTEXT DEFAULT NULL,
+  created_by INT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES workers(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_project_revision (project_id, revision_number)
+);
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='quotation_revisions' AND COLUMN_NAME='snapshot_json');
+SET @sql = IF(@exists=0, 'ALTER TABLE quotation_revisions ADD COLUMN snapshot_json LONGTEXT DEFAULT NULL AFTER notes', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+CREATE TABLE IF NOT EXISTS reservation_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  product_id INT NOT NULL,
+  project_id INT DEFAULT NULL,
+  panel_id INT DEFAULT NULL,
+  old_qty INT NOT NULL DEFAULT 0,
+  new_qty INT NOT NULL DEFAULT 0,
+  change_qty INT NOT NULL DEFAULT 0,
+  reason VARCHAR(100) NOT NULL,
+  changed_by INT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
+  FOREIGN KEY (panel_id) REFERENCES project_crm_panels(id) ON DELETE SET NULL,
+  FOREIGN KEY (changed_by) REFERENCES workers(id) ON DELETE SET NULL,
+  INDEX idx_reservation_history_product (product_id, created_at)
+);
+
 -- ── Migration: payment deadline (for the remaining balance, set once installments start) ──
 SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='projects' AND COLUMN_NAME='payment_deadline');
 SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN payment_deadline DATE DEFAULT NULL AFTER onedrive_folder_link', 'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ── Migration: workflow, margin warning, and stock threshold ──
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='projects' AND COLUMN_NAME='project_stage');
+SET @sql = IF(@exists=0, "ALTER TABLE projects ADD COLUMN project_stage ENUM('design','quotation','approval','procurement','assembly','testing','delivered') NOT NULL DEFAULT 'design' AFTER quote_number", 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='projects' AND COLUMN_NAME='margin_warning_pct');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN margin_warning_pct DECIMAL(5,2) NOT NULL DEFAULT 10 AFTER project_stage', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='products' AND COLUMN_NAME='min_stock_level');
+SET @sql = IF(@exists=0, 'ALTER TABLE products ADD COLUMN min_stock_level INT NOT NULL DEFAULT 0 AFTER reserved_qty', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ── Migration: number of identical units represented by each CRM panel ──
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='project_crm_panels' AND COLUMN_NAME='quantity');
+SET @sql = IF(@exists=0, 'ALTER TABLE project_crm_panels ADD COLUMN quantity INT NOT NULL DEFAULT 1 AFTER panel_name', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ── Role-aware product update center ────────────────────────
+CREATE TABLE IF NOT EXISTS app_updates (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  version VARCHAR(30) NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  summary TEXT NOT NULL,
+  features LONGTEXT NOT NULL,
+  target_roles VARCHAR(255) NOT NULL DEFAULT 'all',
+  is_published BOOLEAN NOT NULL DEFAULT TRUE,
+  published_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by INT DEFAULT NULL,
+  FOREIGN KEY (created_by) REFERENCES workers(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_app_update (version,title)
+);
+
+CREATE TABLE IF NOT EXISTS app_update_reads (
+  update_id INT NOT NULL,
+  worker_id INT NOT NULL,
+  read_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (update_id,worker_id),
+  FOREIGN KEY (update_id) REFERENCES app_updates(id) ON DELETE CASCADE,
+  FOREIGN KEY (worker_id) REFERENCES workers(id) ON DELETE CASCADE
+);
+
+INSERT IGNORE INTO app_updates(version,title,summary,features,target_roles) VALUES
+('0.1','Foundation','The first working version introduced secure access and the core electrical product database.','["Secure login and worker accounts","Product catalogue with brands and pricing","Client records","Initial project CRM"]','all'),
+('0.5','Quotation CRM','Projects gained structured panels, divisions, products, calculations, and customer exports.','["Panels and electrical divisions","Item quantities, markups, discounts and manpower","Quotation totals with VAT","Owner and client PDF exports"]','owner,head_engineer,accounting,engineer'),
+('0.8','Inventory and demand','Stock quantities became connected to live project demand and reservations.','["Stock, reserved and available quantities","Project demand tracker","Shortage and conflict warnings","Reservation history"]','owner,head_engineer,stock_manager,engineer'),
+('1.0','Team collaboration','Engineering collaboration and workshop execution tracking were added.','["Engineer invitations and project collaboration","Technician assignments","Panel and item completion tracking","Activity and progress history"]','owner,head_engineer,engineer,technician'),
+('1.4','Business operations','Financial, administrative, and communication tools were expanded.','["Partial payments and debt tracking","Calendar and deadlines","Announcements and notifications","Analytics by engineer and client"]','owner,head_engineer,accounting,secretary'),
+('2.0','Managed project workflow','Projects now follow seven controlled stages with new management and inventory roles.','["Design, Quotation, Approval, Procurement, Assembly, Testing and Delivered stages","Head Engineer and Stock Manager roles","Unique automatic or manual quotation numbers","Engineer pricing privacy","Panel quantity multiplication across prices and stock demand"]','all'),
+('2.1','Quotation version control','Client-approved quotations are protected and complete quotation versions can be reviewed or restored.','["Full quotation snapshots with panels, divisions and items","Owner-only version restore with automatic backup","Commercial lock after client approval","Compressed snapshots for very large projects","Visible revision history"]','owner,head_engineer,accounting,engineer'),
+('2.2','Updates center','A role-aware What’s New center now keeps every worker informed about relevant improvements.','["Unread update badge","Updates filtered by worker role","Per-user read history","Owner publishing for future releases"]','all'),
+('2.3','New quotation import','PDF imports now create projects using the complete managed quotation model.','["Automatic or imported unique quotation number","New commercial quotation and technical-offer parsing","Panel multiplier import and preview editing","VAT, discount, payment terms, margin threshold and client note","Imported projects start in the Design stage and support revision history"]','owner,head_engineer,accounting,engineer');
+
+-- ── Owner/Head Engineer managed CRM division types ──────────
+CREATE TABLE IF NOT EXISTS division_types (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  color VARCHAR(7) NOT NULL DEFAULT '#64748b',
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_by INT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY(created_by) REFERENCES workers(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_division_type_name(name)
+);
+INSERT IGNORE INTO division_types(name,color,sort_order) VALUES
+('INCOMING','#e11d48',1),('OUTGOING','#2563eb',2),('Enclosure','#7c3aed',3),('Accessories','#d97706',4),('Measurement','#059669',5);
+SET @sql = 'ALTER TABLE panel_divisions MODIFY COLUMN division_type VARCHAR(100) NOT NULL';
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+INSERT IGNORE INTO app_updates(version,title,summary,features,target_roles) VALUES
+('2.4','Managed division types','Owner and Head Engineer can now extend the CRM with custom electrical division types.','["Division Types management page","Add, rename, color, archive and reactivate types","Existing projects update safely when a type is renamed","Used types are archived instead of deleted","Custom types work in CRM panels and technical PDF import"]','owner,head_engineer,engineer');
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='projects' AND COLUMN_NAME='procurement_status');
+SET @sql = IF(@exists=0, "ALTER TABLE projects ADD COLUMN procurement_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending' AFTER project_stage, ADD COLUMN procurement_note TEXT DEFAULT NULL AFTER procurement_status, ADD COLUMN procurement_reviewed_by INT DEFAULT NULL AFTER procurement_note, ADD COLUMN procurement_reviewed_at DATETIME DEFAULT NULL AFTER procurement_reviewed_by, ADD CONSTRAINT fk_projects_procurement_reviewer FOREIGN KEY (procurement_reviewed_by) REFERENCES workers(id) ON DELETE SET NULL", 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+INSERT IGNORE INTO app_updates(version,title,summary,features,target_roles) VALUES
+('2.5','Stock-controlled procurement','Stock Manager now owns the Procurement approval gate before Assembly.','["Price-free procurement queue","Required, available and shortage quantities","Approve or reject with notes","Assembly blocked until stock approval"]','owner,head_engineer,stock_manager,engineer');
+
+CREATE TABLE IF NOT EXISTS project_procurement_allocations (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  product_id INT NOT NULL,
+  allocated_qty INT NOT NULL DEFAULT 0,
+  updated_by INT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE,
+  FOREIGN KEY(updated_by) REFERENCES workers(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_project_procurement_product(project_id,product_id)
+);

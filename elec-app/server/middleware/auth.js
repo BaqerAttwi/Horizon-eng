@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const db = require('../db/connection');
 const { JWT_SECRET } = require('../controllers/authController');
+const { ROLE_PERMISSIONS, isRoleAllowed } = require('../utils/rolePolicy');
 
 async function requireAuth(req, res, next) {
   // Check HttpOnly cookie first, then Authorization header
@@ -16,12 +17,24 @@ async function requireAuth(req, res, next) {
     // req.worker.id (completed_by, performed_by, assigned_by, ...) would
     // otherwise crash with a raw foreign-key violation instead of a clean
     // "please log in again".
-    const [[worker]] = await db.execute('SELECT id FROM workers WHERE id=?', [decoded.id]);
+    const [[worker]] = await db.execute(
+      'SELECT id, name, role FROM workers WHERE id=?',
+      [decoded.id]
+    );
     if (!worker) {
       console.log('[Auth] ❌ Token references a worker that no longer exists:', decoded.id);
       return res.status(401).json({ error: 'Session expired — please log in again' });
     }
-    req.worker = decoded;
+    // Do not trust role/permissions embedded in an older token. An owner who
+    // has been demoted (or any worker whose role changed) must lose the old
+    // privileges immediately instead of retaining them until JWT expiry.
+    req.worker = {
+      ...decoded,
+      id: worker.id,
+      name: worker.name,
+      role: worker.role,
+      permissions: ROLE_PERMISSIONS[worker.role] || [],
+    };
     next();
   } catch (err) {
     console.log('[Auth] ❌ Token error:', err.message);
@@ -31,7 +44,7 @@ async function requireAuth(req, res, next) {
 
 function requireRole(...roles) {
   return (req, res, next) => {
-    if (!roles.includes(req.worker?.role)) {
+    if (!isRoleAllowed(req.worker?.role, roles)) {
       console.log(`[Auth] 🚫 Role "${req.worker?.role}" denied on ${req.method} ${req.path}`);
       return res.status(403).json({ error: `Access denied — requires: ${roles.join(' or ')}` });
     }

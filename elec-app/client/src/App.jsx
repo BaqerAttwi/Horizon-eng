@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { AnimatedPage }   from './components/AnimatedPage';
 import NotificationBell from './components/NotificationBell';
 import Logo            from './components/Logo';
+import api             from './api/client';
 
 // Route-level code splitting — each page ships as its own chunk and is only
 // fetched when the user actually navigates there, instead of all pages
@@ -19,25 +20,43 @@ const ClientsPage      = lazy(() => import('./pages/ClientsPage'));
 const ReservationsPage = lazy(() => import('./pages/ReservationsPage'));
 const DiscountsPage    = lazy(() => import('./pages/DiscountsPage'));
 const CrmProjectPage   = lazy(() => import('./pages/CrmProjectPage'));
+const ClientExportPage = lazy(() => import('./pages/ClientExportPage'));
 const RequestsPage     = lazy(() => import('./pages/RequestsPage'));
 const AnalyticsPage    = lazy(() => import('./pages/AnalyticsPage'));
 const DashboardPage    = lazy(() => import('./pages/DashboardPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
-const PriceChangesPage = lazy(() => import('./pages/PriceChangesPage'));
 const GroupsPage       = lazy(() => import('./pages/GroupsPage'));
 const MessagesPage     = lazy(() => import('./pages/MessagesPage'));
 const CalendarPage     = lazy(() => import('./pages/CalendarPage'));
 const TechnicianProjectsPage = lazy(() => import('./pages/TechnicianProjectsPage'));
 const TechnicianExecutionPage = lazy(() => import('./pages/TechnicianExecutionPage'));
 const DebtPage = lazy(() => import('./pages/DebtPage'));
+const UpdatesPage = lazy(() => import('./pages/UpdatesPage'));
+const DivisionTypesPage = lazy(() => import('./pages/DivisionTypesPage'));
+const ProcurementPage = lazy(() => import('./pages/ProcurementPage'));
+
+function UpdatesLink({ mobile = false }) {
+  const [unread, setUnread] = useState(0);
+  const load = () => api.get('/updates').then(r=>setUnread(r.data.unread_count||0)).catch(()=>{});
+  useEffect(() => { load(); window.addEventListener('updates-read',load); const timer=setInterval(load,60000); return()=>{clearInterval(timer);window.removeEventListener('updates-read',load);}; }, []);
+  return <NavLink to="/updates" className={({isActive})=>mobile?'updates-mobile-link':`nav-link updates-nav${isActive?' active':''}`}>
+    <span className="nav-icon">✨</span>{!mobile&&'What’s New'}{unread>0&&<span className="updates-count">{unread>99?'99+':unread}</span>}
+  </NavLink>;
+}
 
 // Role badge colors
-const ROLE_COLORS = { owner:'#a78bfa', accounting:'#60a5fa', engineer:'#4ade80', secretary:'#fbbf24', technician:'#94a3b8' };
-const ROLE_ICONS  = { owner:'👑', accounting:'💼', engineer:'⚙️', secretary:'📋', technician:'🛠️' };
+const ROLE_COLORS = { owner:'#a78bfa', head_engineer:'#22d3ee', stock_manager:'#f59e0b', accounting:'#60a5fa', engineer:'#4ade80', secretary:'#fbbf24', technician:'#94a3b8' };
+const ROLE_ICONS  = { owner:'👑', head_engineer:'🧭', stock_manager:'📦', accounting:'💼', engineer:'⚙️', secretary:'📋', technician:'🛠️' };
 
 // Technicians only get the execution-only "My Projects" view — no pricing/CRM access
 const TECHNICIAN_NAV = [
   { to: '/my-projects', icon: '🛠️', label: 'My Projects', perm: null, group: 'main' },
+];
+const STOCK_MANAGER_NAV = [
+  { to: '/procurement', icon: '✅', label: 'Procurement Queue', perm: 'procurement', group: 'crm' },
+  { to: '/products', icon: '📦', label: 'Stock Management', perm: 'products', group: 'crm' },
+  { to: '/reservations', icon: '📊', label: 'Demand Tracker', perm: 'reservations', group: 'crm' },
+  { to: '/notifications', icon: '🔔', label: 'Stock Alerts', perm: 'notifications', group: 'crm' },
 ];
 
 // Nav items with permission check
@@ -47,7 +66,7 @@ const NAV = [
   { to: '/projects',     icon: '🔧', label: 'Projects',       perm: 'projects', group: 'main' },
   { to: '/products',     icon: '📦', label: 'Products',       perm: 'products', group: 'crm' },
   { to: '/reservations', icon: '📊', label: 'Demand Tracker',  perm: 'reservations', group: 'crm' },
-  { to: '/price-changes', icon: '💰', label: 'Price Changes',  perm: 'price-changes', group: 'crm' },
+  { to: '/procurement',  icon: '✅', label: 'Procurement Queue', perm: 'procurement', group: 'crm', roles:['owner','head_engineer'] },
   { to: '/groups',       icon: '📋', label: 'Item Groups',     perm: 'item-groups',   group: 'crm' },
   { to: '/messages',     icon: '📢', label: 'Announcements', perm: 'messages',       group: 'crm' },
   { to: '/requests',     icon: '🤝', label: 'Requests',       perm: 'requests', group: 'admin' },
@@ -57,6 +76,7 @@ const NAV = [
   { to: '/debt',         icon: '💸', label: 'Debt',           perm: 'debt',     group: 'admin' },
   { to: '/workers',      icon: '👷', label: 'Workers',        perm: 'workers',  group: 'admin' },
   { to: '/clients',      icon: '🏢', label: 'Clients',        perm: 'clients',  group: 'admin' },
+  { to: '/division-types',icon: '🧩', label: 'Division Types', perm: null, group: 'admin', roles:['owner','head_engineer'] },
 ];
 
 const GROUP_LABELS = {
@@ -66,13 +86,15 @@ const GROUP_LABELS = {
 };
 
 // Protected route wrapper
-function ProtectedRoute({ children, perm }) {
+function ProtectedRoute({ children, perm, roles }) {
   const { worker, loading, can } = useAuth();
   if (loading) return <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100vh' }}><span className="spinner"/></div>;
   if (!worker)  return <Navigate to="/login" replace />;
+  if (roles && !roles.includes(worker.role)) return <Navigate to="/dashboard" replace />;
   // Technicians only ever get execution-scoped routes — no dashboard, CRM, pricing, etc.
-  if (worker.role === 'technician' && perm !== 'execution') return <Navigate to="/my-projects" replace />;
-  if (perm && !can(perm)) return (
+  if (worker.role === 'technician' && !['execution','updates'].includes(perm)) return <Navigate to="/my-projects" replace />;
+  if (worker.role === 'stock_manager' && !['products','reservations','reports','notifications','updates','procurement'].includes(perm)) return <Navigate to="/products" replace />;
+  if (perm && !['notifications','updates'].includes(perm) && !can(perm)) return (
     <div className="page">
       <div className="empty" style={{ paddingTop: 80 }}>
         <div className="empty-icon">🚫</div>
@@ -103,7 +125,7 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
 
       <nav className="sidebar-nav">
         {(() => {
-          const visible = isRole('technician') ? TECHNICIAN_NAV : NAV.filter(n => !n.perm || can(n.perm));
+          const visible = isRole('technician') ? TECHNICIAN_NAV : isRole('stock_manager') ? STOCK_MANAGER_NAV : NAV.filter(n => (!n.roles||n.roles.includes(worker.role))&&(!n.perm || can(n.perm)));
           const groups = [...new Set(visible.map(n => n.group))];
           return groups.flatMap((g, gi) => [
             <div key={`h-${g}`} className="nav-group-label">{GROUP_LABELS[g]}</div>,
@@ -122,6 +144,7 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
       </nav>
 
       {/* Notification bell for desktop */}
+      <div style={{ padding: '2px 8px 0' }}><UpdatesLink /></div>
       <div style={{ padding: '8px 12px' }}>
         <NotificationBell />
       </div>
@@ -212,6 +235,7 @@ function AppLayout() {
             <button className="btn-icon" onClick={() => setMobileOpen(true)} aria-label="Open menu">☰</button>
             <Logo size={80} />
             <div style={{ flex: 1 }} />
+            <UpdatesLink mobile />
         <NotificationBell />
           </div>
         )}
@@ -224,20 +248,23 @@ function AppLayout() {
               <Route path="/dashboard" element={<AnimatedPage><ProtectedRoute><DashboardPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/calendar"  element={<AnimatedPage><ProtectedRoute><CalendarPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/products"  element={<AnimatedPage><ProtectedRoute perm="products"><ProductsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/procurement" element={<AnimatedPage><ProtectedRoute perm="procurement" roles={['owner','head_engineer','stock_manager']}><ProcurementPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/reservations" element={<AnimatedPage><ProtectedRoute perm="reservations"><ReservationsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/upload"    element={<AnimatedPage><ProtectedRoute perm="upload"><UploadPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/projects"  element={<AnimatedPage><ProtectedRoute perm="projects"><ProjectsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/projects/:id/crm" element={<AnimatedPage><ProtectedRoute perm="projects"><CrmProjectPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/projects/:id/client-export" element={<AnimatedPage><ProtectedRoute perm="projects"><ClientExportPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/requests"  element={<AnimatedPage><ProtectedRoute perm="requests"><RequestsPage /></ProtectedRoute></AnimatedPage>} />
-              <Route path="/price-changes" element={<AnimatedPage><ProtectedRoute perm="price-changes"><PriceChangesPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/groups" element={<AnimatedPage><ProtectedRoute perm="item-groups"><GroupsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/messages" element={<AnimatedPage><ProtectedRoute perm="messages"><MessagesPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/discounts"  element={<AnimatedPage><ProtectedRoute perm="discounts"><DiscountsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/workers"   element={<AnimatedPage><ProtectedRoute perm="workers"><WorkersPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/clients"   element={<AnimatedPage><ProtectedRoute perm="clients"><ClientsPage /></ProtectedRoute></AnimatedPage>} />
-              <Route path="/analytics" element={<AnimatedPage><ProtectedRoute perm="analytics"><AnalyticsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/analytics" element={<AnimatedPage><ProtectedRoute perm="analytics" roles={['owner']}><AnalyticsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/debt"      element={<AnimatedPage><ProtectedRoute perm="debt"><DebtPage /></ProtectedRoute></AnimatedPage>} />
-              <Route path="/notifications" element={<AnimatedPage><ProtectedRoute><NotificationsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/notifications" element={<AnimatedPage><ProtectedRoute perm="notifications"><NotificationsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/updates" element={<AnimatedPage><ProtectedRoute perm="updates"><UpdatesPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/division-types" element={<AnimatedPage><ProtectedRoute roles={['owner','head_engineer']}><DivisionTypesPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/my-projects"     element={<AnimatedPage><ProtectedRoute perm="execution"><TechnicianProjectsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/my-projects/:id" element={<AnimatedPage><ProtectedRoute perm="execution"><TechnicianExecutionPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="*"          element={<Navigate to="/dashboard" replace />} />

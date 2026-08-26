@@ -4,8 +4,11 @@ import api from '../../api/client';
 import { DIVISION_COLORS } from '../../utils/crmPricing';
 import CrmItemRow from './CrmItemRow';
 import GroupInstanceSection from './GroupInstanceSection';
+import { useAuth } from '../../context/AuthContext';
 
 function ProductSearch({ onSelect, projectId, exchangeRate }) {
+  const { isRole } = useAuth();
+  const hidePrices = isRole('engineer');
   const [q, setQ] = useState('');
   const [results, setRes] = useState([]);
   const [manuals, setManuals] = useState([]);
@@ -34,7 +37,7 @@ function ProductSearch({ onSelect, projectId, exchangeRate }) {
   }, [dq]);
 
   const displayPrice = (p) => {
-    const rate = exchangeRate || 1.08;
+    const rate = exchangeRate || 1.18;
     let eur = parseFloat(p.price_euro);
     let usd = parseFloat(p.price_usd);
     if (usd && !eur) eur = usd / rate;
@@ -76,7 +79,7 @@ function ProductSearch({ onSelect, projectId, exchangeRate }) {
                 {p.smart_code ? <div style={{ fontSize: 10, color: 'var(--badge-yellow)' }}>📌 {p.smart_code}</div> : null}
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 11, color: 'var(--success)', fontFamily: 'var(--font-mono)' }}>${usd.toFixed(2)} / €{eur.toFixed(2)}</div>
+                {!hidePrices && <div style={{ fontSize: 11, color: 'var(--success)', fontFamily: 'var(--font-mono)' }}>${usd.toFixed(2)} / €{eur.toFixed(2)}</div>}
                 <div style={{ fontSize: 11, color: 'var(--muted)' }}>{p.brand_name}</div>
                 <div style={{ fontSize: 10, color: 'var(--muted)' }}>{p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}</div>
               </div>
@@ -84,7 +87,7 @@ function ProductSearch({ onSelect, projectId, exchangeRate }) {
             );
           })}
           {manuals.filter(m => m.name.toLowerCase().includes(dq.toLowerCase())).map(m => {
-            const rate = exchangeRate || 1.08;
+            const rate = exchangeRate || 1.18;
             const eur = parseFloat(m.price_euro) || 0;
             const usd = parseFloat(m.price_usd) || (eur * rate) || 0;
             return (
@@ -98,7 +101,7 @@ function ProductSearch({ onSelect, projectId, exchangeRate }) {
                 <div style={{ fontSize: 11, color: 'var(--muted)' }}>Manual — {m.brand || '—'}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 11, color: 'var(--success)', fontFamily: 'var(--font-mono)' }}>${usd.toFixed(2)} / €{eur.toFixed(2)}</div>
+                {!hidePrices && <div style={{ fontSize: 11, color: 'var(--success)', fontFamily: 'var(--font-mono)' }}>${usd.toFixed(2)} / €{eur.toFixed(2)}</div>}
               </div>
             </div>
             );
@@ -117,16 +120,17 @@ function ProductSearch({ onSelect, projectId, exchangeRate }) {
 }
 
 function ManualProductModal({ project, onClose, onSaved, prefill }) {
+  const { isRole } = useAuth();
   const [form, setForm] = useState({
     name: prefill?.searchQuery || '', description: '', price_euro: '', price_usd: '', brand: ''
   });
 
   const convertEur = (euro) => {
-    const rate = project.exchange_rate_eur_usd || 1.08;
+    const rate = project.exchange_rate_eur_usd || 1.18;
     setForm(f => ({ ...f, price_euro: euro, price_usd: euro ? (parseFloat(euro) * rate).toFixed(2) : '' }));
   };
   const convertUsd = (usd) => {
-    const rate = project.exchange_rate_eur_usd || 1.08;
+    const rate = project.exchange_rate_eur_usd || 1.18;
     setForm(f => ({ ...f, price_usd: usd, price_euro: usd ? (parseFloat(usd) / rate).toFixed(4) : '' }));
   };
 
@@ -160,7 +164,7 @@ function ManualProductModal({ project, onClose, onSaved, prefill }) {
             <label className="form-label">Brand</label>
             <input className="form-input" value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
           </div>
-          <div className="form-row">
+          {!isRole('engineer') && <div className="form-row">
             <div className="form-group">
               <label className="form-label">Price (EUR €)</label>
               <input type="number" step="0.01" className="form-input" value={form.price_euro}
@@ -171,10 +175,10 @@ function ManualProductModal({ project, onClose, onSaved, prefill }) {
               <input type="number" step="0.01" className="form-input" value={form.price_usd}
                 onChange={e => convertUsd(e.target.value)} placeholder="Auto-converts to EUR" />
             </div>
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginTop: 4 }}>
-            Exchange rate: 1 EUR = {project.exchange_rate_eur_usd || 1.08} USD
-          </div>
+          </div>}
+          {!isRole('engineer') && <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginTop: 4 }}>
+            Exchange rate: 1 EUR = {project.exchange_rate_eur_usd || 1.18} USD
+          </div>}
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
@@ -257,8 +261,30 @@ function GroupSelectModal({ project, division, panel, onClose, onGroupAdded }) {
   );
 }
 
+function StandaloneItemsTable({ items, division, panel, exchangeRate, onItemUpdate, onItemDelete, hideCost, showCr, pendingPriceChanges, selectedItems, onToggleItem, onSelectAll, editView }) {
+  if (!items.length) return null;
+  return <div className="table-wrap" style={{ overflowX: 'auto', background: 'var(--panel)' }}>
+    <table style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+      <thead><tr>
+        <th style={{ width: 28, textAlign: 'center' }}><input type="checkbox"
+          checked={items.every(i => selectedItems?.has(i.id))}
+          onChange={e => items.forEach(i => { if (e.target.checked !== selectedItems?.has(i.id)) onToggleItem?.(i.id); })}
+          style={{ width: 15, height: 15, cursor: 'pointer' }} /></th>
+        <th style={{ width: 32 }}>👁</th><th>Name</th><th>Qty</th>{!hideCost && <><th>Price for 1 $ / €</th><th>Price $ / €</th></>}<th>Description</th><th>Brand</th>
+        {hideCost && <><th>Disc%</th><th>mkP%</th><th>Man%</th><th>mkM%</th></>}
+        {!hideCost && <><th>Disc%</th><th>After Disc $</th><th>mkP%</th><th>T.PriceT $</th><th>Man%</th><th>mkM%</th><th>Final $ / €</th></>}
+        {!hideCost && <><th>Cost $</th><th>Profit $</th></>}{showCr && <><th>C.R $</th><th>N Profit $</th></>}<th className="crm-actions-column">Actions</th>
+      </tr></thead>
+      <tbody>{items.map(item => <CrmItemRow key={item.id} item={item} division={division} panel={panel} exchangeRate={exchangeRate}
+        onUpdate={onItemUpdate} onDelete={onItemDelete} hideCost={hideCost} showCr={showCr}
+        pendingPriceChange={pendingPriceChanges?.[item.id] || null} isSelected={selectedItems?.has(item.id)}
+        onToggleSelect={onToggleItem} editView={editView} />)}</tbody>
+    </table>
+  </div>;
+}
+
 const DivisionSection = memo(function DivisionSection({ division, panel, project, exchangeRate, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, hideCost, showCr, pendingPriceChanges,
-  onGroupInstanceQtyChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll, editView }) {
+  onGroupInstanceQtyChange, onGroupInstanceDescriptionChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll, editView }) {
   const [showAdd, setShowAdd] = useState(false);
   const [showGroup, setShowGroup] = useState(false);
   const [manualModal, setManualModal] = useState(null);
@@ -340,7 +366,7 @@ const DivisionSection = memo(function DivisionSection({ division, panel, project
     setPendingQty(null);
   };
 
-  const divColor = DIVISION_COLORS[division.division_type] || 'var(--muted)';
+  const divColor = division.division_color || DIVISION_COLORS[division.division_type] || 'var(--muted)';
 
   return (
     <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 8, overflow: 'visible', position: 'relative', background: 'transparent' }}>
@@ -357,7 +383,38 @@ const DivisionSection = memo(function DivisionSection({ division, panel, project
           onClick={() => onDivisionDelete(division.id)}>✕</button>
       </div>
 
-      {division.items?.length > 0 && (
+      {/* Division entries share one timeline. Adjacent standalone items stay in
+          a table, while group instances appear exactly where they were added. */}
+      {(() => {
+        const entries = [
+          ...(division.items || []).filter(item => !item.source_group_instance_id).map(item => ({ type: 'item', at: item.created_at, id: item.id, item })),
+          ...(division.group_instances || []).map(group => ({ type: 'group', at: group.created_at, id: group.id, group })),
+        ].sort((a, b) => {
+          const time = new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime();
+          return time || a.id - b.id;
+        });
+        const blocks = [];
+        for (const entry of entries) {
+          if (entry.type === 'item') {
+            const last = blocks[blocks.length - 1];
+            if (last?.type === 'items') last.items.push(entry.item);
+            else blocks.push({ type: 'items', key: `items-${entry.id}`, items: [entry.item] });
+          } else blocks.push({ type: 'group', key: `group-${entry.id}`, group: entry.group });
+        }
+        return blocks.map(block => block.type === 'items' ?
+          <StandaloneItemsTable key={block.key} items={block.items} division={division} panel={panel} exchangeRate={exchangeRate}
+            onItemUpdate={onItemUpdate} onItemDelete={onItemDelete} hideCost={hideCost} showCr={showCr}
+            pendingPriceChanges={pendingPriceChanges} selectedItems={selectedItems} onToggleItem={onToggleItem}
+            onSelectAll={onSelectAll} editView={editView} /> :
+          <GroupInstanceSection key={block.key} instance={block.group} division={division} panel={panel} exchangeRate={exchangeRate}
+            onInstanceQtyChange={onGroupInstanceQtyChange} onInstanceDescriptionChange={onGroupInstanceDescriptionChange}
+            onInstanceRemove={onGroupInstanceRemove} onItemUpdate={onItemUpdate} onItemDelete={onItemDelete}
+            hideCost={hideCost} showCr={showCr} pendingPriceChanges={pendingPriceChanges}
+            selectedItems={selectedItems} onToggleItem={onToggleItem} editView={editView} />
+        );
+      })()}
+
+      {false && division.items?.length > 0 && (
         <div className="table-wrap" style={{ overflowX: 'auto', background: 'var(--panel)' }}>
           <table style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
             <colgroup>
@@ -392,9 +449,9 @@ const DivisionSection = memo(function DivisionSection({ division, panel, project
                     style={{ width: 15, height: 15, cursor: 'pointer' }} />
                 </th>
                 <th style={{ width: 32 }}><span style={{ fontSize: 11 }}>👁</span></th>
-                <th>Name</th><th>Qty</th><th>Price for 1 $ / €</th><th>Price $ / €</th><th>Description</th><th>Brand</th>
-                <th>Disc%</th><th>After Disc $</th><th>mkP%</th><th>T.PriceT $</th>
-                <th>Man%</th><th>mkM%</th><th>Final $ / €</th>
+                <th>Name</th><th>Qty</th>{!hideCost && <><th>Price for 1 $ / €</th><th>Price $ / €</th></>}<th>Description</th><th>Brand</th>
+                {!hideCost && <><th>Disc%</th><th>After Disc $</th><th>mkP%</th><th>T.PriceT $</th>
+                <th>Man%</th><th>mkM%</th><th>Final $ / €</th></>}
                 {!hideCost && <><th>Cost $</th><th>Profit $</th></>}
                 {showCr && <><th style={{ width: 60 }}>C.R $</th><th style={{ width: 70 }}>N Profit $</th></>}
                 <th></th>
@@ -416,9 +473,10 @@ const DivisionSection = memo(function DivisionSection({ division, panel, project
         </div>
       )}
 
-      {division.group_instances?.map(inst => (
+      {false && division.group_instances?.map(inst => (
         <GroupInstanceSection key={inst.id} instance={inst} division={division} panel={panel} exchangeRate={exchangeRate}
           onInstanceQtyChange={onGroupInstanceQtyChange}
+          onInstanceDescriptionChange={onGroupInstanceDescriptionChange}
           onInstanceRemove={onGroupInstanceRemove}
           onItemUpdate={onItemUpdate}
           onItemDelete={onItemDelete}

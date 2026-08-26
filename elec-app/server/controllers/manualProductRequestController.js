@@ -88,25 +88,36 @@ async function getManualProductRequests(req, res, next) {
 
 // ── Approve a request (owner only) ───────────────────────────
 async function approveManualProductRequest(req, res, next) {
+  let conn;
+  let committed = false;
   try {
     const { id } = req.params;
-    const [requests] = await db.execute(
+
+    conn = await db.getConnection();
+    await conn.beginTransaction();
+    const [requests] = await conn.execute(
       'SELECT * FROM manual_product_requests WHERE id=? AND status=?',
       [id, 'pending']
     );
-    if (!requests.length) return res.status(404).json({ error: 'Pending request not found' });
+    if (!requests.length) {
+      await conn.rollback();
+      committed = true;
+      return res.status(404).json({ error: 'Pending request not found' });
+    }
     const r = requests[0];
 
     // Generate reference if missing
     const ref = r.reference || await generateReference(r.name);
-    const [productResult] = await db.execute(
+    const [productResult] = await conn.execute(
       `INSERT INTO products (reference, description, price_usd, price_euro, brand_id, stock_qty, reserved_qty)
        VALUES (?, ?, ?, ?, NULL, 0, 0)`,
       [ref, r.description, r.price_usd, r.price_euro]
     );
 
     // Update request status
-    await db.execute('UPDATE manual_product_requests SET status=? WHERE id=?', ['approved', id]);
+    await conn.execute('UPDATE manual_product_requests SET status=? WHERE id=?', ['approved', id]);
+    await conn.commit();
+    committed = true;
 
     // Notify the requester
     await createNotification(r.created_by, 'manual_product_approved',
@@ -117,8 +128,11 @@ async function approveManualProductRequest(req, res, next) {
     const [newProduct] = await db.execute('SELECT * FROM products WHERE id=?', [productResult.insertId]);
     res.json({ product: newProduct[0], request_id: id });
   } catch (err) {
+    if (conn && !committed) await conn.rollback();
     console.error('[ManualProduct] ❌ approve:', err.message);
     next(err);
+  } finally {
+    if (conn) conn.release();
   }
 }
 

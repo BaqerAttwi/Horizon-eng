@@ -12,19 +12,35 @@ function ensureDir() {
 async function uploadAttachment(req, res, next) {
   try {
     const { projectId } = req.params;
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, projectId);
+    if (!hasAccess) return;
+
     const { link_url, name } = req.body;
     const panelId = req.body.panel_id || null;
     const userId = req.worker.id;
 
+    if (panelId) {
+      const [[panel]] = await db.execute(
+        'SELECT id FROM project_crm_panels WHERE id=? AND project_id=?',
+        [panelId, projectId]
+      );
+      if (!panel) return res.status(400).json({ error: 'Panel does not belong to this project' });
+    }
+
     if (!link_url || !link_url.trim()) return res.status(400).json({ error: 'link_url is required' });
-    try { new URL(link_url); } catch { return res.status(400).json({ error: 'That doesn\'t look like a valid URL' }); }
+    let parsedUrl;
+    try { parsedUrl = new URL(link_url); } catch { return res.status(400).json({ error: 'That doesn\'t look like a valid URL' }); }
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      return res.status(400).json({ error: 'Only http and https links are allowed' });
+    }
 
     const displayName = (name && name.trim()) || link_url;
 
     const [result] = await db.execute(
       `INSERT INTO attachments (project_id, panel_id, file_name, stored_name, file_size, mime_type, uploaded_by, storage, link_url)
        VALUES (?, ?, ?, NULL, 0, NULL, ?, 'link', ?)`,
-      [projectId, panelId, displayName, userId, link_url.trim()]
+      [projectId, panelId, displayName, userId, parsedUrl.href]
     );
 
     const [[attachment]] = await db.execute(

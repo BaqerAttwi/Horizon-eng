@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import toast from 'react-hot-toast';
-import { DIVISION_TYPES } from '../../utils/crmPricing';
 import DivisionSection from './DivisionSection';
 
 function IntersectionLazy({ children, minHeight = 120, rootMargin = '300px', immediate }) {
@@ -30,11 +29,12 @@ function IntersectionLazy({ children, minHeight = 120, rootMargin = '300px', imm
 
 const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, onUpdatePanel, onDeletePanel, onToggleComplete,
   onAddDivision, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, hideCost, showCr, pendingPriceChanges,
-  onGroupInstanceQtyChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll, editView }) {
+  onGroupInstanceQtyChange, onGroupInstanceDescriptionChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll, editView,divisionTypes=[] }) {
 
   const [editing, setEditing] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
-  const [form, setForm] = useState({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false, onedrive_link: panel.onedrive_link || '' });
+  const panelForm = () => ({ panel_name: panel.panel_name, quantity: panel.quantity || 1, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false, onedrive_link: panel.onedrive_link || '' });
+  const [form, setForm] = useState(panelForm);
 
   const handleSavePanel = async () => {
     await onUpdatePanel(panel.id, form);
@@ -50,17 +50,16 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
           <span style={{ fontSize: 12, color: '#fff', transition: 'transform 0.2s', display: 'inline-block', flexShrink: 0 }}>{collapsed ? '▶' : '▼'}</span>
           <span style={{ fontWeight: 800, fontSize: 14, color: '#fff', flexShrink: 0 }}>Panel #{panel.panel_number}</span>
           {panel.panel_name && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>— {panel.panel_name}</span>}
-          <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.9)', flexShrink: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>× {panel.quantity || 1}</span>
+          {!hideCost && <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.9)', flexShrink: 0 }}>
             Total: ${(parseFloat(panel.total_price) || 0).toFixed(2)}
-          </span>
+          </span>}
           {showCr && (() => {
             let cr = 0;
             for (const d of panel.divisions || []) {
               for (const it of d.items || []) cr += (parseFloat(it.cr_amount) || 0) * (parseFloat(it.qty) || 1);
-              for (const gi of d.group_instances || []) {
-                for (const it of gi.items || []) cr += (parseFloat(it.cr_amount) || 0) * (parseFloat(it.qty) || 1);
-              }
             }
+            cr *= Math.max(1, Number(panel.quantity) || 1);
             const panelPrice = parseFloat(panel.total_price) || 0;
             return (
               <>
@@ -90,7 +89,7 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
           {editing ? (
             <>
               <button className="btn btn-sm btn-primary" onClick={e => { e.stopPropagation(); handleSavePanel(); }}>Save</button>
-              <button className="btn btn-sm btn-secondary" onClick={e => { e.stopPropagation(); setEditing(false); setForm({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false, onedrive_link: panel.onedrive_link || '' }); }}>Cancel</button>
+              <button className="btn btn-sm btn-secondary" onClick={e => { e.stopPropagation(); setEditing(false); setForm(panelForm()); }}>Cancel</button>
             </>
           ) : (
             <>
@@ -99,7 +98,7 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
                 {panel.is_completed ? '✓ Complete' : '☐ Mark Complete'}
               </button>
               <button className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}
-                onClick={e => { e.stopPropagation(); setEditing(true); setForm({ panel_name: panel.panel_name, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false, onedrive_link: panel.onedrive_link || '' }); }}>Edit Panel</button>
+                onClick={e => { e.stopPropagation(); setEditing(true); setForm(panelForm()); }}>Edit Panel</button>
             </>
           )}
           <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.25)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}
@@ -113,6 +112,10 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
             <div className="form-group" style={{ flex: 2 }}>
               <label className="form-label">Panel Name</label>
               <input className="form-input" value={form.panel_name || ''} onChange={e => setForm(f => ({ ...f, panel_name: e.target.value }))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Quantity</label>
+              <input type="number" min="1" step="1" className="form-input" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: Math.max(1, parseInt(e.target.value, 10) || 1) }))} />
             </div>
             <div className="form-group">
               <label className="form-label">markupP %</label>
@@ -157,6 +160,7 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
                 onDivisionDelete={onDivisionDelete} hideCost={hideCost} showCr={showCr}
                 pendingPriceChanges={pendingPriceChanges}
                 onGroupInstanceQtyChange={onGroupInstanceQtyChange}
+                onGroupInstanceDescriptionChange={onGroupInstanceDescriptionChange}
                 onGroupInstanceRemove={onGroupInstanceRemove}
                 onGroupAdded={onGroupAdded}
                 selectedItems={selectedItems}
@@ -170,11 +174,12 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
 
       {!collapsed && (
         <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {DIVISION_TYPES.map(type => {
+          {divisionTypes.map(typeRow => {
+            const type=typeRow.name;
             const existingTypes = new Set((panel.divisions || []).map(d => d.division_type));
             if (existingTypes.has(type)) return null;
             return (
-              <button key={type} className="btn btn-sm btn-secondary" style={{ fontSize: 11, padding: '4px 10px' }}
+              <button key={type} className="btn btn-sm btn-secondary" style={{ fontSize: 11, padding: '4px 10px',borderColor:typeRow.color,color:typeRow.color }}
                 onClick={() => onAddDivision(panel.id, { division_type: type, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct })}>
                 + {type}
               </button>

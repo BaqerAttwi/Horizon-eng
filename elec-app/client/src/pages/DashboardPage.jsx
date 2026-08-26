@@ -121,9 +121,9 @@ function EngineerSummaryRow({ e }) {
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       padding: '6px 0', borderBottom: '1px solid var(--border)',
     }}>
-      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--white)' }}>{e.name}</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--white)' }}>{e.name}{Number(e.active_projects)>5 && <span style={{color:'var(--danger)',marginLeft:6}}>⚠ overloaded</span>}</span>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{e.project_count} projects</span>
+        <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{e.active_projects || 0} active • {Number(e.avg_progress||0).toFixed(0)}% • {e.overdue_projects || 0} overdue</span>
         <span className="mono" style={{ fontSize: 11, color: profit >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 700 }}>
           ${profit.toFixed(0)}
         </span>
@@ -133,8 +133,8 @@ function EngineerSummaryRow({ e }) {
 }
 
 const TABS = [
-  { key: 'overview',    label: '📊 Overview',   roles: ['owner','accounting','engineer'] },
-  { key: 'performance', label: '👷 Performance', roles: ['owner'] },
+  { key: 'overview',    label: '📊 Overview',   roles: ['owner','head_engineer','accounting','engineer'] },
+  { key: 'performance', label: '👷 Performance', roles: ['owner','head_engineer'] },
   { key: 'stock',       label: '📦 Stock',      roles: ['owner','accounting'] },
 ];
 
@@ -230,7 +230,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Performance Tab (owner only) ────────────────── */}
-      {tab === 'performance' && isRole('owner') && (
+      {tab === 'performance' && isRole('owner','head_engineer') && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
           <FadeIn>
             <div className="card">

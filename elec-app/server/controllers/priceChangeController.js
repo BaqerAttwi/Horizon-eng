@@ -7,6 +7,19 @@ async function createPriceChangeRequest(req, res, next) {
 
     if (!item_id) return res.status(400).json({ error: 'item_id required' });
 
+    const numericChanges = {
+      new_base_price_usd, new_base_price_euro, new_markupP_pct,
+      new_discount_pct, new_manpower_pct, new_markupM_pct, new_qty,
+    };
+    for (const [field, value] of Object.entries(numericChanges)) {
+      if (value !== undefined && value !== null && value !== '' && !Number.isFinite(Number(value))) {
+        return res.status(400).json({ error: `${field} must be a valid number` });
+      }
+    }
+    if (new_qty !== undefined && (!Number.isInteger(Number(new_qty)) || Number(new_qty) < 1)) {
+      return res.status(400).json({ error: 'new_qty must be a positive whole number' });
+    }
+
     const [items] = await db.execute('SELECT * FROM panel_crm_items WHERE id=?', [item_id]);
     if (!items.length) return res.status(404).json({ error: 'Item not found' });
 
@@ -19,6 +32,10 @@ async function createPriceChangeRequest(req, res, next) {
     const [panels] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [panelId]);
     if (!panels.length) return res.status(404).json({ error: 'Panel not found' });
     const projectId = panels[0].project_id;
+
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, projectId);
+    if (!hasAccess) return;
 
     const [existing] = await db.execute(
       'SELECT id FROM crm_price_change_requests WHERE item_id=? AND status=\'pending\'',
@@ -68,7 +85,7 @@ async function createPriceChangeRequest(req, res, next) {
       ]
     );
 
-    const [owners] = await db.execute('SELECT id FROM workers WHERE role=\'owner\'');
+    const [owners] = await db.execute("SELECT id FROM workers WHERE role IN ('owner','head_engineer')");
     const oldUsd = parseFloat(item.base_price_usd) || 0;
     const oldEur = parseFloat(item.base_price_euro) || 0;
     const newUsd = new_base_price_usd !== undefined ? parseFloat(new_base_price_usd) : oldUsd;
@@ -122,6 +139,10 @@ async function getPendingRequests(req, res, next) {
       params
     );
 
+    if (req.worker.role === 'engineer') {
+      return res.json(requests.map(({ id, project_id, item_id, status, created_at, project_name }) =>
+        ({ id, project_id, item_id, status, created_at, project_name })));
+    }
     res.json(requests);
   } catch (err) {
     console.error('[PriceChange] ❌ getPendingRequests:', err.message);
@@ -231,6 +252,9 @@ async function getMyRequests(req, res, next) {
        ORDER BY r.created_at DESC`,
       [req.worker.id]
     );
+    if (req.worker.role === 'engineer') {
+      return res.json(requests.map(({ item_id, status, created_at }) => ({ item_id, status, created_at })));
+    }
     res.json(requests);
   } catch (err) {
     console.error('[PriceChange] ❌ getMyRequests:', err.message);
@@ -241,6 +265,10 @@ async function getMyRequests(req, res, next) {
 async function getPendingForProject(req, res, next) {
   try {
     const { projectId } = req.params;
+    const { checkProjectAccess } = require('./crmController');
+    const hasAccess = await checkProjectAccess(req, res, projectId);
+    if (!hasAccess) return;
+
     const [requests] = await db.execute(
       `SELECT r.item_id, r.status, r.new_base_price_usd, r.new_base_price_euro, r.created_at
        FROM crm_price_change_requests r

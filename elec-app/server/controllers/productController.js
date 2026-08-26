@@ -1,4 +1,6 @@
 const db = require('../db/connection');
+const { notifyRoles } = require('./notificationController');
+const { canViewPrices } = require('../utils/rolePolicy');
 
 // GET /api/products
 async function getProducts(req, res, next) {
@@ -33,6 +35,7 @@ async function getProducts(req, res, next) {
       [...params, parseInt(limit), offset]
     );
 
+    if (!canViewPrices(req.worker.role)) for (const p of products) { p.price_cost=null; p.price_euro=null; p.price_usd=null; }
     res.json({ products, total, page: parseInt(page), limit: parseInt(limit) });
   } catch (err) {
     console.error('[Products] ❌ getProducts:', err.message);
@@ -59,6 +62,7 @@ async function getProduct(req, res, next) {
       [req.params.id]
     );
 
+    if (!canViewPrices(req.worker.role)) { rows[0].price_cost=null; rows[0].price_euro=null; rows[0].price_usd=null; }
     res.json({ ...rows[0], reservations });
   } catch (err) {
     console.error('[Products] ❌ getProduct:', err.message);
@@ -69,10 +73,15 @@ async function getProduct(req, res, next) {
 // PATCH /api/products/:id
 async function updateProduct(req, res, next) {
   try {
-    const { stock_qty, price_cost, price_euro, price_usd, description, smart_code } = req.body;
+    const { stock_qty, min_stock_level, price_cost, price_euro, price_usd, description, smart_code } = req.body;
+    if (req.worker.role === 'stock_manager' && [price_cost, price_euro, price_usd].some(v => v !== undefined)) {
+      return res.status(403).json({ error: 'Stock Manager cannot view or change pricing' });
+    }
+    const [[before]] = await db.execute('SELECT stock_qty,reserved_qty,min_stock_level FROM products WHERE id=?', [req.params.id]);
     const fields = [], params = [];
 
     if (stock_qty  !== undefined) { fields.push('stock_qty=?');   params.push(parseInt(stock_qty)); }
+    if (min_stock_level !== undefined) { fields.push('min_stock_level=?'); params.push(Math.max(0, parseInt(min_stock_level) || 0)); }
     if (price_cost !== undefined) { fields.push('price_cost=?');  params.push(price_cost === '' ? null : parseFloat(price_cost)); }
     if (price_euro !== undefined) { fields.push('price_euro=?');  params.push(price_euro === '' ? null : parseFloat(price_euro)); }
     if (price_usd  !== undefined) { fields.push('price_usd=?');   params.push(price_usd  === '' ? null : parseFloat(price_usd)); }
@@ -83,6 +92,13 @@ async function updateProduct(req, res, next) {
 
     params.push(req.params.id);
     await db.execute(`UPDATE products SET ${fields.join(',')} WHERE id=?`, params);
+    if (stock_qty !== undefined && before) {
+      const next = parseInt(stock_qty) || 0;
+      await db.execute(`INSERT INTO reservation_history(product_id,old_qty,new_qty,change_qty,reason,changed_by)
+        VALUES(?,?,?,?,?,?)`, [req.params.id, before.stock_qty, next, next-before.stock_qty, 'stock_adjustment', req.worker.id]);
+      const threshold = min_stock_level !== undefined ? Math.max(0, parseInt(min_stock_level)||0) : Number(before.min_stock_level||0);
+      if (next-Number(before.reserved_qty||0) <= threshold) await notifyRoles(['owner','stock_manager'], 'stock', 'Low stock warning', `Product #${req.params.id} has ${next-Number(before.reserved_qty||0)} available`, '/products');
+    }
 
     const [updated] = await db.execute(
       `SELECT p.*, b.name as brand_name, (p.stock_qty-p.reserved_qty) as available_qty

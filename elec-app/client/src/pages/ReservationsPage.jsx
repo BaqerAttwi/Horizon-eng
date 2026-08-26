@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../api/client';
+import { useAuth } from '../context/AuthContext';
 
 const STATUS_BADGE = { draft:'badge-gray', active:'badge-blue', completed:'badge-green', cancelled:'badge-red' };
 const APPROVAL_BADGE = { pending:'badge-yellow', approved:'badge-green', rejected:'badge-red' };
@@ -142,6 +143,7 @@ function DemandRow({ item, onExpand, expanded, onReserve, onRelease, loadingRese
 }
 
 export default function ReservationsPage() {
+  const { isRole } = useAuth();
   const [data, setData]         = useState(null);
   const [loading, setLoading]   = useState(false);
   const [loadingReserve, setLoadingReserve] = useState(null);
@@ -151,6 +153,7 @@ export default function ReservationsPage() {
   const [sortKey, setSortKey]   = useState(null);
   const [sortDir, setSortDir]   = useState('asc');
   const [approvedOnly, setApprovedOnly] = useState(false);
+  const [history, setHistory] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -335,6 +338,7 @@ export default function ReservationsPage() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {isRole('owner','head_engineer','stock_manager') && <button className="btn btn-secondary" onClick={async()=>{if(history){setHistory(null);return;}try{setHistory((await api.get('/reservation-history')).data);}catch(e){toast.error(e.message);}}}>🕘 Reservation Audit</button>}
           <button className="btn btn-secondary" onClick={handleCsvDownload}>
             📥 CSV
           </button>
@@ -343,6 +347,8 @@ export default function ReservationsPage() {
           </button>
         </div>
       </div>
+
+      {history && <div className="card" style={{marginBottom:14}}><div className="card-body"><h3 style={{marginBottom:8}}>Recent stock and reservation changes</h3><div className="table-wrap"><table><thead><tr><th>Date</th><th>Product</th><th>Project/Panel</th><th>Reason</th><th>Old</th><th>New</th><th>Change</th><th>By</th></tr></thead><tbody>{history.map(h=><tr key={h.id}><td>{new Date(h.created_at).toLocaleString()}</td><td className="mono">{h.reference}</td><td>{h.project_name||'—'} {h.panel_name?`/ ${h.panel_name}`:''}</td><td>{h.reason}</td><td>{h.old_qty}</td><td>{h.new_qty}</td><td style={{color:h.change_qty>=0?'var(--success)':'var(--danger)'}}>{h.change_qty>=0?'+':''}{h.change_qty}</td><td>{h.changed_by_name||'system'}</td></tr>)}</tbody></table></div></div></div>}
 
       {/* Summary stats */}
       {data?.summary && (

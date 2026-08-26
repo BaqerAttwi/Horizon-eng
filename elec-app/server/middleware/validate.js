@@ -8,7 +8,7 @@ const schemas = {
   register: z.object({
     name: z.string().min(1, 'Name required'),
     email: z.string().email('Invalid email'),
-    role: z.enum(['owner', 'accounting', 'engineer', 'secretary', 'technician']),
+    role: z.enum(['owner', 'head_engineer', 'stock_manager', 'accounting', 'engineer', 'secretary', 'technician']),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     phone: z.string().optional().nullable(),
   }),
@@ -25,7 +25,7 @@ const schemas = {
     name: z.string().min(1, 'Name required'),
     email: z.string().email().optional().nullable().or(z.literal('')),
     phone: z.string().optional().nullable(),
-    role: z.enum(['owner', 'accounting', 'engineer', 'secretary', 'technician']),
+    role: z.enum(['owner', 'head_engineer', 'stock_manager', 'accounting', 'engineer', 'secretary', 'technician']),
     password: z.string().min(6, 'Password must be at least 6 characters'),
   }),
   createDiscount: z.object({
@@ -36,6 +36,9 @@ const schemas = {
   }).refine(d => d.product_id || d.brand_id, { message: 'product_id or brand_id required' }),
   createProject: z.object({
     project_name: z.string().min(1, 'Project name required'),
+    quote_number: z.string().trim().max(100).optional().nullable(),
+    engineer_id: z.union([z.number(), z.string()]).pipe(z.coerce.number()).optional().nullable(),
+    exchange_rate_eur_usd: z.union([z.number(), z.string()]).pipe(z.coerce.number()).optional(),
     client_id: z.union([z.number(), z.string()]).pipe(z.coerce.number()).optional().nullable(),
     deadline: z.string().optional().nullable(),
     total_panels: z.union([z.number(), z.string()]).pipe(z.coerce.number().int().positive()).optional(),
