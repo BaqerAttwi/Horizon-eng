@@ -6,7 +6,7 @@ const ROLE_PERMISSIONS = {
   owner: ['products','upload','projects','workers','clients','reservations','reports','discounts','requests','analytics','item-groups','messages','debt','procurement'],
   accounting: ['products','projects','clients','reservations','reports','debt'],
   engineer: ['products','projects','reservations','requests','item-groups','messages','clients'],
-  head_engineer: ['products','projects','workers','clients','reservations','reports','requests','discounts','item-groups','messages','procurement'],
+  head_engineer: ['products','upload','projects','workers','clients','reservations','reports','discounts','requests','analytics','item-groups','messages','debt','procurement'],
   stock_manager: ['products','reservations','reports','procurement'],
   secretary: ['products','clients','reservations','messages'],
   technician: ['execution'],

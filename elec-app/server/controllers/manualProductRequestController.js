@@ -19,7 +19,7 @@ async function createManualProductRequest(req, res, next) {
     if (!name || !name.trim()) return res.status(400).json({ error: 'Product name is required' });
 
     const ref = reference || await generateReference(name.trim());
-    const isOwner = req.worker.role === 'owner';
+    const isOwner = ['owner','head_engineer'].includes(req.worker.role);
 
     if (isOwner) {
       // Owner: insert directly into products
@@ -68,7 +68,7 @@ async function getManualProductRequests(req, res, next) {
                  WHERE 1=1`;
     const params = [];
 
-    if (req.worker.role !== 'owner') {
+    if (!['owner','head_engineer'].includes(req.worker.role)) {
       query += ' AND mpr.created_by = ?';
       params.push(req.worker.id);
     }

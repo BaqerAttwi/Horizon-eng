@@ -3,8 +3,9 @@ const VALID_ROLES = ['owner','head_engineer','stock_manager','accounting','engin
 
 async function getUpdates(req, res, next) {
   try {
-    const roleFilter = req.worker.role === 'owner' ? '1=1' : `(u.target_roles='all' OR FIND_IN_SET(?,u.target_roles)>0)`;
-    const params = req.worker.role === 'owner' ? [req.worker.id] : [req.worker.id, req.worker.role];
+    const management = ['owner','head_engineer'].includes(req.worker.role);
+    const roleFilter = management ? '1=1' : `(u.target_roles='all' OR FIND_IN_SET(?,u.target_roles)>0)`;
+    const params = management ? [req.worker.id] : [req.worker.id, req.worker.role];
     const [updates] = await db.execute(`SELECT u.id,u.version,u.title,u.summary,u.features,u.target_roles,u.published_at,
       w.name created_by_name,(r.update_id IS NOT NULL) is_read
       FROM app_updates u LEFT JOIN app_update_reads r ON r.update_id=u.id AND r.worker_id=?
@@ -30,8 +31,9 @@ async function markUpdateRead(req, res, next) {
 
 async function markAllUpdatesRead(req, res, next) {
   try {
-    const roleFilter = req.worker.role === 'owner' ? '1=1' : `(target_roles='all' OR FIND_IN_SET(?,target_roles)>0)`;
-    const params = req.worker.role === 'owner' ? [req.worker.id] : [req.worker.id, req.worker.role];
+    const management = ['owner','head_engineer'].includes(req.worker.role);
+    const roleFilter = management ? '1=1' : `(target_roles='all' OR FIND_IN_SET(?,target_roles)>0)`;
+    const params = management ? [req.worker.id] : [req.worker.id, req.worker.role];
     await db.execute(`INSERT IGNORE INTO app_update_reads(worker_id,update_id)
       SELECT ?,id FROM app_updates WHERE is_published=1 AND ${roleFilter}`, params);
     res.json({ success: true });

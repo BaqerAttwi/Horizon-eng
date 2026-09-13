@@ -8,9 +8,9 @@ async function getGroups(req, res, next) {
         (SELECT COUNT(*) FROM item_group_items WHERE group_id=g.id) AS item_count
        FROM item_groups g
        JOIN workers w ON w.id = g.created_by
-       WHERE g.is_public = TRUE OR g.created_by = ?
+       WHERE ? IN ('owner','head_engineer') OR g.is_public = TRUE OR g.created_by = ?
        ORDER BY g.created_at DESC`,
-      [user.id]
+      [user.role,user.id]
     );
     res.json(groups);
   } catch (err) {
@@ -26,8 +26,8 @@ async function getGroup(req, res, next) {
       `SELECT g.*, w.name AS created_by_name
        FROM item_groups g
        JOIN workers w ON w.id = g.created_by
-       WHERE g.id = ? AND (g.is_public = TRUE OR g.created_by = ?)`,
-      [id, req.worker.id]
+       WHERE g.id = ? AND (? IN ('owner','head_engineer') OR g.is_public = TRUE OR g.created_by = ?)`,
+      [id, req.worker.role, req.worker.id]
     );
     if (!groups.length) return res.status(404).json({ error: 'Group not found' });
     res.json(groups[0]);
@@ -65,7 +65,7 @@ async function updateGroup(req, res, next) {
     const { name, description, is_public } = req.body;
 
     const [existing] = await db.execute(
-      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role=\'owner\'))',
+      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role IN (\'owner\',\'head_engineer\')))',
       [id, req.worker.id, req.worker.id]
     );
     if (!existing.length) return res.status(404).json({ error: 'Group not found or access denied' });
@@ -97,7 +97,7 @@ async function deleteGroup(req, res, next) {
   try {
     const { id } = req.params;
     const [existing] = await db.execute(
-      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role=\'owner\'))',
+      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role IN (\'owner\',\'head_engineer\')))',
       [id, req.worker.id, req.worker.id]
     );
     if (!existing.length) return res.status(404).json({ error: 'Group not found or access denied' });

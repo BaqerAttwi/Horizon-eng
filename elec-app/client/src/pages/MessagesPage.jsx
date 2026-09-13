@@ -11,7 +11,7 @@ export default function MessagesPage() {
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
 
-  const canSend = can('messages') && (worker?.role === 'owner' || worker?.role === 'secretary');
+  const canSend = can('messages') && ['owner','head_engineer','secretary'].includes(worker?.role);
 
   const load = async () => {
     try {
@@ -122,7 +122,7 @@ export default function MessagesPage() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                   <div style={{ flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 14, lineHeight: 1.5, color: 'var(--text)' }}>{msg.content}</div>
-                  {(worker?.role === 'owner' || msg.created_by === worker?.id) && (
+                  {(['owner','head_engineer'].includes(worker?.role) || msg.created_by === worker?.id) && (
                     <button className="btn-icon" title="Delete" style={{ color: 'var(--danger)', flexShrink: 0, fontSize: 13 }}
                       onClick={() => del(msg.id)}>✕</button>
                   )}

@@ -22,7 +22,6 @@ async function createWorker(req, res, next) {
     if (!password || password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
     const validRoles = ['owner','head_engineer','stock_manager','accounting','engineer','secretary','technician'];
     if (!validRoles.includes(role)) return res.status(400).json({ error: 'Invalid role' });
-    if (req.worker.role === 'head_engineer' && role !== 'engineer') return res.status(403).json({ error: 'Head of Engineering can only create engineer accounts' });
     const hash = await bcrypt.hash(password, 10);
     const [result] = await db.execute(
       'INSERT INTO workers(name,email,phone,role,password_hash) VALUES(?,?,?,?,?)',
@@ -38,10 +37,6 @@ async function updateWorker(req, res, next) {
     const { name, email, phone, role } = req.body;
     const validRoles = ['owner','head_engineer','stock_manager','accounting','engineer','secretary','technician'];
     if (role && !validRoles.includes(role)) return res.status(400).json({ error: 'Invalid role' });
-    if (req.worker.role === 'head_engineer') {
-      const [[target]] = await db.execute('SELECT role FROM workers WHERE id=?', [req.params.id]);
-      if (!target || target.role !== 'engineer' || (role && role !== 'engineer')) return res.status(403).json({ error: 'Head of Engineering can only manage engineer accounts' });
-    }
     const fields = [], params = [];
     if (name)  { fields.push('name=?');  params.push(name); }
     if (email) { fields.push('email=?'); params.push(email); }

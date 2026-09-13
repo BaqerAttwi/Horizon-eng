@@ -7,7 +7,7 @@ const METHODS = ['Cash', 'Bank Transfer', 'Check', 'Credit Card', 'Other'];
 
 export default function ProjectPayments({ projectId }) {
   const { isRole } = useAuth();
-  const canManage = isRole('owner') || isRole('accounting');
+  const canManage = isRole('owner','head_engineer','accounting');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);

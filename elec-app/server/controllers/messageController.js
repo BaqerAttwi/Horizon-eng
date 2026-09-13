@@ -69,7 +69,7 @@ async function deleteMessage(req, res, next) {
     if (!existing.length) return res.status(404).json({ error: 'Message not found' });
 
     // Only creator or owner can delete
-    if (existing[0].created_by !== req.worker.id && req.worker.role !== 'owner') {
+    if (existing[0].created_by !== req.worker.id && !['owner','head_engineer'].includes(req.worker.role)) {
       return res.status(403).json({ error: 'Not authorized to delete this message' });
     }
 

@@ -311,7 +311,7 @@ export default function ProductsPage() {
             <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <button className="btn btn-secondary" onClick={() => setShowManualForm(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={handleManualSubmit} disabled={submitting}>
-                {submitting ? <><span className="spinner" /> Submitting...</> : isRole('owner') ? '💾 Save to Database' : '📤 Submit for Approval'}
+                {submitting ? <><span className="spinner" /> Submitting...</> : isRole('owner','head_engineer') ? '💾 Save to Database' : '📤 Submit for Approval'}
               </button>
             </div>
           </div>

@@ -7,7 +7,7 @@ import ProjectPayments from './crm/ProjectPayments';
 
 function PaymentDeadlineEditor({ project, onSaved }) {
   const { isRole } = useAuth();
-  const canEdit = isRole('owner');
+  const canEdit = isRole('owner','head_engineer');
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(project.payment_deadline ? project.payment_deadline.slice(0, 10) : '');
   const [saving, setSaving] = useState(false);

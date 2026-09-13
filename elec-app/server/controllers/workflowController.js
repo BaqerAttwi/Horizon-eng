@@ -137,7 +137,7 @@ async function restoreQuotationRevision(req, res, next) {
   try {
     const projectId = Number(req.params.projectId);
     if (!await assertProjectAccess(req, res, projectId)) return;
-    if (req.worker.role !== 'owner') return res.status(403).json({ error: 'Only Owner can restore a quotation revision' });
+    if (!['owner','head_engineer'].includes(req.worker.role)) return res.status(403).json({ error: 'Only Owner or Head Engineer can restore a quotation revision' });
     const [[revision]] = await db.execute('SELECT * FROM quotation_revisions WHERE id=? AND project_id=?', [req.params.revisionId, projectId]);
     if (!revision) return res.status(404).json({ error: 'Quotation revision not found' });
     if (!revision.snapshot_json) return res.status(409).json({ error: 'This older revision contains totals only. Item restoration is available for newly saved revisions.' });

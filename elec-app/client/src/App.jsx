@@ -6,6 +6,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { AnimatedPage }   from './components/AnimatedPage';
 import NotificationBell from './components/NotificationBell';
 import Logo            from './components/Logo';
+import AppIcon         from './components/AppIcon';
+import RoleTutorial    from './components/RoleTutorial';
 import api             from './api/client';
 
 // Route-level code splitting — each page ships as its own chunk and is only
@@ -40,43 +42,42 @@ function UpdatesLink({ mobile = false }) {
   const load = () => api.get('/updates').then(r=>setUnread(r.data.unread_count||0)).catch(()=>{});
   useEffect(() => { load(); window.addEventListener('updates-read',load); const timer=setInterval(load,60000); return()=>{clearInterval(timer);window.removeEventListener('updates-read',load);}; }, []);
   return <NavLink to="/updates" className={({isActive})=>mobile?'updates-mobile-link':`nav-link updates-nav${isActive?' active':''}`}>
-    <span className="nav-icon">✨</span>{!mobile&&'What’s New'}{unread>0&&<span className="updates-count">{unread>99?'99+':unread}</span>}
+    <span className="nav-icon"><AppIcon name="updates" /></span>{!mobile&&<span className="nav-label">What’s New</span>}{unread>0&&<span className="updates-count">{unread>99?'99+':unread}</span>}
   </NavLink>;
 }
 
 // Role badge colors
 const ROLE_COLORS = { owner:'#a78bfa', head_engineer:'#22d3ee', stock_manager:'#f59e0b', accounting:'#60a5fa', engineer:'#4ade80', secretary:'#fbbf24', technician:'#94a3b8' };
-const ROLE_ICONS  = { owner:'👑', head_engineer:'🧭', stock_manager:'📦', accounting:'💼', engineer:'⚙️', secretary:'📋', technician:'🛠️' };
 
 // Technicians only get the execution-only "My Projects" view — no pricing/CRM access
 const TECHNICIAN_NAV = [
-  { to: '/my-projects', icon: '🛠️', label: 'My Projects', perm: null, group: 'main' },
+  { to: '/my-projects', icon: 'technician', label: 'My Projects', perm: null, group: 'main', tone:'#38bdf8' },
 ];
 const STOCK_MANAGER_NAV = [
-  { to: '/procurement', icon: '✅', label: 'Procurement Queue', perm: 'procurement', group: 'crm' },
-  { to: '/products', icon: '📦', label: 'Stock Management', perm: 'products', group: 'crm' },
-  { to: '/reservations', icon: '📊', label: 'Demand Tracker', perm: 'reservations', group: 'crm' },
-  { to: '/notifications', icon: '🔔', label: 'Stock Alerts', perm: 'notifications', group: 'crm' },
+  { to: '/procurement', icon: 'procurement', label: 'Procurement Queue', perm: 'procurement', group: 'crm', tone:'#22c55e' },
+  { to: '/products', icon: 'products', label: 'Stock Management', perm: 'products', group: 'crm', tone:'#8b5cf6' },
+  { to: '/reservations', icon: 'demand', label: 'Demand Tracker', perm: 'reservations', group: 'crm', tone:'#06b6d4' },
+  { to: '/notifications', icon: 'announcements', label: 'Stock Alerts', perm: 'notifications', group: 'crm', tone:'#f59e0b' },
 ];
 
 // Nav items with permission check
 const NAV = [
-  { to: '/dashboard',   icon: '🏠', label: 'Dashboard',      perm: null,       group: 'main' },
-  { to: '/calendar',     icon: '📅', label: 'Calendar',       perm: null,       group: 'main' },
-  { to: '/projects',     icon: '🔧', label: 'Projects',       perm: 'projects', group: 'main' },
-  { to: '/products',     icon: '📦', label: 'Products',       perm: 'products', group: 'crm' },
-  { to: '/reservations', icon: '📊', label: 'Demand Tracker',  perm: 'reservations', group: 'crm' },
-  { to: '/procurement',  icon: '✅', label: 'Procurement Queue', perm: 'procurement', group: 'crm', roles:['owner','head_engineer'] },
-  { to: '/groups',       icon: '📋', label: 'Item Groups',     perm: 'item-groups',   group: 'crm' },
-  { to: '/messages',     icon: '📢', label: 'Announcements', perm: 'messages',       group: 'crm' },
-  { to: '/requests',     icon: '🤝', label: 'Requests',       perm: 'requests', group: 'admin' },
-  { to: '/upload',       icon: '⬆️', label: 'Import Excel',    perm: 'upload',   group: 'admin' },
-  { to: '/discounts',    icon: '🏷️', label: 'Brand Discounts', perm: 'discounts', group: 'admin' },
-  { to: '/analytics',    icon: '📈', label: 'Analytics',      perm: 'analytics', group: 'admin' },
-  { to: '/debt',         icon: '💸', label: 'Debt',           perm: 'debt',     group: 'admin' },
-  { to: '/workers',      icon: '👷', label: 'Workers',        perm: 'workers',  group: 'admin' },
-  { to: '/clients',      icon: '🏢', label: 'Clients',        perm: 'clients',  group: 'admin' },
-  { to: '/division-types',icon: '🧩', label: 'Division Types', perm: null, group: 'admin', roles:['owner','head_engineer'] },
+  { to: '/dashboard', icon:'dashboard', label:'Dashboard', perm:null, group:'main', tone:'#38bdf8' },
+  { to: '/calendar', icon:'calendar', label:'Calendar', perm:null, group:'main', tone:'#818cf8' },
+  { to: '/projects', icon:'projects', label:'Projects', perm:'projects', group:'main', tone:'#22d3ee' },
+  { to: '/products', icon:'products', label:'Products', perm:'products', group:'crm', tone:'#8b5cf6' },
+  { to: '/reservations', icon:'demand', label:'Demand Tracker', perm:'reservations', group:'crm', tone:'#06b6d4' },
+  { to: '/procurement', icon:'procurement', label:'Procurement Queue', perm:'procurement', group:'crm', roles:['owner','head_engineer'], tone:'#22c55e' },
+  { to: '/groups', icon:'groups', label:'Item Groups', perm:'item-groups', group:'crm', tone:'#a78bfa' },
+  { to: '/messages', icon:'announcements', label:'Announcements', perm:'messages', group:'crm', tone:'#f59e0b' },
+  { to: '/requests', icon:'requests', label:'Requests', perm:'requests', group:'admin', tone:'#34d399' },
+  { to: '/upload', icon:'upload', label:'Import Excel', perm:'upload', group:'admin', tone:'#60a5fa' },
+  { to: '/discounts', icon:'discounts', label:'Brand Discounts', perm:'discounts', group:'admin', tone:'#fb7185' },
+  { to: '/analytics', icon:'analytics', label:'Analytics', perm:'analytics', group:'admin', tone:'#2dd4bf' },
+  { to: '/debt', icon:'debt', label:'Debt', perm:'debt', group:'admin', tone:'#f97316' },
+  { to: '/workers', icon:'workers', label:'Workers', perm:'workers', group:'admin', tone:'#c084fc' },
+  { to: '/clients', icon:'clients', label:'Clients', perm:'clients', group:'admin', tone:'#fbbf24' },
+  { to: '/division-types', icon:'divisions', label:'Division Types', perm:null, group:'admin', roles:['owner','head_engineer'], tone:'#94a3b8' },
 ];
 
 const GROUP_LABELS = {
@@ -106,7 +107,7 @@ function ProtectedRoute({ children, perm, roles }) {
   return children;
 }
 
-function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
+function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme, onOpenTutorial }) {
   const { worker, logout, can, isRole } = useAuth();
   const navigate = useNavigate();
 
@@ -119,8 +120,9 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
   return (
     <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
       <div className="sidebar-logo">
+        <div className="sidebar-brand-glow" />
         <h1><Logo size={160} /></h1>
-        <span>Manager v2.0</span>
+        <span><i /> Control center · 2026</span>
       </div>
 
       <nav className="sidebar-nav">
@@ -134,9 +136,11 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
                 key={n.to} to={n.to}
                 className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
                 onClick={() => setMobileOpen(false)}
+                style={{ '--nav-tone': n.tone || '#38bdf8' }}
               >
-                <span className="nav-icon">{n.icon}</span>
-                {n.label}
+                <span className="nav-icon"><AppIcon name={n.icon} /></span>
+                <span className="nav-label">{n.label}</span>
+                <span className="nav-arrow">›</span>
               </NavLink>
             )),
           ]);
@@ -144,25 +148,33 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
       </nav>
 
       {/* Notification bell for desktop */}
-      <div style={{ padding: '2px 8px 0' }}><UpdatesLink /></div>
-      <div style={{ padding: '8px 12px' }}>
+      <div className="sidebar-updates"><UpdatesLink /></div>
+      <div className="sidebar-help">
+        <button className="nav-link tutorial-nav" onClick={onOpenTutorial}>
+          <span className="nav-icon"><AppIcon name="help" /></span>
+          <span className="nav-label">Help & Tutorial</span>
+          <span className="nav-arrow">›</span>
+        </button>
+      </div>
+      <div className="sidebar-notifications">
         <NotificationBell />
       </div>
 
       {/* Theme toggle */}
       <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-        <span className="toggle-icon">{theme === 'dark' ? '☀️' : '🌙'}</span>
-        {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+        <span className="toggle-icon">{theme === 'dark' ? '☼' : '◐'}</span>
+        <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+        <i className="theme-switch"><b /></i>
       </button>
 
       {/* Worker info at bottom */}
       {worker && (
-        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <span style={{ fontSize: 18 }}>{ROLE_ICONS[worker.role]}</span>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--white)', lineHeight: 1.2 }}>{worker.name}</div>
-              <div style={{ fontSize: 10, color: ROLE_COLORS[worker.role], fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+        <div className="sidebar-profile">
+          <div className="sidebar-user">
+            <span className="sidebar-avatar" style={{ '--role-tone': ROLE_COLORS[worker.role] }}><AppIcon name={worker.role} /></span>
+            <div className="sidebar-user-copy">
+              <div className="sidebar-user-name">{worker.name}</div>
+              <div className="sidebar-user-role" style={{ color: ROLE_COLORS[worker.role] }}>
                 {worker.role}
               </div>
             </div>
@@ -172,7 +184,7 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme }) {
             style={{ width: '100%', justifyContent: 'center' }}
             onClick={handleLogout}
           >
-            🚪 Sign Out
+            <span>↪</span> Sign Out
           </button>
         </div>
       )}
@@ -185,6 +197,7 @@ function AppLayout() {
   const [theme, setTheme] = useState(() => localStorage.getItem('horizon-theme') || 'dark');
   const { worker } = useAuth();
   const location = useLocation();
+  const [tutorialRequest, setTutorialRequest] = useState(0);
 
   // Mirror the theme onto <html> too — the Toaster portal renders as a sibling
   // of this component, outside the `.light-mode` div below, so it otherwise
@@ -215,7 +228,8 @@ function AppLayout() {
 
   return (
     <div className={`layout${theme === 'light' ? ' light-mode' : ''}`}>
-      {worker && <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} theme={theme} toggleTheme={toggleTheme} />}
+      {worker && <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} theme={theme} toggleTheme={toggleTheme} onOpenTutorial={() => { setMobileOpen(false); setTutorialRequest(v => v + 1); }} />}
+      {worker && <RoleTutorial worker={worker} openRequest={tutorialRequest} onCloseRequest={() => {}} />}
 
       {/* Mobile overlay backdrop */}
       {mobileOpen && (
@@ -260,7 +274,7 @@ function AppLayout() {
               <Route path="/discounts"  element={<AnimatedPage><ProtectedRoute perm="discounts"><DiscountsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/workers"   element={<AnimatedPage><ProtectedRoute perm="workers"><WorkersPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/clients"   element={<AnimatedPage><ProtectedRoute perm="clients"><ClientsPage /></ProtectedRoute></AnimatedPage>} />
-              <Route path="/analytics" element={<AnimatedPage><ProtectedRoute perm="analytics" roles={['owner']}><AnalyticsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/analytics" element={<AnimatedPage><ProtectedRoute perm="analytics" roles={['owner','head_engineer']}><AnalyticsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/debt"      element={<AnimatedPage><ProtectedRoute perm="debt"><DebtPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/notifications" element={<AnimatedPage><ProtectedRoute perm="notifications"><NotificationsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/updates" element={<AnimatedPage><ProtectedRoute perm="updates"><UpdatesPage /></ProtectedRoute></AnimatedPage>} />

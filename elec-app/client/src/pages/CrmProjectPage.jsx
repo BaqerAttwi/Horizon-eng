@@ -116,10 +116,12 @@ function ProjectMarkupPage({ projectId, panels, onChanged }) {
   const rows = panels.map(panel => {
     const items = (panel.divisions || []).flatMap(d => d.items || []);
     const edit = panelEdits[panel.id] || {};
-    const panelHasValues = ['markupP_pct', 'manpower_pct', 'markupM_pct'].every(key => edit[key] !== undefined && edit[key] !== '');
-    const panelValues = { markupP_pct: Number(edit.markupP_pct) || 0, manpower_pct: Number(edit.manpower_pct) || 0, markupM_pct: Number(edit.markupM_pct) || 0 };
+    const panelValues = Object.fromEntries(['markupP_pct','manpower_pct','markupM_pct'].map(key => [key,
+      edit[key] !== undefined && edit[key] !== '' ? Number(edit[key]) || 0 : values[key]]));
+    const panelHasValues = ['markupP_pct','manpower_pct','markupM_pct'].every(key =>
+      (edit[key] !== undefined && edit[key] !== '') || form[key] !== '');
     return { panel, items, current: Number(panel.total_price) || 0, panelHasValues, panelValues,
-      preview: items.reduce((sum, item) => sum + previewItem(item, panelHasValues ? panelValues : values), 0) };
+      preview: items.reduce((sum, item) => sum + previewItem(item, panelValues), 0) };
   });
   const hasValues = Object.values(form).every(value => value !== '');
   const apply = async () => {
@@ -151,7 +153,7 @@ function ProjectMarkupPage({ projectId, panels, onChanged }) {
     <div style={{ overflowX: 'auto', marginTop: 8 }}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}><thead><tr style={{ borderBottom: '2px solid var(--border)' }}><th style={{ textAlign: 'left', padding: 8 }}>Panel</th><th>Items</th><th>Current Price</th><th>Product Mk%</th><th>Manpower%</th><th>Manpower Mk%</th><th>New Price</th><th>Change</th><th></th></tr></thead><tbody>
       {rows.map(row => <tr key={row.panel.id} style={{ borderBottom: '1px solid var(--border)' }}>
         <td style={{ padding: 8 }}>#{row.panel.panel_number} {row.panel.panel_name}</td><td style={{ textAlign: 'center' }}>{row.items.length}</td><td style={{ textAlign: 'right' }}>${row.current.toFixed(2)}</td>
-        {['markupP_pct','manpower_pct','markupM_pct'].map(key => <td key={key} style={{ padding: 4 }}><input type="number" min="0" step="0.1" className="form-input" style={{ width: 72, padding: '4px 6px' }} value={panelEdits[row.panel.id]?.[key] ?? ''} placeholder="%" onChange={e => setPanelEdits(v => ({ ...v, [row.panel.id]: { ...(v[row.panel.id] || {}), [key]: e.target.value } }))} /></td>)}
+        {['markupP_pct','manpower_pct','markupM_pct'].map(key => <td key={key} style={{ padding: 4 }}><input type="number" min="0" step="0.1" className="form-input" style={{ width: 72, padding: '4px 6px' }} value={panelEdits[row.panel.id]?.[key] ?? ''} placeholder={form[key] !== '' ? form[key] : '%'} onChange={e => setPanelEdits(v => ({ ...v, [row.panel.id]: { ...(v[row.panel.id] || {}), [key]: e.target.value } }))} /></td>)}
         <td style={{ textAlign: 'right', color: 'var(--accent2)' }}>{row.panelHasValues ? `$${row.preview.toFixed(2)}` : '—'}</td><td style={{ textAlign: 'right', color: row.preview >= row.current ? 'var(--success)' : 'var(--danger)' }}>{row.panelHasValues ? `${row.preview >= row.current ? '+' : '-'}$${Math.abs(row.preview-row.current).toFixed(2)}` : '—'}</td>
         <td style={{ padding: 4 }}><button className="btn btn-sm btn-primary" disabled={!row.panelHasValues || savingPanel === row.panel.id} onClick={() => applyPanel(row)}>{savingPanel === row.panel.id ? 'Applying...' : 'Apply Panel'}</button></td>
       </tr>)}
@@ -285,7 +287,7 @@ export default function CrmProjectPage() {
             🔧 Execution
           </button>
         )}
-        {(isRole('owner') || isRole('accounting')) && (
+        {isRole('owner','head_engineer','accounting') && (
           <button onClick={() => setActiveTab('payments')}
             style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'payments' ? 'var(--success)' : 'var(--muted)', borderBottom: activeTab === 'payments' ? '2px solid var(--success)' : '2px solid transparent', cursor: 'pointer' }}>
             💰 Payments
@@ -424,7 +426,7 @@ export default function CrmProjectPage() {
       {activeTab === 'cr-items' && isRole('owner','head_engineer') && <CrItemsPage projectId={project.id} panels={panels} onChanged={load} />}
       {activeTab === 'markup' && isRole('owner','head_engineer') && <ProjectMarkupPage projectId={project.id} panels={panels} onChanged={load} />}
 
-      {isRole('owner') && selectedItems.size > 0 && (
+      {isRole('owner','head_engineer') && selectedItems.size > 0 && (
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000,
           background: 'var(--panel2)', borderTop: '1px solid var(--accent)',
@@ -439,7 +441,7 @@ export default function CrmProjectPage() {
         </div>
       )}
 
-      {isRole('owner') && showBulkEdit && (
+      {isRole('owner','head_engineer') && showBulkEdit && (
         <BulkEditModal count={selectedItems.size}
           onClose={() => setShowBulkEdit(false)}
           onApply={handleBulkEdit} />
@@ -454,7 +456,7 @@ export default function CrmProjectPage() {
                 ? `Execution Deadline: ${project.execution_deadline}`
                 : 'Set an execution deadline in the project details page.'}
             </div>
-            {isRole('owner') && <ProjectTechnicians projectId={project.id} />}
+            {isRole('owner','head_engineer') && <ProjectTechnicians projectId={project.id} />}
             {panels.length > 0 && (() => {
               const { totalQty, doneQty } = executionStats;
               const pct = totalQty > 0 ? Math.round((doneQty / totalQty) * 100) : 0;
@@ -699,7 +701,7 @@ export default function CrmProjectPage() {
           hideCost={hideCost} exchangeRate={exchangeRate} />
       )}
 
-      {activeTab === 'payments' && (isRole('owner') || isRole('accounting')) && (
+      {activeTab === 'payments' && isRole('owner','head_engineer','accounting') && (
         <ProjectPayments projectId={project.id} />
       )}
 

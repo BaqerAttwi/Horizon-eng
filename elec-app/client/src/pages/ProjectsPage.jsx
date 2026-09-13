@@ -412,7 +412,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
                           <strong>{panel.panel_name || `Panel ${panel.panel_number}`} × {panel.quantity || 1}</strong>
                           {(panel.divisions||[]).map(div=><div key={div.id} className="revision-division"><span>{div.division_type}</span><ul>{(div.items||[]).slice(0,100).map(item=><li key={item.id}><span>{item.reference || item.custom_name || item.product_description || 'Manual item'}</span><b>× {item.qty}</b><em>${Number(item.totalfinalProduct||0).toFixed(2)}</em></li>)}</ul>{(div.items||[]).length>100&&<small>+ {(div.items||[]).length-100} more item lines</small>}</div>)}
                         </div>)}
-                        {isRole('owner') && <button className="btn btn-danger btn-sm" disabled={restoringRevision===revision.id} onClick={()=>restoreRevision(revision)}>{restoringRevision===revision.id?'Restoring…':'Restore this version'}</button>}
+                        {isRole('owner','head_engineer') && <button className="btn btn-danger btn-sm" disabled={restoringRevision===revision.id} onClick={()=>restoreRevision(revision)}>{restoringRevision===revision.id?'Restoring…':'Restore this version'}</button>}
                       </>}
                     </div>}
                   </div>;
@@ -566,12 +566,12 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
               <button className="btn btn-primary" onClick={() => { onClose(); window.open(`/projects/${project.id}/crm`, '_blank'); }}>
                 📋 Open CRM Editor
               </button>
-              {isRole('owner') || (isRole('head_engineer', 'engineer') && project.client_approval !== 'approved') ? (
+              {isRole('owner','head_engineer') || (isRole('engineer') && project.client_approval !== 'approved') ? (
                 <button className="btn btn-secondary" onClick={() => setShowEdit(true)}>
                   ✏️ Edit Project
                 </button>
               ) : null}
-              {isRole('owner') && (
+              {isRole('owner','head_engineer') && (
                 <button className="btn btn-secondary" onClick={() => handleExportPdf('owner')} disabled={pdfExporting}
                   style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)' }}>
                   {pdfExporting && pdfType === 'owner' ? <><span className="spinner" />Exporting...</> : '📄 Export PDF (Owner)'}
@@ -764,7 +764,7 @@ export default function ProjectsPage() {
                     <td className="project-actions-cell"><div>
                       <button className="btn btn-sm btn-secondary" onClick={() => window.open(`/projects/${p.id}/crm`, '_blank')} style={{ fontSize: 11, padding: '2px 8px' }}>CRM</button>
                       <button className="btn-icon" title="View" onClick={() => setDetail(p.id)}>👁</button>
-                      {isRole('owner') && <button className="btn-icon" title="Delete" onClick={() => del(p)} style={{ color: 'var(--danger)' }}>🗑</button>}
+                      {isRole('owner','head_engineer') && <button className="btn-icon" title="Delete" onClick={() => del(p)} style={{ color: 'var(--danger)' }}>🗑</button>}
                     </div>
                     </td>
                   </tr>

@@ -9,7 +9,7 @@ const ROLE_ICON  = { owner:'👑', head_engineer:'🧭', stock_manager:'📦', a
 
 function WorkerModal({ worker, onClose, onSaved }) {
   const { isRole } = useAuth();
-  const allowedRoles = isRole('head_engineer') ? ['engineer'] : ROLES;
+  const allowedRoles = ROLES;
   const isNew = !worker?.id;
   const [form, setForm] = useState({ name:'', email:'', phone:'', role:'engineer', ...worker, password: '' });
   const [saving, setSaving] = useState(false);
@@ -206,9 +206,9 @@ export default function WorkersPage() {
                   <td style={{color:'var(--muted)'}}>{w.email||'—'}</td>
                   <td className="mono">{w.phone||'—'}</td>
                   <td style={{display:'flex',gap:6}}>
-                    {(isRole('owner') || w.role === 'engineer') && <button className="btn-icon" title="Edit" onClick={()=>setModal(w)}>✏️</button>}
-                    {isRole('owner') && <button className="btn-icon" title="Set Password" onClick={()=>setSetPassFor(w)}>🔑</button>}
-                    {(isRole('owner') || w.role === 'engineer') && <button className="btn-icon" title="Delete" onClick={()=>del(w)} style={{color:'var(--danger)'}}>🗑</button>}
+                    {isRole('owner','head_engineer') && <button className="btn-icon" title="Edit" onClick={()=>setModal(w)}>✏️</button>}
+                    {isRole('owner','head_engineer') && <button className="btn-icon" title="Set Password" onClick={()=>setSetPassFor(w)}>🔑</button>}
+                    {isRole('owner') && <button className="btn-icon" title="Delete" onClick={()=>del(w)} style={{color:'var(--danger)'}}>🗑</button>}
                   </td>
                 </tr>
               ))}

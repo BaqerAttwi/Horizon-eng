@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { FadeIn } from '../components/AnimatedPage';
+import AppIcon from '../components/AppIcon';
 
 const STATUS_COLORS = {
   completed: 'var(--success)',
@@ -21,7 +22,7 @@ function KpiCard({ icon, label, value, sub, color, delay }) {
       whileHover={{ scale: 1.02, y: -2 }}
       style={{ borderTop: `3px solid ${color || 'var(--accent)'}` }}
     >
-      <div style={{ fontSize: 24, marginBottom: 4 }}>{icon}</div>
+      <div className="dashboard-kpi-icon" style={{ '--kpi-tone': color || 'var(--accent)' }}><AppIcon name={icon} size={22} /></div>
       <div className="stat-value" style={{ fontSize: 20 }}>{value}</div>
       <div className="stat-label">{label}</div>
       {sub && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{sub}</div>}
@@ -31,9 +32,9 @@ function KpiCard({ icon, label, value, sub, color, delay }) {
 
 function ActivityItem({ item }) {
   const icons = {
-    project_created: '🔧',
-    panel_completed: '✅',
-    status_changed: '🔄',
+    project_created: 'projects',
+    panel_completed: 'procurement',
+    status_changed: 'updates',
   };
   return (
     <Link to={item.link} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -41,7 +42,7 @@ function ActivityItem({ item }) {
         display: 'flex', gap: 10, alignItems: 'flex-start',
         padding: '8px 0', borderBottom: '1px solid var(--border)',
       }}>
-        <span style={{ fontSize: 16, flexShrink: 0 }}>{icons[item.action] || '📌'}</span>
+        <span className="dashboard-row-icon"><AppIcon name={icons[item.action] || 'updates'} size={16} /></span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {item.title}
@@ -121,7 +122,7 @@ function EngineerSummaryRow({ e }) {
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       padding: '6px 0', borderBottom: '1px solid var(--border)',
     }}>
-      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--white)' }}>{e.name}{Number(e.active_projects)>5 && <span style={{color:'var(--danger)',marginLeft:6}}>⚠ overloaded</span>}</span>
+      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--white)' }}>{e.name}{Number(e.active_projects)>5 && <span className="dashboard-warning"><AppIcon name="announcements" size={13} /> overloaded</span>}</span>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{e.active_projects || 0} active • {Number(e.avg_progress||0).toFixed(0)}% • {e.overdue_projects || 0} overdue</span>
         <span className="mono" style={{ fontSize: 11, color: profit >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 700 }}>
@@ -133,9 +134,9 @@ function EngineerSummaryRow({ e }) {
 }
 
 const TABS = [
-  { key: 'overview',    label: '📊 Overview',   roles: ['owner','head_engineer','accounting','engineer'] },
-  { key: 'performance', label: '👷 Performance', roles: ['owner','head_engineer'] },
-  { key: 'stock',       label: '📦 Stock',      roles: ['owner','accounting'] },
+  { key: 'overview', icon:'dashboard', label:'Overview', roles:['owner','head_engineer','accounting','engineer'] },
+  { key: 'performance', icon:'workers', label:'Performance', roles:['owner','head_engineer'] },
+  { key: 'stock', icon:'products', label:'Stock', roles:['owner','accounting'] },
 ];
 
 export default function DashboardPage() {
@@ -162,7 +163,7 @@ export default function DashboardPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <div className="page-title">🏠 Dashboard</div>
+          <div className="page-title dashboard-page-title"><AppIcon name="dashboard" size={23} /> Dashboard</div>
           <div className="page-subtitle">Welcome back — here's what's happening</div>
         </div>
       </div>
@@ -171,25 +172,25 @@ export default function DashboardPage() {
       <div style={{ display: 'flex', gap: 2, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 0, flexWrap: 'wrap', overflowX: 'auto' }}>
         {visibleTabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
-            padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+            display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
             background: 'none', border: 'none', color: tab === t.key ? 'var(--accent)' : 'var(--muted)',
             borderBottom: tab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
             transition: 'all 0.15s', marginBottom: -1,
-          }}>{t.label}</button>
+          }}><AppIcon name={t.icon} size={15} /> {t.label}</button>
         ))}
       </div>
 
       {/* KPI Cards — shown on every tab */}
       <div className="stats-row" style={{ marginBottom: 24 }}>
-        <KpiCard icon="🔧" label="Total Projects" value={kpis.total_projects || 0}
+        <KpiCard icon="projects" label="Total Projects" value={kpis.total_projects || 0}
           sub={`${kpis.active_projects || 0} active`} color="var(--accent)" delay={0} />
-        <KpiCard icon="✅" label="Completed" value={kpis.completed_projects || 0}
+        <KpiCard icon="procurement" label="Completed" value={kpis.completed_projects || 0}
           color="var(--success)" delay={1} />
-        {!(isRole('engineer') || isRole('secretary')) && <KpiCard icon="💰" label="Total Revenue" value={`$${parseFloat(kpis.total_revenue || 0).toFixed(0)}`}
+        {!(isRole('engineer') || isRole('secretary')) && <KpiCard icon="accounting" label="Total Revenue" value={`$${parseFloat(kpis.total_revenue || 0).toFixed(0)}`}
           color="var(--primary)" delay={2} />}
-        {!isRole('engineer') && <KpiCard icon="📈" label="Net Profit" value={`$${profit.toFixed(0)}`}
+        {!isRole('engineer') && <KpiCard icon="analytics" label="Net Profit" value={`$${profit.toFixed(0)}`}
           sub={profit >= 0 ? 'Positive' : 'Negative'} color={profitColor} delay={3} />}
-        <KpiCard icon="⏳" label="Pending Approvals" value={kpis.pending_approvals || 0}
+        <KpiCard icon="requests" label="Pending Approvals" value={kpis.pending_approvals || 0}
           sub={kpis.pending_approvals > 0 ? 'Needs attention' : 'All clear'}
           color={kpis.pending_approvals > 0 ? 'var(--danger)' : 'var(--success)'} delay={4} />
       </div>
@@ -201,11 +202,11 @@ export default function DashboardPage() {
             <div className="card">
               <div className="card-body">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)' }}>📅 Upcoming Deadlines</h3>
+                  <h3 className="dashboard-section-title"><AppIcon name="calendar" size={17} /> Upcoming Deadlines</h3>
                   <Link to="/projects" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>View all →</Link>
                 </div>
                 {(data?.deadlines ?? []).length === 0 ? (
-                  <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>No upcoming deadlines 🎉</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>No upcoming deadlines</div>
                 ) : (
                   (data?.deadlines ?? []).map(d => <DeadlineItem key={d.id} d={d} />)
                 )}
@@ -216,7 +217,7 @@ export default function DashboardPage() {
             <div className="card">
               <div className="card-body">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)' }}>🕐 Recent Activity</h3>
+                  <h3 className="dashboard-section-title"><AppIcon name="updates" size={17} /> Recent Activity</h3>
                 </div>
                 {(data?.activity ?? []).length === 0 ? (
                   <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>No recent activity</div>
@@ -236,7 +237,7 @@ export default function DashboardPage() {
             <div className="card">
               <div className="card-body">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)' }}>👷 Engineer Performance</h3>
+                  <h3 className="dashboard-section-title"><AppIcon name="workers" size={17} /> Engineer Performance</h3>
                   <Link to="/analytics" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>Full report →</Link>
                 </div>
                 {(data?.engineer_summary ?? []).map(e => <EngineerSummaryRow key={e.id} e={e} />)}
@@ -253,11 +254,11 @@ export default function DashboardPage() {
             <div className="card">
               <div className="card-body">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--danger)' }}>⚠️ Low Stock Alerts</h3>
+                  <h3 className="dashboard-section-title" style={{ color:'var(--danger)' }}><AppIcon name="announcements" size={17} /> Low Stock Alerts</h3>
                   <Link to="/products" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>Manage →</Link>
                 </div>
                 {(data?.low_stock ?? []).length === 0 ? (
-                  <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>All stocked up ✅</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>All products are sufficiently stocked</div>
                 ) : (
                   (data?.low_stock ?? []).map(s => <StockAlert key={s.id} item={s} />)
                 )}
@@ -274,7 +275,7 @@ export default function DashboardPage() {
             <div className="card">
               <div className="card-body">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--white)' }}>🔧 My Projects</h3>
+                  <h3 className="dashboard-section-title"><AppIcon name="projects" size={17} /> My Projects</h3>
                   <Link to="/projects" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>View all →</Link>
                 </div>
                 {data?.my_projects?.map(p => (

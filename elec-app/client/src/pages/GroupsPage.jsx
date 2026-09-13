@@ -204,7 +204,7 @@ function GroupCard({ group, onEdit, onDelete, onAddItem, onRemoveItem }) {
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const isOwner = isRole('owner');
+  const isOwner = isRole('owner','head_engineer');
 
   const loadItems = useCallback(async () => {
     setLoadingItems(true);
