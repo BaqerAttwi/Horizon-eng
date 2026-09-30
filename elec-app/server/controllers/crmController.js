@@ -650,7 +650,13 @@ async function updateCrmItem(req, res, next) {
       logActivity({ project_id: req.params.projectId, panel_id: req.params.panelId, division_id: req.params.divisionId, item_id: req.params.itemId, action: 'item_updated', field_name: 'visible_in_client_pdf', new_value: String(visible_in_client_pdf), performed_by: req.worker.id });
     }
 
-    const [rows] = await db.execute('SELECT * FROM panel_crm_items WHERE id=?', [req.params.itemId]);
+    const [rows] = await db.execute(
+      `SELECT i.*, p.reference, p.description AS product_desc, b.name AS brand_name
+       FROM panel_crm_items i
+       LEFT JOIN products p ON p.id=i.product_id
+       LEFT JOIN brands b ON b.id=p.brand_id
+       WHERE i.id=?`, [req.params.itemId]
+    );
     if (req.worker.role === 'engineer') redactEngineerPrices(rows);
     res.json(rows[0]);
   } catch (err) { console.error('[CRM] ❌ updateCrmItem:', err.message); next(err); }

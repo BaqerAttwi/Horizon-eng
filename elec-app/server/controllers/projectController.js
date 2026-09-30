@@ -1,3 +1,4 @@
+const { generateQuotationNumber } = require('../utils/quotationNumber');
 const db = require('../db/connection');
 const { logActivity } = require('./activityController');
 const { createNotification, notifyOwners, notifyRoles } = require('./notificationController');
@@ -160,20 +161,20 @@ async function getProject(req, res, next) {
 
 async function createProject(req, res, next) {
   try {
-    const { project_name, quote_number, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, items = [], total_panels = 0, vat_pct, project_discount_pct, payment_terms } = req.body;
+    const { project_name, quote_number, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, items = [], total_panels = 0, vat_pct, project_discount_pct, margin_warning_pct, payment_terms, client_pdf_note } = req.body;
     if (!project_name) return res.status(400).json({ error: 'project_name is required' });
 
     // Auto-assign engineer to themselves
     const assignedEngineer = req.worker.role === 'engineer' ? req.worker.id : (engineer_id || null);
 
     const [result] = await db.execute(
-      `INSERT INTO projects(project_name,quote_number,engineer_id,client_id,exchange_rate_eur_usd,deadline,notes,total_panels,vat_pct,project_discount_pct,payment_terms)
-       VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
-      [project_name, quote_number?.trim() || null, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.18, deadline||null, notes||null, total_panels||0, vat_pct ?? 0, parseFloat(project_discount_pct) || 0, payment_terms || null]
+      `INSERT INTO projects(project_name,quote_number,engineer_id,client_id,exchange_rate_eur_usd,deadline,notes,total_panels,vat_pct,project_discount_pct,payment_terms,margin_warning_pct,client_pdf_note)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [project_name, quote_number?.trim() || null, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.18, deadline||null, notes||null, total_panels||0, vat_pct ?? 0, parseFloat(project_discount_pct) || 0, payment_terms || null, margin_warning_pct ?? 10, client_pdf_note || null]
     );
     const projectId = result.insertId;
     if (!quote_number?.trim()) {
-      await db.execute('UPDATE projects SET quote_number=? WHERE id=?', [`Q-${String(projectId).padStart(6, '0')}`, projectId]);
+      await db.execute('UPDATE projects SET quote_number=? WHERE id=?', [generateQuotationNumber(project_name, projectId), projectId]);
     }
 
     let totalCost = 0, totalPrice = 0;
@@ -240,9 +241,11 @@ async function updateProject(req, res, next) {
       return res.status(403).json({ error: `Only an owner or Head of Engineering can update ${forbiddenField}` });
     }
 
+    const [[existingProject]] = await db.execute('SELECT project_name, created_at FROM projects WHERE id=?', [req.params.id]);
+    if (!existingProject) return res.status(404).json({ error: 'Project not found. Refresh the project list and try again.' });
     const fields = [], params = [];
     if (project_name       !== undefined) { fields.push('project_name=?');    params.push(project_name); }
-    if (quote_number       !== undefined) { fields.push('quote_number=?');    params.push(quote_number?.trim() || `Q-${String(req.params.id).padStart(6, '0')}`); }
+    if (quote_number       !== undefined) { fields.push('quote_number=?');    params.push(quote_number?.trim() || generateQuotationNumber(project_name || existingProject.project_name, req.params.id, existingProject.created_at)); }
     if (engineer_id        !== undefined) { fields.push('engineer_id=?');     params.push(engineer_id||null); }
     if (client_id          !== undefined) { fields.push('client_id=?');       params.push(client_id||null); }
     if (exchange_rate_eur_usd !== undefined) { fields.push('exchange_rate_eur_usd=?'); params.push(exchange_rate_eur_usd||1.18); }
@@ -353,7 +356,8 @@ async function removeProjectItem(req, res, next) {
 
 async function deleteProject(req, res, next) {
   try {
-    await db.execute('DELETE FROM projects WHERE id=?', [req.params.id]);
+    const [deleted] = await db.execute('DELETE FROM projects WHERE id=?', [req.params.id]);
+    if (!deleted.affectedRows) return res.status(404).json({ error: 'Project not found' });
     await recalcReservedQty();
     res.json({ message: 'Project permanently deleted' });
   } catch (err) { console.error('[Projects] ❌ delete:', err.message); next(err); }
@@ -365,8 +369,10 @@ async function markReadyForReview(req, res, next) {
     const { checkProjectAccess } = require('./crmController');
     const hasAccess = await checkProjectAccess(req, res, id);
     if (!hasAccess) return;
+    const [[project]] = await db.execute('SELECT id FROM projects WHERE id=? AND deleted_at IS NULL', [id]);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
     await db.execute('UPDATE projects SET ready_for_review=TRUE WHERE id=?', [id]);
-    logActivity({ project_id: id, action: 'ready_for_review', field_name: 'ready_for_review', new_value: 'true', performed_by: req.worker.id });
+    await logActivity({ project_id: id, action: 'ready_for_review', field_name: 'ready_for_review', new_value: 'true', performed_by: req.worker.id });
     await notifyRoles(['owner','head_engineer'], 'status', `Ready for Review: Project #${id}`, `${req.worker.name} marked project as ready for review`, `/projects/${id}`);
     res.json({ message: 'Project marked as ready for review' });
   } catch (err) { console.error('[Projects] ❌ markReadyForReview:', err.message); next(err); }
@@ -378,6 +384,8 @@ async function adminApproval(req, res, next) {
     if (!admin_approval || !['pending','approved','rejected'].includes(admin_approval)) {
       return res.status(400).json({ error: 'admin_approval must be pending, approved, or rejected' });
     }
+    const [[project]] = await db.execute('SELECT id FROM projects WHERE id=? AND deleted_at IS NULL', [req.params.id]);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
     await db.execute('UPDATE projects SET admin_approval=?, rejection_note=? WHERE id=?',
       [admin_approval, rejection_note||null, req.params.id]);
     await recalcReservedQty();

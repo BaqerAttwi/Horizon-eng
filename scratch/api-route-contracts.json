@@ -1,0 +1,1106 @@
+{
+  "routes": 147,
+  "total": 157,
+  "mismatches": [],
+  "checks": [
+    {
+      "file": "elec-app\\client\\src\\App.jsx",
+      "line": 42,
+      "method": "get",
+      "url": "/updates",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\ActivityLog.jsx",
+      "line": 30,
+      "method": "get",
+      "url": "/projects/:value/activity",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\DivisionSection.jsx",
+      "line": 24,
+      "method": "get",
+      "url": "/projects/:value/manual-products",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\DivisionSection.jsx",
+      "line": 33,
+      "method": "get",
+      "url": "/products",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\DivisionSection.jsx",
+      "line": 141,
+      "method": "post",
+      "url": "/projects/:value/manual-products",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\DivisionSection.jsx",
+      "line": 200,
+      "method": "get",
+      "url": "/item-groups",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\DivisionSection.jsx",
+      "line": 209,
+      "method": "post",
+      "url": "/projects/:value/panels/:value/divisions/:value/group-instances",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\ProjectPayments.jsx",
+      "line": 19,
+      "method": "get",
+      "url": "/projects/:value/payments",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\ProjectPayments.jsx",
+      "line": 33,
+      "method": "post",
+      "url": "/projects/:value/payments",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\ProjectPayments.jsx",
+      "line": 48,
+      "method": "delete",
+      "url": "/projects/:value/payments/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\ProjectTechnicians.jsx",
+      "line": 15,
+      "method": "get",
+      "url": "/projects/:value/technicians",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\ProjectTechnicians.jsx",
+      "line": 16,
+      "method": "get",
+      "url": "/workers",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\ProjectTechnicians.jsx",
+      "line": 29,
+      "method": "post",
+      "url": "/projects/:value/technicians",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\crm\\ProjectTechnicians.jsx",
+      "line": 38,
+      "method": "delete",
+      "url": "/projects/:value/technicians/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\DebtList.jsx",
+      "line": 18,
+      "method": "patch",
+      "url": "/projects/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\DebtList.jsx",
+      "line": 61,
+      "method": "get",
+      "url": "/debt",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\FileAttachments.jsx",
+      "line": 23,
+      "method": "patch",
+      "url": "/projects/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\FileAttachments.jsx",
+      "line": 34,
+      "method": "get",
+      "url": "/projects/:value/attachments",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\FileAttachments.jsx",
+      "line": 49,
+      "method": "post",
+      "url": "/projects/:value/attachments",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\FileAttachments.jsx",
+      "line": 68,
+      "method": "delete",
+      "url": "/projects/:value/attachments/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\NotificationBell.jsx",
+      "line": 90,
+      "method": "get",
+      "url": "/notifications",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\NotificationBell.jsx",
+      "line": 117,
+      "method": "patch",
+      "url": "/notifications/:value/read",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\NotificationBell.jsx",
+      "line": 124,
+      "method": "patch",
+      "url": "/notifications/read-all",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\NotificationBell.jsx",
+      "line": 131,
+      "method": "delete",
+      "url": "/notifications/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\SummaryTesting.jsx",
+      "line": 68,
+      "method": "get",
+      "url": "/products",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\SummaryTesting.jsx",
+      "line": 78,
+      "method": "get",
+      "url": "/projects",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\SummaryTesting.jsx",
+      "line": 84,
+      "method": "get",
+      "url": "/projects/:value/crm",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\SummaryTesting.jsx",
+      "line": 91,
+      "method": "get",
+      "url": "/projects/:value/crm",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\SummaryTesting.jsx",
+      "line": 149,
+      "method": "post",
+      "url": "/projects/:value/items/bulk-replace",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\context\\AuthContext.jsx",
+      "line": 14,
+      "method": "get",
+      "url": "/auth/me",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\context\\AuthContext.jsx",
+      "line": 29,
+      "method": "get",
+      "url": "/auth/me",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\context\\AuthContext.jsx",
+      "line": 43,
+      "method": "post",
+      "url": "/auth/login",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\context\\AuthContext.jsx",
+      "line": 55,
+      "method": "post",
+      "url": "/auth/logout",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 43,
+      "method": "get",
+      "url": "/projects/:value/crm",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 44,
+      "method": "get",
+      "url": "/projects/:value/execution",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 45,
+      "method": "get",
+      "url": "/division-types",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 71,
+      "method": "post",
+      "url": "/projects/:value/items/apply-brand-discount",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 102,
+      "method": "post",
+      "url": "/projects/:value/panels",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 115,
+      "method": "get",
+      "url": "/projects",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 124,
+      "method": "post",
+      "url": "/projects/:value/panels/copy-from",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 137,
+      "method": "patch",
+      "url": "/projects/:value/panels/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 148,
+      "method": "delete",
+      "url": "/projects/:value/panels/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 157,
+      "method": "patch",
+      "url": "/projects/:value/panels/:value/complete",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 165,
+      "method": "post",
+      "url": "/projects/:value/panels/:value/divisions",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 175,
+      "method": "delete",
+      "url": "/projects/:value/panels/:value/divisions/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 188,
+      "method": "post",
+      "url": "/projects/:value/panels/:value/divisions/:value/items",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 204,
+      "method": "patch",
+      "url": "/projects/:value/panels/:value/divisions/:value/items/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 231,
+      "method": "delete",
+      "url": "/projects/:value/panels/:value/divisions/:value/items/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 249,
+      "method": "patch",
+      "url": "/projects/:value/execution/panels/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 269,
+      "method": "patch",
+      "url": "/projects/:value/execution/items/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 279,
+      "method": "patch",
+      "url": "/group-instances/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 295,
+      "method": "patch",
+      "url": "/group-instances/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 306,
+      "method": "delete",
+      "url": "/group-instances/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 325,
+      "method": "patch",
+      "url": "/projects/:value/ready-for-review",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
+      "line": 355,
+      "method": "post",
+      "url": "/projects/:value/items/bulk-update",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\AnalyticsPage.jsx",
+      "line": 187,
+      "method": "get",
+      "url": "/analytics/summary",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\AnalyticsPage.jsx",
+      "line": 188,
+      "method": "get",
+      "url": "/analytics/engineers",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\AnalyticsPage.jsx",
+      "line": 189,
+      "method": "get",
+      "url": "/analytics/clients",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CalendarPage.jsx",
+      "line": 18,
+      "method": "get",
+      "url": "/projects",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ClientExportPage.jsx",
+      "line": 44,
+      "method": "get",
+      "url": "/projects/:value/crm",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ClientsPage.jsx",
+      "line": 14,
+      "method": "patch",
+      "url": "/clients/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ClientsPage.jsx",
+      "line": 15,
+      "method": "post",
+      "url": "/clients",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ClientsPage.jsx",
+      "line": 90,
+      "method": "get",
+      "url": "/clients",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ClientsPage.jsx",
+      "line": 101,
+      "method": "delete",
+      "url": "/clients/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 75,
+      "method": "post",
+      "url": "/projects/:value/items/bulk-update",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 141,
+      "method": "post",
+      "url": "/projects/:value/items/bulk-update",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 151,
+      "method": "post",
+      "url": "/projects/:value/items/bulk-update",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 359,
+      "method": "get",
+      "url": "/projects/:value/crm",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 494,
+      "method": "patch",
+      "url": "/projects/:value/execution/panels/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\DashboardPage.jsx",
+      "line": 150,
+      "method": "get",
+      "url": "/dashboard",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\DiscountsPage.jsx",
+      "line": 22,
+      "method": "get",
+      "url": "/discounts",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\DiscountsPage.jsx",
+      "line": 23,
+      "method": "get",
+      "url": "/brands",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\DiscountsPage.jsx",
+      "line": 45,
+      "method": "post",
+      "url": "/discounts",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\DiscountsPage.jsx",
+      "line": 60,
+      "method": "delete",
+      "url": "/discounts/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\DiscountsPage.jsx",
+      "line": 82,
+      "method": "post",
+      "url": "/discounts/bulk-brand",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\DivisionTypesPage.jsx",
+      "line": 2,
+      "method": "get",
+      "url": "/division-types",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\DivisionTypesPage.jsx",
+      "line": 2,
+      "method": "post",
+      "url": "/division-types",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\DivisionTypesPage.jsx",
+      "line": 2,
+      "method": "patch",
+      "url": "/division-types/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\DivisionTypesPage.jsx",
+      "line": 2,
+      "method": "patch",
+      "url": "/division-types/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\DivisionTypesPage.jsx",
+      "line": 2,
+      "method": "delete",
+      "url": "/division-types/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\GroupsPage.jsx",
+      "line": 35,
+      "method": "patch",
+      "url": "/item-groups/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\GroupsPage.jsx",
+      "line": 36,
+      "method": "post",
+      "url": "/item-groups",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\GroupsPage.jsx",
+      "line": 93,
+      "method": "get",
+      "url": "/products",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\GroupsPage.jsx",
+      "line": 101,
+      "method": "post",
+      "url": "/item-groups/:value/items",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\GroupsPage.jsx",
+      "line": 212,
+      "method": "get",
+      "url": "/item-groups/:value/items",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\GroupsPage.jsx",
+      "line": 225,
+      "method": "delete",
+      "url": "/item-groups/:value/items/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\GroupsPage.jsx",
+      "line": 308,
+      "method": "get",
+      "url": "/item-groups",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\GroupsPage.jsx",
+      "line": 324,
+      "method": "delete",
+      "url": "/item-groups/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\MessagesPage.jsx",
+      "line": 18,
+      "method": "get",
+      "url": "/messages",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\MessagesPage.jsx",
+      "line": 33,
+      "method": "post",
+      "url": "/messages",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\MessagesPage.jsx",
+      "line": 54,
+      "method": "delete",
+      "url": "/messages/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\NotificationsPage.jsx",
+      "line": 40,
+      "method": "patch",
+      "url": "/notifications/:value/read",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\NotificationsPage.jsx",
+      "line": 44,
+      "method": "patch",
+      "url": "/notifications/read-all",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\NotificationsPage.jsx",
+      "line": 48,
+      "method": "delete",
+      "url": "/notifications/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\PriceChangesPage.jsx",
+      "line": 51,
+      "method": "patch",
+      "url": "/price-changes/:value/reject",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\PriceChangesPage.jsx",
+      "line": 102,
+      "method": "get",
+      "url": "/price-changes",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\PriceChangesPage.jsx",
+      "line": 115,
+      "method": "patch",
+      "url": "/price-changes/:value/approve",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProcurementPage.jsx",
+      "line": 7,
+      "method": "get",
+      "url": "/procurement/projects",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProcurementPage.jsx",
+      "line": 9,
+      "method": "patch",
+      "url": "/procurement/projects/:value/review",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProcurementPage.jsx",
+      "line": 10,
+      "method": "patch",
+      "url": "/procurement/projects/:value/products/:value/receive",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProductsPage.jsx",
+      "line": 25,
+      "method": "get",
+      "url": "/products/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProductsPage.jsx",
+      "line": 85,
+      "method": "patch",
+      "url": "/products/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProductsPage.jsx",
+      "line": 179,
+      "method": "get",
+      "url": "/manual-product-requests",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProductsPage.jsx",
+      "line": 194,
+      "method": "post",
+      "url": "/manual-product-requests",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProductsPage.jsx",
+      "line": 211,
+      "method": "patch",
+      "url": "/manual-product-requests/:value/approve",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProductsPage.jsx",
+      "line": 221,
+      "method": "patch",
+      "url": "/manual-product-requests/:value/reject",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProductsPage.jsx",
+      "line": 230,
+      "method": "get",
+      "url": "/products",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProductsPage.jsx",
+      "line": 240,
+      "method": "get",
+      "url": "/brands",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProductsPage.jsx",
+      "line": 261,
+      "method": "post",
+      "url": "/products/provision",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 19,
+      "method": "patch",
+      "url": "/projects/:value/stage",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 58,
+      "method": "get",
+      "url": "/projects/draft-notifications",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 110,
+      "method": "get",
+      "url": "/workers",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 111,
+      "method": "get",
+      "url": "/clients",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 129,
+      "method": "patch",
+      "url": "/projects/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 130,
+      "method": "post",
+      "url": "/projects",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 259,
+      "method": "get",
+      "url": "/projects/:value/engineers",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 261,
+      "method": "get",
+      "url": "/workers",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 269,
+      "method": "post",
+      "url": "/engineer-requests",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 279,
+      "method": "get",
+      "url": "/projects/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 281,
+      "method": "get",
+      "url": "/projects/:value/quotation-revisions",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 307,
+      "method": "patch",
+      "url": "/projects/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 319,
+      "method": "patch",
+      "url": "/projects/:value/admin-approval",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 341,
+      "method": "post",
+      "url": "/projects/:value/quotation-revisions",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 349,
+      "method": "post",
+      "url": "/projects/:value/quotation-revisions/:value/restore",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 362,
+      "method": "get",
+      "url": "/projects/:value/quotation-revisions/:value/snapshot",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 645,
+      "method": "get",
+      "url": "/projects",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 656,
+      "method": "delete",
+      "url": "/projects/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 804,
+      "method": "get",
+      "url": "/clients",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 805,
+      "method": "get",
+      "url": "/workers",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 817,
+      "method": "post",
+      "url": "/projects/import-pdf/preview",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 858,
+      "method": "post",
+      "url": "/projects/import-pdf/create",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\RequestsPage.jsx",
+      "line": 15,
+      "method": "get",
+      "url": "/engineer-requests/pending",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\RequestsPage.jsx",
+      "line": 16,
+      "method": "get",
+      "url": "/engineer-requests/sent",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\RequestsPage.jsx",
+      "line": 31,
+      "method": "patch",
+      "url": "/engineer-requests/:value/respond",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\RequestsPage.jsx",
+      "line": 40,
+      "method": "patch",
+      "url": "/engineer-requests/:value/respond",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\RequestsPage.jsx",
+      "line": 51,
+      "method": "delete",
+      "url": "/engineer-requests/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ReservationsPage.jsx",
+      "line": 161,
+      "method": "get",
+      "url": "/reservations",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ReservationsPage.jsx",
+      "line": 192,
+      "method": "patch",
+      "url": "/reservations/product/:value/reserved-qty",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ReservationsPage.jsx",
+      "line": 221,
+      "method": "patch",
+      "url": "/reservations/product/:value/reserved-qty",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ReservationsPage.jsx",
+      "line": 341,
+      "method": "get",
+      "url": "/reservation-history",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\TechnicianExecutionPage.jsx",
+      "line": 18,
+      "method": "get",
+      "url": "/projects/:value/execution/view",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\TechnicianExecutionPage.jsx",
+      "line": 19,
+      "method": "get",
+      "url": "/projects/:value/execution",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\TechnicianExecutionPage.jsx",
+      "line": 32,
+      "method": "patch",
+      "url": "/projects/:value/execution/panels/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\TechnicianExecutionPage.jsx",
+      "line": 48,
+      "method": "patch",
+      "url": "/projects/:value/execution/items/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\TechnicianExecutionPage.jsx",
+      "line": 102,
+      "method": "patch",
+      "url": "/projects/:value/execution/panels/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\TechnicianProjectsPage.jsx",
+      "line": 12,
+      "method": "get",
+      "url": "/technicians/my-projects",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\UpdatesPage.jsx",
+      "line": 15,
+      "method": "get",
+      "url": "/updates",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\UpdatesPage.jsx",
+      "line": 20,
+      "method": "patch",
+      "url": "/updates/:value/read",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\UpdatesPage.jsx",
+      "line": 24,
+      "method": "patch",
+      "url": "/updates/read-all",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\UpdatesPage.jsx",
+      "line": 28,
+      "method": "post",
+      "url": "/updates",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\UploadPage.jsx",
+      "line": 28,
+      "method": "post",
+      "url": "/upload",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\WorkersPage.jsx",
+      "line": 24,
+      "method": "post",
+      "url": "/workers",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\WorkersPage.jsx",
+      "line": 25,
+      "method": "patch",
+      "url": "/workers/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\WorkersPage.jsx",
+      "line": 93,
+      "method": "post",
+      "url": "/auth/set-password",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\WorkersPage.jsx",
+      "line": 140,
+      "method": "get",
+      "url": "/workers",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\WorkersPage.jsx",
+      "line": 151,
+      "method": "delete",
+      "url": "/workers/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\utils\\pdfExport.js",
+      "line": 121,
+      "method": "get",
+      "url": "/projects/:value/crm",
+      "matched": true
+    }
+  ]
+}

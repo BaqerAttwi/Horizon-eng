@@ -1,0 +1,182 @@
+elec-app/client/src/hooks\useCrmProject.js:43:        api.get(`/projects/${id}/crm`),
+elec-app/client/src/hooks\useCrmProject.js:44:        api.get(`/projects/${id}/execution`),
+elec-app/client/src/hooks\useCrmProject.js:45:        api.get('/division-types')
+elec-app/client/src/hooks\useCrmProject.js:71:      await api.post(`/projects/${id}/items/apply-brand-discount`, { brand: previewBrand, discount_pct: previewDiscPct });
+elec-app/client/src/hooks\useCrmProject.js:102:      const r = await api.post(`/projects/${id}/panels`, { panel_number, markupP: 0, markupM: 0, manpower_pct: 0 });
+elec-app/client/src/hooks\useCrmProject.js:115:      const r = await api.get('/projects');
+elec-app/client/src/hooks\useCrmProject.js:124:      await api.post(`/projects/${id}/panels/copy-from`, {
+elec-app/client/src/hooks\useCrmProject.js:137:      await api.patch(`/projects/${id}/panels/${panelId}`, form);
+elec-app/client/src/hooks\useCrmProject.js:147:      await api.delete(`/projects/${id}/panels/${panelId}`);
+elec-app/client/src/hooks\useCrmProject.js:156:      const r = await api.patch(`/projects/${id}/panels/${panelId}/complete`);
+elec-app/client/src/hooks\useCrmProject.js:164:      const r = await api.post(`/projects/${id}/panels/${panelId}/divisions`, divData);
+elec-app/client/src/hooks\useCrmProject.js:174:      await api.delete(`/projects/${id}/panels/${div.panel_id}/divisions/${divisionId}`);
+elec-app/client/src/hooks\useCrmProject.js:187:      const r = await api.post(`/projects/${id}/panels/${div.panel_id}/divisions/${divisionId}/items`, { ...itemData, project_id: parseInt(id) });
+elec-app/client/src/hooks\useCrmProject.js:203:      const r = await api.patch(`/projects/${id}/panels/${panel.id}/divisions/${div.id}/items/${itemId}`, form);
+elec-app/client/src/hooks\useCrmProject.js:229:      await api.delete(`/projects/${id}/panels/${panel.id}/divisions/${div.id}/items/${itemId}`);
+elec-app/client/src/hooks\useCrmProject.js:247:      const r = await api.patch(`/projects/${id}/execution/panels/${panelId}`, { is_completed: is_completed ? 1 : 0, description });
+elec-app/client/src/hooks\useCrmProject.js:267:      const r = await api.patch(`/projects/${id}/execution/items/${itemId}`, body);
+elec-app/client/src/hooks\useCrmProject.js:277:      await api.patch(`/group-instances/${instanceId}`, { quantity: newQty });
+elec-app/client/src/hooks\useCrmProject.js:293:      await api.patch(`/group-instances/${instanceId}`, { description });
+elec-app/client/src/hooks\useCrmProject.js:304:      await api.delete(`/group-instances/${instanceId}`);
+elec-app/client/src/hooks\useCrmProject.js:323:      await api.patch(`/projects/${id}/ready-for-review`);
+elec-app/client/src/hooks\useCrmProject.js:353:      const r = await api.post(`/projects/${id}/items/bulk-update`, { item_ids, changes });
+elec-app/client/src/components\ActivityLog.jsx:29:    api.get(`/projects/${projectId}/activity`)
+elec-app/client/src/components\ActivityLog.jsx:31:      .catch(() => {})
+elec-app/client/src/pages\AnalyticsPage.jsx:186:      api.get(`/analytics/summary?${qs}`),
+elec-app/client/src/pages\AnalyticsPage.jsx:187:      api.get(`/analytics/engineers?${qs}`),
+elec-app/client/src/pages\AnalyticsPage.jsx:188:      api.get(`/analytics/clients?${qs}`),
+elec-app/client/src/pages\AnalyticsPage.jsx:194:    }).catch(() => setLoading(false));
+elec-app/client/src/pages\CalendarPage.jsx:17:    api.get('/projects')
+elec-app/client/src/pages\CalendarPage.jsx:22:      .catch(() => {})
+elec-app/client/src/pages\ClientExportPage.jsx:38:    api.get(`/projects/${id}/crm`).then(({ data }) => {
+elec-app/client/src/pages\ClientExportPage.jsx:41:    }).catch(e => toast.error(e.message));
+elec-app/client/src/components\DebtList.jsx:18:      const r = await api.patch(`/projects/${project.id}`, { payment_deadline: value || null });
+elec-app/client/src/components\DebtList.jsx:61:      const r = await api.get('/debt');
+elec-app/client/src/pages\ClientsPage.jsx:14:        ? await api.patch(`/clients/${client.id}`, form)
+elec-app/client/src/pages\ClientsPage.jsx:15:        : await api.post('/clients', form);
+elec-app/client/src/pages\ClientsPage.jsx:19:    } catch(e) { toast.error('❌ ' + e.message); }
+elec-app/client/src/pages\ClientsPage.jsx:90:      const r = await api.get('/clients');
+elec-app/client/src/pages\ClientsPage.jsx:92:    } catch(e) { toast.error('❌ ' + e.message); }
+elec-app/client/src/pages\ClientsPage.jsx:101:      await api.delete(`/clients/${c.id}`);
+elec-app/client/src/pages\ClientsPage.jsx:104:    } catch(e) { toast.error('❌ ' + e.message); }
+elec-app/client/src/components\crm\DivisionSection.jsx:21:    api.get('/products', { params: { search: val, limit: 15 } })
+elec-app/client/src/components\crm\DivisionSection.jsx:23:      .catch(() => {});
+elec-app/client/src/components\crm\DivisionSection.jsx:27:    api.get(`/projects/${projectId}/manual-products`)
+elec-app/client/src/components\crm\DivisionSection.jsx:29:      .catch(() => {});
+elec-app/client/src/components\crm\DivisionSection.jsx:34:    api.get('/products', { params: { search: dq, limit: 15 } })
+elec-app/client/src/components\crm\DivisionSection.jsx:36:      .catch(() => {});
+elec-app/client/src/components\crm\DivisionSection.jsx:140:      const r = await api.post(`/projects/${project.id}/manual-products`, form);
+elec-app/client/src/components\crm\DivisionSection.jsx:199:    api.get('/item-groups')
+elec-app/client/src/components\crm\DivisionSection.jsx:201:      .catch(e => toast.error(e.message))
+elec-app/client/src/components\crm\DivisionSection.jsx:208:      await api.post(
+elec-app/client/src/components\FileAttachments.jsx:23:      const r = await api.patch(`/projects/${projectId}`, { onedrive_folder_link: projectLinkDraft || null });
+elec-app/client/src/components\FileAttachments.jsx:34:      const r = await api.get(`/projects/${projectId}/attachments`);
+elec-app/client/src/components\FileAttachments.jsx:49:      await api.post(`/projects/${projectId}/attachments`, {
+elec-app/client/src/components\FileAttachments.jsx:68:      await api.delete(`/projects/${projectId}/attachments/${id}`);
+elec-app/client/src/pages\CrmProjectPage.jsx:75:      await api.post(`/projects/${projectId}/items/bulk-update`, { item_ids: group.items.map(item => item.id), changes: { cr_amount: value } });
+elec-app/client/src/pages\CrmProjectPage.jsx:141:      await api.post(`/projects/${projectId}/items/bulk-update`, { item_ids: itemIds, changes: values });
+elec-app/client/src/pages\CrmProjectPage.jsx:151:      await api.post(`/projects/${projectId}/items/bulk-update`, { item_ids: row.items.map(item => item.id), changes: row.panelValues });
+elec-app/client/src/pages\CrmProjectPage.jsx:359:                            const r = await api.get(`/projects/${p.id}/crm`);
+elec-app/client/src/pages\CrmProjectPage.jsx:494:                    try { await api.patch(`/projects/${project.id}/execution/panels/${pid}`, { description }); }
+elec-app/client/src/pages\DashboardPage.jsx:149:    api.get('/dashboard')
+elec-app/client/src/pages\DashboardPage.jsx:151:      .catch(() => setLoading(false));
+elec-app/client/src/components\NotificationBell.jsx:89:    api.get('/notifications?limit=20')
+elec-app/client/src/components\NotificationBell.jsx:95:      .catch(() => setLoading(false));
+elec-app/client/src/components\NotificationBell.jsx:116:    api.patch(`/notifications/${id}/read`).then(() => {
+elec-app/client/src/components\NotificationBell.jsx:119:    }).catch(() => {});
+elec-app/client/src/components\NotificationBell.jsx:123:    api.patch('/notifications/read-all').then(() => {
+elec-app/client/src/components\NotificationBell.jsx:126:    }).catch(() => {});
+elec-app/client/src/components\NotificationBell.jsx:130:    api.delete(`/notifications/${id}`).then(() => {
+elec-app/client/src/components\NotificationBell.jsx:132:    }).catch(() => {});
+elec-app/client/src/pages\DiscountsPage.jsx:22:        api.get('/discounts'),
+elec-app/client/src/pages\DiscountsPage.jsx:23:        api.get('/brands'),
+elec-app/client/src/pages\DiscountsPage.jsx:45:      await api.post('/discounts', {
+elec-app/client/src/pages\DiscountsPage.jsx:60:      await api.delete(`/discounts/${id}`);
+elec-app/client/src/pages\DiscountsPage.jsx:82:      await api.post('/discounts/bulk-brand', { discounts: payload });
+elec-app/client/src/components\crm\ProjectPayments.jsx:19:      const r = await api.get(`/projects/${projectId}/payments`);
+elec-app/client/src/components\crm\ProjectPayments.jsx:33:      await api.post(`/projects/${projectId}/payments`, {
+elec-app/client/src/components\crm\ProjectPayments.jsx:48:      await api.delete(`/projects/${projectId}/payments/${id}`);
+elec-app/client/src/pages\DivisionTypesPage.jsx:2:export default function DivisionTypesPage(){const[types,setTypes]=useState([]);const[name,setName]=useState('');const[color,setColor]=useState('#64748b');const[loading,setLoading]=useState(true);const load=async()=>{try{setTypes((await api.get('/division-types',{params:{include_inactive:true}})).data)}catch(e){toast.error(e.message)}finally{setLoading(false)}};useEffect(()=>{load()},[]);const add=async()=>{try{await api.post('/division-types',{name,color});setName('');toast.success('Division type added');load()}catch(e){toast.error(e.response?.data?.error||e.message)}};const edit=async(type)=>{const next=prompt('Division type name:',type.name);if(next===null)return;try{await api.patch(`/division-types/${type.id}`,{name:next,color:type.color,is_active:Boolean(type.is_active)});toast.success('Division type updated everywhere');load()}catch(e){toast.error(e.response?.data?.error||e.message)}};const toggle=async type=>{try{await api.patch(`/division-types/${type.id}`,{is_active:!type.is_active});load()}catch(e){toast.error(e.response?.data?.error||e.message)}};const remove=async type=>{if(!confirm(`Delete ${type.name}? Types already used in projects will be archived.`))return;try{const r=await api.delete(`/division-types/${type.id}`);toast.success(r.data.message);load()}catch(e){toast.error(e.response?.data?.error||e.message)}};return <div className="page"><div className="page-header"><div><h1 className="page-title">🧩 Division Types</h1><p className="page-subtitle">Manage the division choices available inside every CRM panel</p></div></div><div className="card" style={{marginBottom:18}}><div className="card-body"><div className="form-row" style={{alignItems:'end'}}><div className="form-group"><label className="form-label">New division name</label><input className="form-input" value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Capacitor Bank"/></div><div className="form-group"><label className="form-label">Color</label><input className="form-input" type="color" value={color} onChange={e=>setColor(e.target.value)} style={{height:40,padding:4}}/></div><button className="btn btn-primary" disabled={!name.trim()} onClick={add}>+ Add Division Type</button></div></div></div><div className="card"><div className="table-wrap"><table><thead><tr><th>Color</th><th>Name</th><th>Used</th><th>Status</th><th>Created by</th><th>Actions</th></tr></thead><tbody>{loading?<tr><td colSpan="6"><div className="empty"><span className="spinner"/></div></td></tr>:types.map(type=><tr key={type.id}><td><span style={{display:'block',width:24,height:24,borderRadius:7,background:type.color}}/></td><td style={{fontWeight:700,color:'var(--white)'}}>{type.name}</td><td><span className="badge badge-blue">{type.usage_count||0} divisions</span></td><td><span className={`badge ${type.is_active?'badge-green':'badge-gray'}`}>{type.is_active?'Active':'Archived'}</span></td><td>{type.created_by_name||'System'}</td><td style={{display:'flex',gap:6}}><button className="btn btn-sm btn-secondary" onClick={()=>edit(type)}>Edit name</button><button className="btn btn-sm btn-secondary" onClick={()=>toggle(type)}>{type.is_active?'Archive':'Activate'}</button><button className="btn-icon" style={{color:'var(--danger)'}} onClick={()=>remove(type)}>🗑</button></td></tr>)}</tbody></table></div></div><div className="tint-box" style={{marginTop:14}}>Renaming a division type updates all existing projects. Deleting a type that is already used archives it, preserving historical CRM data.</div></div>}
+elec-app/client/src/components\SummaryTesting.jsx:85:      api.get('/products', { params: { search: dq, limit: 10 } })
+elec-app/client/src/components\SummaryTesting.jsx:87:        .catch(() => {});
+elec-app/client/src/components\SummaryTesting.jsx:95:    api.get('/projects').then(r => setAllProjects(r.data || [])).catch(() => {});
+elec-app/client/src/components\SummaryTesting.jsx:101:    api.get(`/projects/${projectA}/crm`)
+elec-app/client/src/components\SummaryTesting.jsx:103:      .catch(() => setExternalPanelsA([]));
+elec-app/client/src/components\SummaryTesting.jsx:108:    api.get(`/projects/${projectB}/crm`)
+elec-app/client/src/components\SummaryTesting.jsx:110:      .catch(() => setExternalPanelsB([]));
+elec-app/client/src/components\SummaryTesting.jsx:166:        await api.post(`/projects/${id}/items/bulk-replace`, {
+elec-app/client/src/components\crm\ProjectTechnicians.jsx:15:        api.get(`/projects/${projectId}/technicians`),
+elec-app/client/src/components\crm\ProjectTechnicians.jsx:16:        api.get('/workers', { params: { role: 'technician' } }),
+elec-app/client/src/components\crm\ProjectTechnicians.jsx:29:      await api.post(`/projects/${projectId}/technicians`, { worker_id: pickerId });
+elec-app/client/src/components\crm\ProjectTechnicians.jsx:38:      await api.delete(`/projects/${projectId}/technicians/${workerId}`);
+elec-app/client/src/pages\GroupsPage.jsx:35:        ? await api.patch(`/item-groups/${group.id}`, form)
+elec-app/client/src/pages\GroupsPage.jsx:36:        : await api.post('/item-groups', form);
+elec-app/client/src/pages\GroupsPage.jsx:93:    api.get('/products', { params: { search: dq, limit: 10 } })
+elec-app/client/src/pages\GroupsPage.jsx:95:      .catch(() => {});
+elec-app/client/src/pages\GroupsPage.jsx:101:      const r = await api.post(`/item-groups/${groupId}/items`, {
+elec-app/client/src/pages\GroupsPage.jsx:212:      const r = await api.get(`/item-groups/${group.id}/items`);
+elec-app/client/src/pages\GroupsPage.jsx:225:      await api.delete(`/item-groups/${group.id}/items/${itemId}`);
+elec-app/client/src/pages\GroupsPage.jsx:308:      const r = await api.get('/item-groups');
+elec-app/client/src/pages\GroupsPage.jsx:324:      await api.delete(`/item-groups/${id}`);
+elec-app/client/src/pages\MessagesPage.jsx:18:      const r = await api.get('/messages');
+elec-app/client/src/pages\MessagesPage.jsx:33:      await api.post('/messages', { content: content.trim() });
+elec-app/client/src/pages\MessagesPage.jsx:54:      await api.delete(`/messages/${id}`);
+elec-app/client/src/pages\NotificationsPage.jsx:27:    api.get(url)
+elec-app/client/src/pages\NotificationsPage.jsx:33:      .catch(() => setLoading(false));
+elec-app/client/src/pages\NotificationsPage.jsx:39:    api.patch(`/notifications/${id}/read`).then(load);
+elec-app/client/src/pages\NotificationsPage.jsx:43:    api.patch('/notifications/read-all').then(load);
+elec-app/client/src/pages\NotificationsPage.jsx:47:    api.delete(`/notifications/${id}`).then(load);
+elec-app/client/src/pages\PriceChangesPage.jsx:51:      await api.patch(`/price-changes/${request.id}/reject`, { rejection_reason: reason });
+elec-app/client/src/pages\PriceChangesPage.jsx:102:      const r = await api.get('/price-changes', { params: { status: filter } });
+elec-app/client/src/pages\PriceChangesPage.jsx:115:      await api.patch(`/price-changes/${id}/approve`);
+elec-app/client/src/pages\ProcurementPage.jsx:7:  const load=()=>{setLoading(true);api.get('/procurement/projects').then(r=>setProjects(r.data)).catch(e=>toast.error(e.message)).finally(()=>setLoading(false));};
+elec-app/client/src/pages\ProcurementPage.jsx:9:  const review=async(project,action)=>{setSaving(project.id);try{await api.patch(`/procurement/projects/${project.id}/review`,{action,note:notes[project.id]||null});toast.success(`Procurement ${action==='approve'?'approved':'rejected'}`);load();}catch(e){toast.error(e.response?.data?.error||e.message);}finally{setSaving(null);}};
+elec-app/client/src/pages\ProcurementPage.jsx:10:  const receive=async(project,item)=>{const key=`${project.id}-${item.product_id}`,quantity=parseInt(receiveQty[key]);if(!quantity||quantity<1){toast.error('Enter the quantity allocated to this project');return;}setReceiving(key);try{await api.patch(`/procurement/projects/${project.id}/products/${item.product_id}/receive`,{quantity});toast.success(`Allocated ${quantity} of ${item.item_name} to this project (stock unchanged)`);setReceiveQty(q=>({...q,[key]:''}));load();}catch(e){toast.error(e.response?.data?.error||e.message);}finally{setReceiving(null);}};
+elec-app/client/src/pages\ProductsPage.jsx:25:    api.get(`/products/${productId}`)
+elec-app/client/src/pages\ProductsPage.jsx:27:      .catch(e => toast.error(e.message))
+elec-app/client/src/pages\ProductsPage.jsx:85:      const r = await api.patch(`/products/${product.id}`, payload);
+elec-app/client/src/pages\ProductsPage.jsx:89:    } catch(e) {
+elec-app/client/src/pages\ProductsPage.jsx:179:      const r = await api.get('/manual-product-requests', { params: { status: 'pending' } });
+elec-app/client/src/pages\ProductsPage.jsx:194:      const r = await api.post('/manual-product-requests', manualForm);
+elec-app/client/src/pages\ProductsPage.jsx:211:      await api.patch(`/manual-product-requests/${id}/approve`);
+elec-app/client/src/pages\ProductsPage.jsx:221:      await api.patch(`/manual-product-requests/${id}/reject`, { reason: reason || null });
+elec-app/client/src/pages\ProductsPage.jsx:230:      const r = await api.get('/products', { params: { page, limit: LIMIT, search: debouncedSearch, brand: brandFilter } });
+elec-app/client/src/pages\ProductsPage.jsx:233:    } catch(e) {
+elec-app/client/src/pages\ProductsPage.jsx:240:    api.get('/brands').then(r => setBrands(r.data)).catch(()=>{});
+elec-app/client/src/pages\ProductsPage.jsx:261:          {stockOnly && <button className="btn btn-primary" onClick={async()=>{const smart_code=prompt('Smart code for new stock item:');if(!smart_code)return;const qty=parseInt(prompt('Starting stock quantity:')||'0',10)||0;try{await api.post('/products/provision',{smart_code,qty});toast.success('Stock item created');load();}catch(e){toast.error(e.response?.data?.error||e.message);}}}>➕ Add Stock Item</button>}
+elec-app/client/src/pages\ProjectsPage.jsx:19:    try { const r = await api.patch(`/projects/${project.id}/stage`, { stage, note: note.trim() || null }); onChanged(r.data); setNote(''); toast.success(`Project moved to ${stage}`); }
+elec-app/client/src/pages\ProjectsPage.jsx:58:      api.get('/projects/draft-notifications')
+elec-app/client/src/pages\ProjectsPage.jsx:60:        .catch(() => {});
+elec-app/client/src/pages\ProjectsPage.jsx:110:    api.get('/workers', { params: { role: 'engineer' } }).then(r => setWorkers(r.data));
+elec-app/client/src/pages\ProjectsPage.jsx:111:    api.get('/clients').then(r => setClients(r.data));
+elec-app/client/src/pages\ProjectsPage.jsx:129:        ? await api.patch(`/projects/${project.id}`, payload)
+elec-app/client/src/pages\ProjectsPage.jsx:130:        : await api.post('/projects', payload);
+elec-app/client/src/pages\ProjectsPage.jsx:259:    api.get(`/projects/${projectId}/engineers`).then(r => setCollaborators(r.data)).catch(() => {});
+elec-app/client/src/pages\ProjectsPage.jsx:261:      api.get('/workers').then(r => setWorkers(r.data.filter(w => w.role === 'engineer'))).catch(() => {});
+elec-app/client/src/pages\ProjectsPage.jsx:269:      await api.post('/engineer-requests', { project_id: projectId, target_engineer_id: parseInt(inviteEngId) });
+elec-app/client/src/pages\ProjectsPage.jsx:279:      const r = await api.get(`/projects/${projectId}`);
+elec-app/client/src/pages\ProjectsPage.jsx:281:      api.get(`/projects/${projectId}/quotation-revisions`).then(x=>setRevisions(x.data)).catch(()=>{});
+elec-app/client/src/pages\ProjectsPage.jsx:307:      const r = await api.patch(`/projects/${projectId}`, payload);
+elec-app/client/src/pages\ProjectsPage.jsx:319:      const r = await api.patch(`/projects/${projectId}/admin-approval`, { admin_approval });
+elec-app/client/src/pages\ProjectsPage.jsx:341:    try { const r=await api.post(`/projects/${projectId}/quotation-revisions`,{notes}); setRevisions(v=>[r.data,...v]); toast.success(`Created ${project.quote_number}-R${r.data.revision_number}`); }
+elec-app/client/src/pages\ProjectsPage.jsx:342:    catch(e){ toast.error(e.response?.data?.error||e.message); }
+elec-app/client/src/pages\ProjectsPage.jsx:349:      const r = await api.post(`/projects/${projectId}/quotation-revisions/${revision.id}/restore`);
+elec-app/client/src/pages\ProjectsPage.jsx:362:      const r = await api.get(`/projects/${projectId}/quotation-revisions/${revision.id}/snapshot`);
+elec-app/client/src/pages\ProjectsPage.jsx:645:      const r = await api.get('/projects');
+elec-app/client/src/pages\ProjectsPage.jsx:656:      await api.delete(`/projects/${p.id}`);
+elec-app/client/src/pages\ProjectsPage.jsx:804:    api.get('/clients').then(r => setClients(r.data)).catch(() => {});
+elec-app/client/src/pages\ProjectsPage.jsx:805:    api.get('/workers').then(r => setEngineers(r.data.filter(w => w.role === 'engineer' || w.role === 'owner'))).catch(() => {});
+elec-app/client/src/pages\ProjectsPage.jsx:817:      const r = await api.post('/projects/import-pdf/preview', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+elec-app/client/src/pages\ProjectsPage.jsx:858:      const res = await api.post('/projects/import-pdf/create', {
+elec-app/client/src/pages\RequestsPage.jsx:15:        api.get('/engineer-requests/pending'),
+elec-app/client/src/pages\RequestsPage.jsx:16:        api.get('/engineer-requests/sent'),
+elec-app/client/src/pages\RequestsPage.jsx:31:      await api.patch(`/engineer-requests/${id}/respond`, { action });
+elec-app/client/src/pages\RequestsPage.jsx:40:      await api.patch(`/engineer-requests/${rejectModal}/respond`, { action: 'reject', rejection_reason: rejectReason });
+elec-app/client/src/pages\RequestsPage.jsx:51:      await api.delete(`/engineer-requests/${id}`);
+elec-app/client/src/pages\ReservationsPage.jsx:161:      const r = await api.get('/reservations');
+elec-app/client/src/pages\ReservationsPage.jsx:192:      const r = await api.patch(`/reservations/product/${productId}/reserved-qty`, { action: 'reserve', qty });
+elec-app/client/src/pages\ReservationsPage.jsx:221:      const r = await api.patch(`/reservations/product/${productId}/reserved-qty`, { action: 'release', qty });
+elec-app/client/src/pages\ReservationsPage.jsx:341:          {isRole('owner','head_engineer','stock_manager') && <button className="btn btn-secondary" onClick={async()=>{if(history){setHistory(null);return;}try{setHistory((await api.get('/reservation-history')).data);}catch(e){toast.error(e.message);}}}>🕘 Reservation Audit</button>}
+elec-app/client/src/pages\TechnicianExecutionPage.jsx:18:        api.get(`/projects/${id}/execution/view`),
+elec-app/client/src/pages\TechnicianExecutionPage.jsx:19:        api.get(`/projects/${id}/execution`),
+elec-app/client/src/pages\TechnicianExecutionPage.jsx:32:      const r = await api.patch(`/projects/${id}/execution/panels/${panelId}`, { is_completed: is_completed ? 1 : 0, description });
+elec-app/client/src/pages\TechnicianExecutionPage.jsx:48:      const r = await api.patch(`/projects/${id}/execution/items/${itemId}`, body);
+elec-app/client/src/pages\TechnicianExecutionPage.jsx:102:                  try { await api.patch(`/projects/${id}/execution/panels/${pid}`, { description }); }
+elec-app/client/src/pages\TechnicianProjectsPage.jsx:12:    api.get('/technicians/my-projects')
+elec-app/client/src/pages\TechnicianProjectsPage.jsx:14:      .catch(e => toast.error(e.message))
+elec-app/client/src/pages\UpdatesPage.jsx:15:  const load = async () => { try { setData((await api.get('/updates')).data); } catch(e) { toast.error(e.message); } finally { setLoading(false); } };
+elec-app/client/src/pages\UpdatesPage.jsx:20:    await api.patch(`/updates/${update.id}/read`);
+elec-app/client/src/pages\UpdatesPage.jsx:24:  const markAll = async () => { await api.patch('/updates/read-all'); await load(); window.dispatchEvent(new Event('updates-read')); toast.success('All updates marked as read'); };
+elec-app/client/src/pages\UpdatesPage.jsx:28:      await api.post('/updates', { ...form, features: form.features.split('\n').map(v=>v.trim()).filter(Boolean), target_roles: form.target_roles.includes('all')?'all':form.target_roles });
+elec-app/client/src/pages\UpdatesPage.jsx:30:    } catch(e) { toast.error(e.response?.data?.error||e.message); }
+elec-app/client/src/pages\UploadPage.jsx:28:      const r = await api.post('/upload', fd, {
+elec-app/client/src/pages\UploadPage.jsx:34:    } catch(e) {
+elec-app/client/src/pages\WorkersPage.jsx:24:        ? await api.post('/workers', body)
+elec-app/client/src/pages\WorkersPage.jsx:25:        : await api.patch(`/workers/${worker.id}`, body);
+elec-app/client/src/pages\WorkersPage.jsx:29:    } catch(e) {
+elec-app/client/src/pages\WorkersPage.jsx:93:      await api.post('/auth/set-password', { worker_id: worker.id, new_password: newPass });
+elec-app/client/src/pages\WorkersPage.jsx:96:    } catch(e) { toast.error('❌ ' + e.message); }
+elec-app/client/src/pages\WorkersPage.jsx:140:      const r = await api.get('/workers', { params: roleFilter ? { role: roleFilter } : {} });
+elec-app/client/src/pages\WorkersPage.jsx:142:    } catch(e) { toast.error('❌ ' + e.message); }
+elec-app/client/src/pages\WorkersPage.jsx:151:      await api.delete(`/workers/${w.id}`);
+elec-app/client/src/pages\WorkersPage.jsx:154:    } catch(e) { toast.error('❌ ' + e.message); }

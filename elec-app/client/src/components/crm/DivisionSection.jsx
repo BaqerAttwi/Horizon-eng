@@ -18,22 +18,23 @@ function ProductSearch({ onSelect, projectId, exchangeRate }) {
     setQ(val);
     if (!val.trim()) { setDq(''); setRes([]); return; }
     setDq(val);
-    api.get('/products', { params: { search: val, limit: 15 } })
-      .then(r => setRes(r.data.products || []))
-      .catch(() => {});
   };
 
   useEffect(() => {
     api.get(`/projects/${projectId}/manual-products`)
       .then(r => setManuals(r.data || []))
-      .catch(() => {});
+      .catch(e => toast.error(e.message, { id: 'api-' + e.message }));
   }, [projectId]);
 
   useEffect(() => {
     if (!dq.trim()) { setRes([]); return; }
-    api.get('/products', { params: { search: dq, limit: 15 } })
-      .then(r => setRes(r.data.products || []))
-      .catch(() => {});
+    let active = true;
+    const timer = setTimeout(() => {
+      api.get('/products', { params: { search: dq, limit: 15 } })
+        .then(r => { if (active) setRes(r.data.products || []); })
+        .catch(e => { if (active) { setRes([]); toast.error(e.message, { id: 'api-' + e.message }); } });
+    }, 300);
+    return () => { active = false; clearTimeout(timer); };
   }, [dq]);
 
   const displayPrice = (p) => {

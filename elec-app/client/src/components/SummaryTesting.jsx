@@ -2,38 +2,21 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../api/client';
+import { calcMetrics, calcPanelMetrics } from '../utils/summaryTesting';
 
 const MODES = [
-  { key: 'item', label: 'Item Replace', icon: '↔️' },
+  { key: 'item', label: 'Search & Replace', icon: '↔️' },
   { key: 'panel', label: 'Panel vs Panel', icon: '📊' },
-  { key: 'product', label: 'Product Across Project', icon: '🔍' },
 ];
-
-function calcMetrics(item) {
-  const base = parseFloat(item.base_price_usd || 0);
-  const eur = parseFloat(item.base_price_euro || 0);
-  const qty = parseInt(item.qty) || 1;
-  const baseTotal = base * qty;
-  const disc = baseTotal * (parseFloat(item.discount_pct) / 100);
-  const afterDisc = baseTotal - disc;
-  const mkP = afterDisc * (parseFloat(item.markupP_pct) / 100);
-  const totalT = afterDisc + mkP;
-  const man = afterDisc * (parseFloat(item.manpower_pct) / 100);
-  const mkM = man * (parseFloat(item.markupM_pct) / 100);
-  const finalPrice = totalT + man + mkM;
-  const cost = parseFloat(item.cost || 0);
-  const profit = finalPrice - cost;
-  const margin = finalPrice > 0 ? (profit / finalPrice) * 100 : 0;
-  return { basePrice: base, priceEuro: eur, qty, baseTotal, discountPct: parseFloat(item.discount_pct) || 0, afterDisc, markupP: parseFloat(item.markupP_pct) || 0, mkP, totalT, man, mkM, finalPrice, cost, profit, margin };
-}
 
 function formatPct(diff) {
   const sign = diff > 0 ? '+' : '';
   return `${sign}${diff.toFixed(1)}%`;
 }
 
-export default function SummaryTesting({ panels, project, id, onItemUpdate, onItemDelete, hideCost, exchangeRate }) {
+export default function SummaryTesting({ panels, project, id, onItemUpdate, onItemDelete, onReload, hideCost, exchangeRate }) {
   const [mode, setMode] = useState('item');
+  const [itemSearch, setItemSearch] = useState('');
   const [searchQ, setSearchQ] = useState('');
   const [searchRes, setSearchRes] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -49,8 +32,6 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
   const [externalPanelsB, setExternalPanelsB] = useState([]);
   const [allProjects, setAllProjects] = useState([]);
   const [compareKey, setCompareKey] = useState(0);
-  const [productSearch, setProductSearch] = useState('');
-  const [productResults, setProductResults] = useState([]);
   const [applying, setApplying] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [applyToAll, setApplyToAll] = useState(false);
@@ -75,8 +56,10 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
     let items = allItems;
     if (sourcePanelId) items = items.filter(i => i.panel_id === parseInt(sourcePanelId));
     if (sourceDivId) items = items.filter(i => i.division_id === parseInt(sourceDivId));
+    const query = itemSearch.trim().toLowerCase();
+    if (query) items = items.filter(i => [i.reference, i.custom_name, i.name, i.description, i.product_desc, i.custom_desc, i.brand_name, i.brand, i.custom_brand, i.panel_name, i.division_type].some(value => String(value || '').toLowerCase().includes(query)));
     return items;
-  }, [allItems, sourcePanelId, sourceDivId]);
+  }, [allItems, sourcePanelId, sourceDivId, itemSearch]);
 
   // Search alternatives
   useEffect(() => {
@@ -84,7 +67,7 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
     const t = setTimeout(() => {
       api.get('/products', { params: { search: dq, limit: 10 } })
         .then(r => setSearchRes(r.data.products || []))
-        .catch(() => {});
+        .catch(e => toast.error(e.message, { id: 'api-' + e.message }));
     }, 300);
     return () => clearTimeout(t);
   }, [dq]);
@@ -92,22 +75,22 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
   // Load projects for panel comparison
   useEffect(() => {
     if (mode !== 'panel') return;
-    api.get('/projects').then(r => setAllProjects(r.data || [])).catch(() => {});
+    api.get('/projects').then(r => setAllProjects(r.data || [])).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
   }, [mode]);
 
   // Fetch external panels when project changes
   useEffect(() => {
     if (projectA === 'current' || !projectA) { setExternalPanelsA([]); return; }
     api.get(`/projects/${projectA}/crm`)
-      .then(r => setExternalPanelsA(r.data.panels || []))
-      .catch(() => setExternalPanelsA([]));
+      .then(r => setExternalPanelsA((r.data.panels || []).map(p => ({ ...p, exchange_rate_eur_usd: r.data.exchange_rate_eur_usd }))))
+      .catch(e => { setExternalPanelsA([]); toast.error(e.message, { id: 'api-' + e.message }); });
   }, [projectA]);
 
   useEffect(() => {
     if (projectB === 'current' || !projectB) { setExternalPanelsB([]); return; }
     api.get(`/projects/${projectB}/crm`)
-      .then(r => setExternalPanelsB(r.data.panels || []))
-      .catch(() => setExternalPanelsB([]));
+      .then(r => setExternalPanelsB((r.data.panels || []).map(p => ({ ...p, exchange_rate_eur_usd: r.data.exchange_rate_eur_usd }))))
+      .catch(e => { setExternalPanelsB([]); toast.error(e.message, { id: 'api-' + e.message }); });
   }, [projectB]);
 
   // Resolve panels for A and B
@@ -117,37 +100,7 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
   // Force remount when panel selections change
   useEffect(() => { setCompareKey(k => k + 1); }, [panelA, panelB, projectA, projectB]);
 
-  // Product across project search
-  useEffect(() => {
-    if (!productSearch.trim()) { setProductResults([]); return; }
-    const t = setTimeout(() => {
-      api.get('/products', { params: { search: productSearch, limit: 10 } })
-        .then(r => setProductResults(r.data.products || []))
-        .catch(() => {});
-    }, 300);
-    return () => clearTimeout(t);
-  }, [productSearch]);
-
-  // Find all panel occurrences for selected product
-  const productOccurrences = useMemo(() => {
-    const sel = alternative || (productResults.length === 1 ? productResults[0] : null);
-    if (!sel) return [];
-    const ref = sel.reference || sel.name;
-    const found = [];
-    for (const p of panels) {
-      for (const d of p.divisions || []) {
-        for (const i of d.items || []) {
-          const itemRef = i.is_manual ? (i.custom_name || '') : (i.reference || '');
-          if (itemRef.toLowerCase().includes(ref.toLowerCase())) {
-            found.push({ ...i, panel_number: p.panel_number, panel_name: p.panel_name, panel_id: p.id, division_id: d.id, division_type: d.division_type });
-          }
-        }
-      }
-    }
-    return found;
-  }, [alternative, productResults, panels]);
-
-  const currentMetrics = useMemo(() => selectedItem ? calcMetrics(selectedItem) : null, [selectedItem]);
+  const currentMetrics = useMemo(() => selectedItem ? calcMetrics(selectedItem, exchangeRate || 1.18) : null, [selectedItem, exchangeRate]);
   const altMetrics = useMemo(() => {
   if (!alternative) return null;
   const rate = exchangeRate || 1.18;
@@ -199,6 +152,7 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
           base_price_usd: usd,
           base_price_euro: eur,
         });
+        await onReload?.();
         toast.success(`✅ Replaced in ${allIds.length} item(s) across all panels`);
       } else {
         const form = {
@@ -212,7 +166,8 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
           custom_price_euro: null,
           custom_price_usd: null,
         };
-        await onItemUpdate(selectedItem.id, form);
+        if (await onItemUpdate(selectedItem.id, form) === false) return;
+        await onReload?.();
         toast.success('✅ Item replaced with ' + (alternative.reference || alternative.name));
       }
 
@@ -241,53 +196,31 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
   const ComparisonTable = ({ left, right, leftLabel, rightLabel }) => {
     if (!left || !right) return null;
     const metrics = [
-      { label: 'Unit Price', left: left.basePrice, right: right.basePrice, fmt: 'currency', higher: 'worse' },
-      { label: 'Cost', left: left.cost, right: right.cost, fmt: 'currency', higher: 'worse' },
-      { label: 'Final Price', left: left.finalPrice, right: right.finalPrice, fmt: 'currency', higher: 'better' },
-      { label: 'Profit', left: left.profit, right: right.profit, fmt: 'currency', higher: 'better' },
-      { label: 'Margin', left: left.margin, right: right.margin, fmt: 'pct', higher: 'better' },
+      { key: 'basePrice', label: 'Unit Price', higher: 'worse' },
+      { key: 'cost', label: 'Cost', higher: 'worse' },
+      { key: 'finalPrice', label: 'Final Price', higher: 'better' },
+      { key: 'profit', label: 'Profit', higher: 'better' },
+      { key: 'margin', label: 'Margin', higher: 'better' },
     ];
-
-    return (
-      <div style={{ overflowX: 'auto', marginTop: 12 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid var(--border)' }}>
-              <th style={{ textAlign: 'left', padding: '8px 10px' }}>Metric</th>
-              <th style={{ textAlign: 'right', padding: '8px 10px' }}>{leftLabel || 'Current'}</th>
-              <th style={{ textAlign: 'right', padding: '8px 10px' }}>{rightLabel || 'Alternative'}</th>
-              <th style={{ textAlign: 'right', padding: '8px 10px' }}>Difference</th>
-            </tr>
-          </thead>
-          <tbody>
-            {metrics.map(m => {
-              const diff = right[m.label === 'Unit Price' ? 'basePrice' : m.label.toLowerCase() === 'cost' ? 'cost' : m.label.toLowerCase() === 'final price' ? 'finalPrice' : m.label.toLowerCase() === 'profit' ? 'profit' : 'margin'] - left[m.label === 'Unit Price' ? 'basePrice' : m.label.toLowerCase() === 'cost' ? 'cost' : m.label.toLowerCase() === 'final price' ? 'finalPrice' : m.label.toLowerCase() === 'profit' ? 'profit' : 'margin'];
-              const pctDiff = left[m.label === 'Unit Price' ? 'basePrice' : m.label.toLowerCase() === 'cost' ? 'cost' : m.label.toLowerCase() === 'final price' ? 'finalPrice' : m.label.toLowerCase() === 'profit' ? 'profit' : 'margin'] !== 0
-                ? (diff / Math.abs(left[m.label === 'Unit Price' ? 'basePrice' : m.label.toLowerCase() === 'cost' ? 'cost' : m.label.toLowerCase() === 'final price' ? 'finalPrice' : m.label.toLowerCase() === 'profit' ? 'profit' : 'margin'])) * 100
-                : 0;
-              const isBetter = m.higher === 'better' ? diff > 0 : diff < 0;
-              const isWorse = m.higher === 'better' ? diff < 0 : diff > 0;
-              const val = m.label === 'Margin' ? pctDiff : diff;
-
-              return (
-                <tr key={m.label} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '6px 10px', fontWeight: 600, color: 'var(--white)' }}>{m.label}</td>
-                  <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>
-                    {hideCost ? `$${left[m.label === 'Unit Price' ? 'basePrice' : m.label.toLowerCase() === 'cost' ? 'cost' : m.label.toLowerCase() === 'final price' ? 'finalPrice' : m.label.toLowerCase() === 'profit' ? 'profit' : 'margin'].toFixed(2)}` : `$${left[m.label === 'Unit Price' ? 'basePrice' : m.label.toLowerCase() === 'cost' ? 'cost' : m.label.toLowerCase() === 'final price' ? 'finalPrice' : m.label.toLowerCase() === 'profit' ? 'profit' : 'margin'].toFixed(2)}`}
-                  </td>
-                  <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>
-                    {hideCost ? `$${right[m.label === 'Unit Price' ? 'basePrice' : m.label.toLowerCase() === 'cost' ? 'cost' : m.label.toLowerCase() === 'final price' ? 'finalPrice' : m.label.toLowerCase() === 'profit' ? 'profit' : 'margin'].toFixed(2)}` : `$${right[m.label === 'Unit Price' ? 'basePrice' : m.label.toLowerCase() === 'cost' ? 'cost' : m.label.toLowerCase() === 'final price' ? 'finalPrice' : m.label.toLowerCase() === 'profit' ? 'profit' : 'margin'].toFixed(2)}`}
-                  </td>
-                  <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, color: isBetter ? 'var(--success)' : isWorse ? 'var(--danger)' : 'var(--muted)' }}>
-                    {hideCost || m.label === 'Margin' ? formatPct(pctDiff) : `${isBetter ? '+' : isWorse ? '' : ''}$${Math.abs(val).toFixed(2)} (${formatPct(pctDiff)})`}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    );
+    return <div style={{ overflowX: 'auto', marginTop: 12 }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+        <thead><tr><th>Metric</th><th>{leftLabel || 'Current'}</th><th>{rightLabel || 'Alternative'}</th><th>Difference</th></tr></thead>
+        <tbody>{metrics.map(metric => {
+          const l = left[metric.key], r = right[metric.key];
+          const diff = r - l;
+          const pct = l !== 0 ? diff / Math.abs(l) * 100 : null;
+          const format = value => metric.key === 'margin' ? value.toFixed(2) + '%' : '$' + value.toFixed(2);
+          const better = metric.higher === 'better' ? diff > 0 : diff < 0;
+          const change = metric.key === 'margin' ? formatPct(diff) + ' points' : (diff > 0 ? '+' : diff < 0 ? '-' : '') + '$' + Math.abs(diff).toFixed(2) + (pct === null ? '' : ' (' + formatPct(pct) + ')');
+          return <tr key={metric.key} style={{ borderBottom: '1px solid var(--border)' }}>
+            <td style={{ padding: '6px 10px', fontWeight: 600 }}>{metric.label}</td>
+            <td style={{ textAlign: 'right', padding: '6px 10px' }}>{format(l)}</td>
+            <td style={{ textAlign: 'right', padding: '6px 10px' }}>{format(r)}</td>
+            <td style={{ textAlign: 'right', padding: '6px 10px', color: diff === 0 ? 'var(--muted)' : better ? 'var(--success)' : 'var(--danger)' }}>{change}</td>
+          </tr>;
+        })}</tbody>
+      </table>
+    </div>;
   };
 
   return (
@@ -307,7 +240,7 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
         {mode === 'item' && (
           <>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--white)', marginBottom: 10 }}>
-              Select an item from any panel to test a replacement
+              Search project items, select an occurrence, then search for its replacement
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
               <div className="form-group" style={{ minWidth: 160 }}>
@@ -330,6 +263,7 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
               )}
             </div>
 
+            <input className="form-input" aria-label="Search project items" placeholder="Search project items by reference, name, description, or brand..." value={itemSearch} onChange={e => setItemSearch(e.target.value)} style={{ marginBottom: 12 }} />
             <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 16 }}>
               {filteredItems.length === 0 ? (
                 <div style={{ padding: 16, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>No items found</div>
@@ -467,34 +401,8 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
               const b = panelsB.find(p => p.id === parseInt(panelB));
               if (!a || !b) return <div style={{ textAlign:'center', padding:20, color:'var(--muted)', fontSize:12 }}>Panel not found</div>;
 
-              const panelTotal = (p) => {
-                let total = 0, cost = 0;
-                for (const d of p.divisions || []) {
-                  for (const i of d.items || []) {
-                    const qty = parseInt(i.qty) || 1;
-                    const tfp = parseFloat(i.totalfinalProduct);
-                    if (tfp && tfp > 0) {
-                      total += tfp * qty;
-                    } else {
-                      let base = parseFloat(i.base_price_usd || 0);
-                      const eur = parseFloat(i.base_price_euro || 0);
-                      if (!base && eur) base = eur * rate;
-                      const baseTotal = base * qty;
-                      const disc = baseTotal * (parseFloat(i.discount_pct) / 100);
-                      const afterDisc = baseTotal - disc;
-                      total += afterDisc
-                        + afterDisc * (parseFloat(i.markupP_pct) / 100)
-                        + afterDisc * (parseFloat(i.manpower_pct) / 100)
-                        + (afterDisc * (parseFloat(i.manpower_pct) / 100)) * (parseFloat(i.markupM_pct) / 100);
-                    }
-                    cost += parseFloat(i.cost || 0) * qty;
-                  }
-                }
-                return { total, cost };
-              };
-
-              const { total: aTotal, cost: aCost } = panelTotal(a);
-              const { total: bTotal, cost: bCost } = panelTotal(b);
+              const { total: aTotal, cost: aCost } = calcPanelMetrics(a, a.exchange_rate_eur_usd || rate);
+              const { total: bTotal, cost: bCost } = calcPanelMetrics(b, b.exchange_rate_eur_usd || rate);
               const diff = bTotal - aTotal;
               const pct = aTotal !== 0 ? (diff / aTotal) * 100 : 0;
               const aItems = (a.divisions || []).reduce((s, d) => s + (d.items || []).length, 0);
@@ -528,6 +436,22 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
                       <div style={{ fontSize: 11, color: 'var(--muted)' }}>{bItems} items</div>
                     </div>
                   </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+                    {[a, b].map((panel, index) => <div key={index} style={{ overflowX: 'auto' }}>
+                      <h4>Panel {index === 0 ? 'A' : 'B'} — {panel.panel_name || '#' + panel.panel_number}</h4>
+                      {(panel.divisions || []).map(division => <div key={division.id}>
+                        <div style={{ fontWeight: 600, margin: '8px 0' }}>{division.division_type}</div>
+                        <table style={{ width: '100%', fontSize: 12 }}><thead><tr><th>Item</th><th>Description</th><th>Qty</th><th>Unit $</th></tr></thead>
+                          <tbody>{(division.items || []).map(item => <tr key={item.id}>
+                            <td>{item.is_manual ? item.custom_name : item.reference || item.name}</td>
+                            <td>{item.is_manual ? item.custom_desc : item.product_desc || item.description}</td>
+                            <td>{item.qty ?? 1}</td><td>{Number(item.base_price_usd || Number(item.base_price_euro || 0) * rate).toFixed(2)}</td>
+                          </tr>)}</tbody></table>
+                        {!(division.items || []).length && <p>No items in this division.</p>}
+                      </div>)}
+                      {!(panel.divisions || []).length && <p>No items in this panel.</p>}
+                    </div>)}
+                  </div>
                   {!hideCost && (
                     <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: 8 }}>
                       Cost: ${aCost.toFixed(2)} vs ${bCost.toFixed(2)} —
@@ -537,77 +461,6 @@ export default function SummaryTesting({ panels, project, id, onItemUpdate, onIt
                 </div>
               );
             })()}
-          </>
-        )}
-
-        {/* ── Mode: Product Across Project ── */}
-        {mode === 'product' && (
-          <>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--white)', marginBottom: 10 }}>
-              Search a product and see where it's used across all panels
-            </div>
-            <input className="form-input" placeholder="🔍 Search product reference or name..."
-              value={productSearch} onChange={e => setProductSearch(e.target.value)} style={{ marginBottom: 12 }} />
-
-            {productSearch.trim() && productResults.length > 0 && (
-              <div style={{ maxHeight: 140, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 12 }}>
-                {productResults.slice(0, 5).map(p => (
-                  <div key={p.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', cursor: 'pointer',
-                    borderBottom: '1px solid var(--border)', background: alternative?.id === p.id ? 'var(--accent)' : '',
-                    color: alternative?.id === p.id ? '#fff' : 'inherit'
-                  }} onClick={() => setAlternative(p)}>
-                    <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: alternative?.id === p.id ? '#ddd' : 'var(--accent)', minWidth: 80 }}>{p.reference}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, flex: 1, color: alternative?.id === p.id ? '#fff' : 'var(--white)' }}>{p.description || p.name}</span>
-                    <span style={{ fontSize: 11, color: alternative?.id === p.id ? '#ddd' : 'var(--success)' }}>${displayPrice(p).usd.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {productOccurrences.length > 0 && (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                      <th style={{ textAlign: 'left', padding: '8px 10px' }}>Panel</th>
-                      <th style={{ textAlign: 'left', padding: '8px 10px' }}>Division</th>
-                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Qty</th>
-                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Unit Price</th>
-                      {!hideCost && <th style={{ textAlign: 'right', padding: '8px 10px' }}>Cost</th>}
-                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Final Price</th>
-                      {!hideCost && <th style={{ textAlign: 'right', padding: '8px 10px' }}>Profit</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {productOccurrences.map((item, i) => {
-                      const m = calcMetrics(item);
-                      return (
-                        <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-                          <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>P#{item.panel_number}</td>
-                          <td style={{ padding: '6px 10px', color: 'var(--accent)' }}>{item.division_type}</td>
-                          <td style={{ padding: '6px 10px', textAlign: 'right' }}>{m.qty}</td>
-                          <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>${m.basePrice.toFixed(2)}</td>
-                          {!hideCost && <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>${m.cost.toFixed(2)}</td>}
-                          <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>${m.finalPrice.toFixed(2)}</td>
-                          {!hideCost && (
-                            <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: m.profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                              {m.profit >= 0 ? '+' : '-'}${Math.abs(m.profit).toFixed(2)}
-                            </td>
-                          )}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {productSearch.trim() && productOccurrences.length === 0 && (
-              <div style={{ textAlign: 'center', padding: 20, color: 'var(--muted)', fontSize: 12 }}>
-                Product not found in any panel. Try a different search term.
-              </div>
-            )}
           </>
         )}
 

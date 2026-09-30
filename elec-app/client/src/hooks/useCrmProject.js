@@ -138,7 +138,8 @@ export default function useCrmProject() {
       // Reload nested divisions/items because panel markup cascades on the server.
       // Merging only the returned panel row left the first/overridden item stale.
       await load();
-    } catch (e) { toast.error(e.message); }
+      return true;
+    } catch (e) { toast.error(e.message); return false; }
   }, [id, load]);
 
   const deletePanel = useCallback(async (panelId) => {
@@ -197,9 +198,9 @@ export default function useCrmProject() {
   const updateItem = useCallback(async (itemId, form) => {
     try {
       const div = panels.flatMap(p => p.divisions || []).find(d => d.items?.some(i => i.id === itemId));
-      if (!div) { toast.error('Item not found — page may be stale'); return; }
+      if (!div) { toast.error('Item not found — page may be stale'); return false; }
       const panel = panels.find(p => p.divisions?.some(d => d.id === div.id));
-      if (!panel) { toast.error('Panel not found — page may be stale'); return; }
+      if (!panel) { toast.error('Panel not found — page may be stale'); return false; }
       const r = await api.patch(`/projects/${id}/panels/${panel.id}/divisions/${div.id}/items/${itemId}`, form);
       setPanels(p => p.map(panel2 =>
         panel2.divisions?.some(d => d.items?.some(i2 => i2.id === itemId))
@@ -217,7 +218,8 @@ export default function useCrmProject() {
       } else {
         toast.success('Item updated');
       }
-    } catch (e) { toast.error(e.message); }
+      return true;
+    } catch (e) { toast.error(e.message); return false; }
   }, [id, panels]);
 
   const deleteItem = useCallback(async (itemId) => {

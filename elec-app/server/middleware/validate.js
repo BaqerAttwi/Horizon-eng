@@ -35,13 +35,19 @@ const schemas = {
     notes: z.string().optional().nullable(),
   }).refine(d => d.product_id || d.brand_id, { message: 'product_id or brand_id required' }),
   createProject: z.object({
-    project_name: z.string().min(1, 'Project name required'),
+    project_name: z.string().trim().min(1, 'Project name required').max(250),
     quote_number: z.string().trim().max(100).optional().nullable(),
     engineer_id: z.union([z.number(), z.string()]).pipe(z.coerce.number()).optional().nullable(),
     exchange_rate_eur_usd: z.union([z.number(), z.string()]).pipe(z.coerce.number()).optional(),
     client_id: z.union([z.number(), z.string()]).pipe(z.coerce.number()).optional().nullable(),
     deadline: z.string().optional().nullable(),
-    total_panels: z.union([z.number(), z.string()]).pipe(z.coerce.number().int().positive()).optional(),
+    total_panels: z.union([z.number(), z.string()]).pipe(z.coerce.number().int().nonnegative()).optional(),
+    notes: z.string().optional().nullable(),
+    vat_pct: z.coerce.number().min(0).max(100).optional(),
+    project_discount_pct: z.coerce.number().min(0).max(100).optional(),
+    margin_warning_pct: z.coerce.number().min(0).max(100).optional(),
+    payment_terms: z.string().optional().nullable(),
+    client_pdf_note: z.string().optional().nullable(),
   }),
 };
 

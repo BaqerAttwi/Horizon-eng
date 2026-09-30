@@ -1,0 +1,640 @@
+elec-app/server/middleware\auth.js:21:      'SELECT id, name, role FROM workers WHERE id=?',
+elec-app/server/controllers\activityController.js:8:      `INSERT INTO activity_logs (project_id, panel_id, division_id, item_id, action, field_name, old_value, new_value, performed_by)
+elec-app/server/controllers\activityController.js:29:       FROM activity_logs al
+elec-app/server/controllers\activityController.js:30:       LEFT JOIN workers w ON w.id = al.performed_by
+elec-app/server/controllers\activityController.js:38:      'SELECT COUNT(*) as total FROM activity_logs WHERE project_id = ?',
+elec-app/server/middleware\commercialLock.js:8:      const [[row]] = await db.execute(`SELECT pcp.project_id FROM division_item_group_instances gi
+elec-app/server/middleware\commercialLock.js:9:        JOIN panel_divisions d ON d.id=gi.division_id JOIN project_crm_panels pcp ON pcp.id=d.panel_id WHERE gi.id=?`, [req.params.instanceId]);
+elec-app/server/middleware\commercialLock.js:13:    const [[project]] = await db.execute('SELECT client_approval FROM projects WHERE id=? AND deleted_at IS NULL', [projectId]);
+elec-app/server/controllers\analyticsController.js:13:const PAYMENTS_JOIN = `
+elec-app/server/controllers\analyticsController.js:14:  LEFT JOIN (SELECT project_id, SUM(amount) as paid FROM project_payments GROUP BY project_id) pay
+elec-app/server/controllers\analyticsController.js:53:      FROM workers w
+elec-app/server/controllers\analyticsController.js:54:      LEFT JOIN projects p ON p.engineer_id = w.id AND p.deleted_at IS NULL ${df}${APPROVED_FILTER}
+elec-app/server/controllers\analyticsController.js:64:      FROM projects p
+elec-app/server/controllers\analyticsController.js:65:      JOIN project_engineer_requests per ON per.project_id = p.id AND per.status = 'accepted'
+elec-app/server/controllers\analyticsController.js:66:      JOIN workers ew ON ew.id = per.target_engineer_id
+elec-app/server/controllers\analyticsController.js:105:      FROM clients c
+elec-app/server/controllers\analyticsController.js:106:      LEFT JOIN projects p ON p.client_id = c.id AND p.deleted_at IS NULL ${df}${APPROVED_FILTER}
+elec-app/server/controllers\analyticsController.js:107:      LEFT JOIN workers w ON w.id = p.engineer_id
+elec-app/server/controllers\analyticsController.js:139:      FROM projects p
+elec-app/server/controllers\analyticsController.js:146:      FROM projects p JOIN workers w ON w.id = p.engineer_id
+elec-app/server/controllers\analyticsController.js:154:      FROM projects p JOIN clients c ON c.id = p.client_id
+elec-app/server/controllers\analyticsController.js:169:      FROM project_payments pp
+elec-app/server/controllers\analyticsController.js:170:      JOIN projects p ON p.id = pp.project_id AND p.deleted_at IS NULL ${APPROVED_FILTER}
+elec-app/server/controllers\analyticsController.js:182:      FROM project_payments pp
+elec-app/server/controllers\analyticsController.js:183:      JOIN projects p ON p.id = pp.project_id AND p.deleted_at IS NULL ${APPROVED_FILTER}
+elec-app/server/controllers\analyticsController.js:184:      LEFT JOIN clients c ON c.id = p.client_id
+elec-app/server/controllers\analyticsController.js:195:      FROM workers w
+elec-app/server/controllers\analyticsController.js:196:      LEFT JOIN projects p ON p.engineer_id = w.id AND p.deleted_at IS NULL ${df}${APPROVED_FILTER}
+elec-app/server/controllers\analyticsController.js:205:      SELECT * FROM (
+elec-app/server/controllers\analyticsController.js:210:        FROM projects p
+elec-app/server/controllers\analyticsController.js:211:        LEFT JOIN clients c ON c.id = p.client_id
+elec-app/server/controllers\analyticsController.js:239:      FROM projects p JOIN workers w ON w.id = p.engineer_id
+elec-app/server/controllers\analyticsController.js:247:      FROM project_engineer_requests per
+elec-app/server/controllers\analyticsController.js:248:      JOIN workers w ON w.id = per.target_engineer_id
+elec-app/server/utils\emailService.js:60:const fromAddr = () => process.env.EMAIL_FROM || 'noreply@app.hps-leb.com';
+elec-app/server/controllers\attachmentController.js:25:        'SELECT id FROM project_crm_panels WHERE id=? AND project_id=?',
+elec-app/server/controllers\attachmentController.js:41:      `INSERT INTO attachments (project_id, panel_id, file_name, stored_name, file_size, mime_type, uploaded_by, storage, link_url)
+elec-app/server/controllers\attachmentController.js:48:       FROM attachments a
+elec-app/server/controllers\attachmentController.js:49:       LEFT JOIN workers w ON w.id = a.uploaded_by
+elec-app/server/controllers\attachmentController.js:69:       FROM attachments a
+elec-app/server/controllers\attachmentController.js:70:       LEFT JOIN workers w ON w.id = a.uploaded_by
+elec-app/server/controllers\attachmentController.js:86:    const [[attachment]] = await db.execute('SELECT * FROM attachments WHERE id = ?', [attachmentId]);
+elec-app/server/controllers\attachmentController.js:115:    const [[attachment]] = await db.execute('SELECT * FROM attachments WHERE id = ?', [attachmentId]);
+elec-app/server/controllers\attachmentController.js:129:    await db.execute('DELETE FROM attachments WHERE id = ?', [attachmentId]);
+elec-app/server/utils\oneDrive.js:59:    `INSERT INTO oauth_tokens (provider, account_email, refresh_token, access_token, expires_at, connected_by)
+elec-app/server/utils\oneDrive.js:61:     ON DUPLICATE KEY UPDATE account_email=VALUES(account_email), refresh_token=VALUES(refresh_token),
+elec-app/server/utils\oneDrive.js:70:    "SELECT account_email, updated_at FROM oauth_tokens WHERE provider='onedrive'"
+elec-app/server/utils\oneDrive.js:76:  await db.execute("DELETE FROM oauth_tokens WHERE provider='onedrive'");
+elec-app/server/utils\oneDrive.js:85:  const [[row]] = await db.execute("SELECT refresh_token FROM oauth_tokens WHERE provider='onedrive'");
+elec-app/server/utils\oneDrive.js:106:    "UPDATE oauth_tokens SET refresh_token=?, access_token=?, expires_at=? WHERE provider='onedrive'",
+elec-app/server/controllers\authController.js:30:      'SELECT * FROM workers WHERE email = ?', [email.trim().toLowerCase()]
+elec-app/server/controllers\authController.js:100:      'SELECT id FROM workers WHERE email=?', [email.trim().toLowerCase()]
+elec-app/server/controllers\authController.js:108:      'INSERT INTO workers(name,email,phone,role,password_hash) VALUES(?,?,?,?,?)',
+elec-app/server/controllers\authController.js:113:      'SELECT id,name,email,phone,role,created_at FROM workers WHERE id=?',
+elec-app/server/controllers\authController.js:141:    const [rows] = await db.execute('SELECT * FROM workers WHERE id=?', [workerId]);
+elec-app/server/controllers\authController.js:148:    await db.execute('UPDATE workers SET password_hash=? WHERE id=?', [hash, workerId]);
+elec-app/server/controllers\authController.js:171:    await db.execute('UPDATE workers SET password_hash=? WHERE id=?', [hash, worker_id]);
+elec-app/server/controllers\authController.js:191:    const [rows] = await db.execute('SELECT id, name, email, role, created_at FROM workers WHERE id=?', [req.worker.id]);
+elec-app/server/utils\pricing.js:6:    'SELECT id, base_price_usd, base_price_euro, markupP_pct, discount_pct, manpower_pct, markupM_pct, qty FROM panel_crm_items WHERE division_id=?',
+elec-app/server/utils\pricing.js:13:      `UPDATE panel_crm_items SET markupP_amt=?,discount_amt=?,totalpriceT=?,manpower_amt=?,markupM_amt=?,totalfinalProduct=? WHERE id=?`,
+elec-app/server/utils\pricing.js:23:    'SELECT pcp.project_id, pcp.quantity, p.exchange_rate_eur_usd FROM project_crm_panels pcp JOIN projects p ON pcp.project_id=p.id WHERE pcp.id=?',
+elec-app/server/utils\pricing.js:28:  const [divisions] = await db.execute('SELECT id FROM panel_divisions WHERE panel_id=?', [panelId]);
+elec-app/server/utils\pricing.js:34:  await db.execute('UPDATE project_crm_panels SET total_price=? WHERE id=?', [panelTotal, panelId]);
+elec-app/server/utils\pricing.js:37:    const [panels] = await db.execute('SELECT id, total_price, is_completed FROM project_crm_panels WHERE project_id=?', [projectId]);
+elec-app/server/utils\pricing.js:40:    const [[proj]] = await db.execute('SELECT vat_pct, project_discount_pct FROM projects WHERE id=?', [projectId]);
+elec-app/server/utils\pricing.js:48:      FROM panel_crm_items i JOIN panel_divisions d ON d.id=i.division_id
+elec-app/server/utils\pricing.js:49:      JOIN project_crm_panels pcp ON pcp.id=d.panel_id WHERE pcp.project_id=?`, [projectId]);
+elec-app/server/utils\pricing.js:51:    await db.execute('UPDATE projects SET total_cost=?, total_price=?, project_discount_amount=?, total_vat=?, total_with_vat=?, completed_panels=?, total_panels=? WHERE id=?',
+elec-app/server/controllers\clientController.js:5:    const [clients] = await db.execute('SELECT * FROM clients ORDER BY name');
+elec-app/server/controllers\clientController.js:15:      'INSERT INTO clients(type,name,tax_id,credit_limit,phone,email,address) VALUES(?,?,?,?,?,?,?)',
+elec-app/server/controllers\clientController.js:18:    const [rows] = await db.execute('SELECT * FROM clients WHERE id=?', [result.insertId]);
+elec-app/server/controllers\clientController.js:27:    const [[existing]] = await db.execute('SELECT id FROM clients WHERE id=?', [req.params.id]);
+elec-app/server/controllers\clientController.js:40:    await db.execute(`UPDATE clients SET ${fields.join(',')} WHERE id=?`, params);
+elec-app/server/controllers\clientController.js:41:    const [rows] = await db.execute('SELECT * FROM clients WHERE id=?', [req.params.id]);
+elec-app/server/controllers\clientController.js:49:      await db.execute('UPDATE clients SET deleted_at = NOW() WHERE id=?', [req.params.id]);
+elec-app/server/controllers\clientController.js:52:        await db.execute('DELETE FROM clients WHERE id=?', [req.params.id]);
+elec-app/server/controllers\crmController.js:26:      `SELECT p.id FROM projects p
+elec-app/server/controllers\crmController.js:27:       LEFT JOIN project_engineer_requests per ON per.project_id = p.id
+elec-app/server/controllers\crmController.js:50:  const [[panel]] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [panelId]);
+elec-app/server/controllers\crmController.js:64:       FROM project_crm_panels p
+elec-app/server/controllers\crmController.js:65:       LEFT JOIN panel_divisions d ON d.panel_id = p.id
+elec-app/server/controllers\crmController.js:89:      'INSERT INTO project_crm_panels(project_id,panel_number,panel_name,quantity,markupP,markupM,manpower_pct) VALUES(?,?,?,?,?,?,?)',
+elec-app/server/controllers\crmController.js:99:    const [rows] = await db.execute('SELECT * FROM project_crm_panels WHERE id=?', [result.insertId]);
+elec-app/server/controllers\crmController.js:115:      'SELECT id, quantity FROM project_crm_panels WHERE id=? AND project_id=?',
+elec-app/server/controllers\crmController.js:124:      'UPDATE project_crm_panels SET panel_name=?, quantity=?, markupP=?, markupM=?, manpower_pct=?, note=?, show_note_in_client_pdf=?, onedrive_link=?, updated_by=? WHERE id=? AND project_id=?',
+elec-app/server/controllers\crmController.js:129:    const [divisions] = await db.execute('SELECT id FROM panel_divisions WHERE panel_id=?', [req.params.panelId]);
+elec-app/server/controllers\crmController.js:132:        'UPDATE panel_divisions SET markupP=?, markupM=?, manpower_pct=? WHERE id=?',
+elec-app/server/controllers\crmController.js:136:        'UPDATE panel_crm_items SET markupP_pct=?, manpower_pct=?, markupM_pct=?, override_markup=0 WHERE division_id=?',
+elec-app/server/controllers\crmController.js:144:      const [affected] = await db.execute(`SELECT product_id,SUM(qty) item_qty FROM panel_crm_items
+elec-app/server/controllers\crmController.js:145:        WHERE division_id IN (SELECT id FROM panel_divisions WHERE panel_id=?) AND product_id IS NOT NULL GROUP BY product_id`, [req.params.panelId]);
+elec-app/server/controllers\crmController.js:149:        await db.execute(`INSERT INTO reservation_history(product_id,project_id,panel_id,old_qty,new_qty,change_qty,reason,changed_by)
+elec-app/server/controllers\crmController.js:158:       FROM project_crm_panels pcp
+elec-app/server/controllers\crmController.js:159:       LEFT JOIN workers w ON pcp.updated_by = w.id
+elec-app/server/controllers\crmController.js:174:      'SELECT panel_name, panel_number, project_id FROM project_crm_panels WHERE id=? AND project_id=?',
+elec-app/server/controllers\crmController.js:178:    await db.execute('DELETE FROM project_crm_panels WHERE id=? AND project_id=?', [req.params.panelId, req.params.projectId]);
+elec-app/server/controllers\crmController.js:181:      'SELECT id FROM project_crm_panels WHERE project_id=? ORDER BY panel_number',
+elec-app/server/controllers\crmController.js:185:      await db.execute('UPDATE project_crm_panels SET panel_number=? WHERE id=?', [i + 1, remaining[i].id]);
+elec-app/server/controllers\crmController.js:189:    const [panels] = await db.execute('SELECT id, total_price, is_completed FROM project_crm_panels WHERE project_id=?', [deletedPanel.project_id]);
+elec-app/server/controllers\crmController.js:192:    const [[proj]] = await db.execute('SELECT vat_pct, project_discount_pct FROM projects WHERE id=?', [deletedPanel.project_id]);
+elec-app/server/controllers\crmController.js:199:    await db.execute('UPDATE projects SET total_price=?, project_discount_amount=?, total_vat=?, total_with_vat=?, completed_panels=?, total_panels=? WHERE id=?',
+elec-app/server/controllers\crmController.js:211:    const [panels] = await db.execute('SELECT is_completed, panel_name FROM project_crm_panels WHERE id=? AND project_id=?', [req.params.panelId, req.params.projectId]);
+elec-app/server/controllers\crmController.js:214:    await db.execute('UPDATE project_crm_panels SET is_completed=?, updated_by=? WHERE id=?', [newVal, req.worker.id, req.params.panelId]);
+elec-app/server/controllers\crmController.js:219:       FROM project_crm_panels pcp
+elec-app/server/controllers\crmController.js:220:       LEFT JOIN workers w ON pcp.updated_by = w.id
+elec-app/server/controllers\crmController.js:238:        (SELECT COUNT(*) FROM panel_crm_items i WHERE i.division_id=d.id) as item_count
+elec-app/server/controllers\crmController.js:239:       FROM panel_divisions d LEFT JOIN division_types dt ON dt.name=d.division_type WHERE d.panel_id=? ORDER BY d.id`,
+elec-app/server/controllers\crmController.js:256:    const [[validType]] = await db.execute('SELECT id FROM division_types WHERE name=? AND is_active=1',[division_type]);
+elec-app/server/controllers\crmController.js:260:      'INSERT INTO panel_divisions(panel_id,division_type,markupP,markupM,manpower_pct) VALUES(?,?,?,?,?)',
+elec-app/server/controllers\crmController.js:264:    const [rows] = await db.execute('SELECT d.*,dt.color division_color FROM panel_divisions d LEFT JOIN division_types dt ON dt.name=d.division_type WHERE d.id=?', [result.insertId]);
+elec-app/server/controllers\crmController.js:266:    const [[p]] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [req.params.panelId]);
+elec-app/server/controllers\crmController.js:278:    const [[validType]] = await db.execute('SELECT id FROM division_types WHERE name=? AND is_active=1',[division_type]);
+elec-app/server/controllers\crmController.js:281:      'UPDATE panel_divisions SET division_type=?, markupP=?, markupM=?, manpower_pct=? WHERE id=? AND panel_id=?',
+elec-app/server/controllers\crmController.js:287:      'UPDATE panel_crm_items SET markupP_pct=?, manpower_pct=?, markupM_pct=? WHERE division_id=? AND (override_markup IS NULL OR override_markup = FALSE)',
+elec-app/server/controllers\crmController.js:293:    const [[divP]] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [req.params.panelId]);
+elec-app/server/controllers\crmController.js:296:    const [rows] = await db.execute('SELECT * FROM panel_divisions WHERE id=?', [req.params.divisionId]);
+elec-app/server/controllers\crmController.js:307:    const [[oldDiv]] = await db.execute('SELECT division_type FROM panel_divisions WHERE id=?', [req.params.divisionId]);
+elec-app/server/controllers\crmController.js:308:    await db.execute('DELETE FROM panel_divisions WHERE id=? AND panel_id=?', [req.params.divisionId, req.params.panelId]);
+elec-app/server/controllers\crmController.js:311:    const [[divPDel]] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [req.params.panelId]);
+elec-app/server/controllers\crmController.js:325:      'SELECT * FROM panel_manual_products WHERE project_id=? ORDER BY name',
+elec-app/server/controllers\crmController.js:342:      'INSERT INTO panel_manual_products(project_id,name,description,price_euro,price_usd,brand) VALUES(?,?,?,?,?,?)',
+elec-app/server/controllers\crmController.js:345:    const [rows] = await db.execute('SELECT * FROM panel_manual_products WHERE id=?', [result.insertId]);
+elec-app/server/controllers\crmController.js:356:    await db.execute('DELETE FROM panel_manual_products WHERE id=? AND project_id=?', [req.params.productId, req.params.projectId]);
+elec-app/server/controllers\crmController.js:364:    SELECT d.panel_id, pcp.project_id FROM panel_divisions d
+elec-app/server/controllers\crmController.js:365:    JOIN project_crm_panels pcp ON d.panel_id = pcp.id
+elec-app/server/controllers\crmController.js:386:       FROM panel_crm_items i
+elec-app/server/controllers\crmController.js:387:       LEFT JOIN products p ON i.product_id = p.id
+elec-app/server/controllers\crmController.js:388:       LEFT JOIN brands b ON p.brand_id = b.id
+elec-app/server/controllers\crmController.js:397:        const [mp] = await db.execute('SELECT * FROM panel_manual_products WHERE id=?', [item.manual_product_id]);
+elec-app/server/controllers\crmController.js:430:    const [projRows] = await db.execute('SELECT exchange_rate_eur_usd FROM projects WHERE id=?', [req.params.projectId]);
+elec-app/server/controllers\crmController.js:439:      const [[productPrice]] = await db.execute('SELECT price_usd,price_euro FROM products WHERE id=?', [product_id]);
+elec-app/server/controllers\crmController.js:458:        'INSERT INTO panel_manual_products(project_id,name,description,price_euro,price_usd,brand) VALUES(?,?,?,?,?,?)',
+elec-app/server/controllers\crmController.js:468:        'SELECT pd.discount_pct FROM product_discounts pd WHERE pd.product_id=? OR pd.brand_id=(SELECT brand_id FROM products WHERE id=?) LIMIT 1',
+elec-app/server/controllers\crmController.js:480:      `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
+elec-app/server/controllers\crmController.js:503:       FROM panel_crm_items i
+elec-app/server/controllers\crmController.js:504:       LEFT JOIN products p ON i.product_id = p.id
+elec-app/server/controllers\crmController.js:505:       LEFT JOIN brands b ON p.brand_id = b.id
+elec-app/server/controllers\crmController.js:511:        'SELECT name,description,brand,price_euro,price_usd FROM panel_manual_products WHERE id=?',
+elec-app/server/controllers\crmController.js:536:    const [existing] = await db.execute('SELECT * FROM panel_crm_items WHERE id=? AND division_id=?', [req.params.itemId, req.params.divisionId]);
+elec-app/server/controllers\crmController.js:551:    const [projRows] = await db.execute('SELECT exchange_rate_eur_usd FROM projects WHERE id=?', [req.params.projectId]);
+elec-app/server/controllers\crmController.js:631:    await db.execute(`UPDATE panel_crm_items SET ${updateFields.join(',')} WHERE id=?`, updateParams);
+elec-app/server/controllers\crmController.js:655:       FROM panel_crm_items i
+elec-app/server/controllers\crmController.js:656:       LEFT JOIN products p ON p.id=i.product_id
+elec-app/server/controllers\crmController.js:657:       LEFT JOIN brands b ON b.id=p.brand_id
+elec-app/server/controllers\crmController.js:670:    const [[deletedItem]] = await db.execute('SELECT base_price_usd, qty FROM panel_crm_items WHERE id=?', [req.params.itemId]);
+elec-app/server/controllers\crmController.js:671:    await db.execute('DELETE FROM panel_crm_items WHERE id=? AND division_id=?', [req.params.itemId, req.params.divisionId]);
+elec-app/server/controllers\crmController.js:692:       FROM projects p
+elec-app/server/controllers\crmController.js:693:       LEFT JOIN workers w ON p.engineer_id=w.id
+elec-app/server/controllers\crmController.js:694:       LEFT JOIN clients c ON p.client_id=c.id
+elec-app/server/controllers\crmController.js:703:       FROM project_crm_panels pcp
+elec-app/server/controllers\crmController.js:704:       LEFT JOIN workers w ON pcp.updated_by = w.id
+elec-app/server/controllers\crmController.js:714:          'INSERT INTO project_crm_panels(project_id,panel_number,panel_name,markupP,markupM,manpower_pct) VALUES(?,?,?,0,0,0)',
+elec-app/server/controllers\crmController.js:721:         FROM project_crm_panels pcp
+elec-app/server/controllers\crmController.js:722:         LEFT JOIN workers w ON pcp.updated_by = w.id
+elec-app/server/controllers\crmController.js:736:         FROM panel_divisions d
+elec-app/server/controllers\crmController.js:737:         LEFT JOIN division_types dt ON dt.name=d.division_type
+elec-app/server/controllers\crmController.js:738:         LEFT JOIN panel_crm_items i ON i.division_id=d.id
+elec-app/server/controllers\crmController.js:750:             FROM panel_crm_items i
+elec-app/server/controllers\crmController.js:751:             LEFT JOIN products p ON i.product_id = p.id
+elec-app/server/controllers\crmController.js:752:             LEFT JOIN brands b ON p.brand_id = b.id
+elec-app/server/controllers\crmController.js:758:             FROM division_item_group_instances dig
+elec-app/server/controllers\crmController.js:759:             JOIN item_groups ig ON dig.item_group_id = ig.id
+elec-app/server/controllers\crmController.js:790:      'SELECT * FROM panel_manual_products WHERE project_id=?',
+elec-app/server/controllers\crmController.js:830:    const [panels] = await db.execute('SELECT * FROM project_crm_panels WHERE id=? AND project_id=?', [sourcePanelId, sourceProjectId]);
+elec-app/server/controllers\crmController.js:838:    const [maxNum] = await conn.execute('SELECT COALESCE(MAX(panel_number), 0) + 1 AS next_num FROM project_crm_panels WHERE project_id=? FOR UPDATE', [targetProjectId]);
+elec-app/server/controllers\crmController.js:843:      'INSERT INTO project_crm_panels(project_id,panel_number,panel_name,quantity,markupP,markupM,manpower_pct,note,show_note_in_client_pdf,updated_by) VALUES(?,?,?,?,?,?,?,?,?,?)',
+elec-app/server/controllers\crmController.js:849:    const [sourceDivs] = await conn.execute('SELECT * FROM panel_divisions WHERE panel_id=?', [sourcePanelId]);
+elec-app/server/controllers\crmController.js:855:        'INSERT INTO panel_divisions(panel_id,division_type,markupP,markupM,manpower_pct) VALUES(?,?,?,?,?)',
+elec-app/server/controllers\crmController.js:860:      const [sourceItems] = await conn.execute('SELECT * FROM panel_crm_items WHERE division_id=?', [sd.id]);
+elec-app/server/controllers\crmController.js:866:            const [mp] = await conn.execute('SELECT * FROM panel_manual_products WHERE id=?', [si.manual_product_id]);
+elec-app/server/controllers\crmController.js:869:                'INSERT INTO panel_manual_products(project_id,name,description,price_euro,price_usd,brand) VALUES(?,?,?,?,?,?)',
+elec-app/server/controllers\crmController.js:879:          `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
+elec-app/server/controllers\crmController.js:898:    const [newPanelRows] = await db.execute('SELECT * FROM project_crm_panels WHERE id=?', [newPanelId]);
+elec-app/server/controllers\crmController.js:899:    const [newDivs] = await db.execute('SELECT * FROM panel_divisions WHERE panel_id=?', [newPanelId]);
+elec-app/server/controllers\crmController.js:902:      const [ndItems] = await db.execute('SELECT * FROM panel_crm_items WHERE division_id=?', [nd.id]);
+elec-app/server/controllers\crmController.js:934:        `SELECT pci.* FROM panel_crm_items pci
+elec-app/server/controllers\crmController.js:935:         JOIN panel_divisions pd ON pd.id=pci.division_id
+elec-app/server/controllers\crmController.js:936:         JOIN project_crm_panels pcp ON pcp.id=pd.panel_id
+elec-app/server/controllers\crmController.js:954:      await db.execute(`UPDATE panel_crm_items SET ${fields.join(',')} WHERE id=?`, params);
+elec-app/server/controllers\crmController.js:957:      const [updated] = await db.execute('SELECT * FROM panel_crm_items WHERE id=?', [itemId]);
+elec-app/server/controllers\crmController.js:960:        'UPDATE panel_crm_items SET markupP_amt=?,discount_amt=?,totalpriceT=?,manpower_amt=?,markupM_amt=?,totalfinalProduct=? WHERE id=?',
+elec-app/server/controllers\crmController.js:970:       FROM panel_crm_items pci
+elec-app/server/controllers\crmController.js:971:       JOIN panel_divisions pd ON pci.division_id = pd.id
+elec-app/server/controllers\crmController.js:972:       JOIN project_crm_panels pcp ON pcp.id = pd.panel_id
+elec-app/server/controllers\crmController.js:1009:    const [projRows] = await db.execute('SELECT exchange_rate_eur_usd FROM projects WHERE id=?', [projectId]);
+elec-app/server/controllers\crmController.js:1019:        `SELECT pci.* FROM panel_crm_items pci
+elec-app/server/controllers\crmController.js:1020:         JOIN panel_divisions pd ON pd.id=pci.division_id
+elec-app/server/controllers\crmController.js:1021:         JOIN project_crm_panels pcp ON pcp.id=pd.panel_id
+elec-app/server/controllers\crmController.js:1042:        `UPDATE panel_crm_items SET product_id=?,base_price_usd=?,base_price_euro=?,
+elec-app/server/controllers\crmController.js:1058:       FROM panel_crm_items pci
+elec-app/server/controllers\crmController.js:1059:       JOIN panel_divisions pd ON pci.division_id = pd.id
+elec-app/server/controllers\crmController.js:1060:       JOIN project_crm_panels pcp ON pcp.id = pd.panel_id
+elec-app/server/controllers\crmController.js:1101:    const [[proj]] = await db.execute('SELECT exchange_rate_eur_usd FROM projects WHERE id=?', [projectId]);
+elec-app/server/controllers\crmController.js:1107:       FROM panel_crm_items pci
+elec-app/server/controllers\crmController.js:1108:       JOIN panel_divisions pd ON pci.division_id = pd.id
+elec-app/server/controllers\crmController.js:1109:       JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+elec-app/server/controllers\crmController.js:1110:       LEFT JOIN products p ON pci.product_id = p.id
+elec-app/server/controllers\crmController.js:1111:       LEFT JOIN brands b ON p.brand_id = b.id
+elec-app/server/controllers\crmController.js:1125:        `UPDATE panel_crm_items SET discount_pct=?, markupP_amt=?,discount_amt=?,totalpriceT=?,
+elec-app/server/controllers\crmController.js:1136:       FROM panel_crm_items pci
+elec-app/server/controllers\crmController.js:1137:       JOIN panel_divisions pd ON pci.division_id = pd.id
+elec-app/server/controllers\dashboardController.js:14:        `SELECT id FROM projects WHERE engineer_id = ? OR id IN (SELECT project_id FROM project_engineer_requests WHERE target_engineer_id = ? AND status = 'accepted')`,
+elec-app/server/controllers\dashboardController.js:35:      FROM projects p
+elec-app/server/controllers\dashboardController.js:45:      FROM projects p
+elec-app/server/controllers\dashboardController.js:46:      LEFT JOIN workers w ON w.id = p.engineer_id
+elec-app/server/controllers\dashboardController.js:47:      LEFT JOIN clients c ON c.id = p.client_id
+elec-app/server/controllers\dashboardController.js:67:      FROM projects p
+elec-app/server/controllers\dashboardController.js:68:      LEFT JOIN workers w ON w.id = p.engineer_id
+elec-app/server/controllers\dashboardController.js:80:      FROM project_crm_panels pcp
+elec-app/server/controllers\dashboardController.js:81:      JOIN projects p ON p.id = pcp.project_id
+elec-app/server/controllers\dashboardController.js:82:      LEFT JOIN workers w ON w.id = pcp.updated_by
+elec-app/server/controllers\dashboardController.js:98:        FROM products
+elec-app/server/controllers\dashboardController.js:114:        FROM projects p
+elec-app/server/controllers\dashboardController.js:115:        LEFT JOIN clients c ON c.id = p.client_id
+elec-app/server/controllers\dashboardController.js:116:        LEFT JOIN project_crm_panels pcp ON pcp.project_id = p.id
+elec-app/server/controllers\dashboardController.js:119:            SELECT per.project_id FROM project_engineer_requests per
+elec-app/server/controllers\dashboardController.js:142:        FROM workers w
+elec-app/server/controllers\dashboardController.js:143:        LEFT JOIN projects p ON p.engineer_id = w.id AND p.deleted_at IS NULL AND p.admin_approval = 'approved' AND p.client_approval = 'approved'
+elec-app/server/controllers\discountController.js:23:      `SELECT COUNT(*) as total FROM product_discounts pd ${where}`, params
+elec-app/server/controllers\discountController.js:28:       FROM product_discounts pd
+elec-app/server/controllers\discountController.js:29:       LEFT JOIN products pr ON pd.product_id = pr.id
+elec-app/server/controllers\discountController.js:30:       LEFT JOIN brands b ON pd.brand_id = b.id
+elec-app/server/controllers\discountController.js:46:      'INSERT INTO product_discounts(product_id,brand_id,discount_pct,notes) VALUES(?,?,?,?)',
+elec-app/server/controllers\discountController.js:51:       FROM product_discounts pd
+elec-app/server/controllers\discountController.js:52:       LEFT JOIN products pr ON pd.product_id = pr.id
+elec-app/server/controllers\discountController.js:53:       LEFT JOIN brands b ON pd.brand_id = b.id
+elec-app/server/controllers\discountController.js:64:    await db.execute('UPDATE product_discounts SET discount_pct=?,notes=? WHERE id=?',
+elec-app/server/controllers\discountController.js:66:    const [rows] = await db.execute('SELECT * FROM product_discounts WHERE id=?', [req.params.id]);
+elec-app/server/controllers\discountController.js:74:      await db.execute('UPDATE product_discounts SET deleted_at = NOW() WHERE id=?', [req.params.id]);
+elec-app/server/controllers\discountController.js:77:        await db.execute('DELETE FROM product_discounts WHERE id=?', [req.params.id]);
+elec-app/server/controllers\discountController.js:95:      const [existing] = await db.execute('SELECT id FROM product_discounts WHERE brand_id=? AND product_id IS NULL', [brandId]);
+elec-app/server/controllers\discountController.js:97:        await db.execute('UPDATE product_discounts SET discount_pct=? WHERE id=?', [pct, existing[0].id]);
+elec-app/server/controllers\discountController.js:99:        await db.execute('INSERT INTO product_discounts(brand_id,discount_pct) VALUES(?,?)', [brandId, pct]);
+elec-app/server/controllers\divisionItemGroupController.js:16:    const [[group]] = await db.execute('SELECT * FROM item_groups WHERE id = ?', [item_group_id]);
+elec-app/server/controllers\divisionItemGroupController.js:23:       FROM panel_divisions pd
+elec-app/server/controllers\divisionItemGroupController.js:24:       JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+elec-app/server/controllers\divisionItemGroupController.js:33:    const [[proj]] = await db.execute('SELECT exchange_rate_eur_usd FROM projects WHERE id = ?', [div.project_id]);
+elec-app/server/controllers\divisionItemGroupController.js:45:      'INSERT INTO division_item_group_instances (division_id, item_group_id, quantity, description) VALUES (?, ?, ?, ?)',
+elec-app/server/controllers\divisionItemGroupController.js:54:       FROM item_group_items gi
+elec-app/server/controllers\divisionItemGroupController.js:55:       LEFT JOIN products p ON gi.product_id = p.id
+elec-app/server/controllers\divisionItemGroupController.js:71:          `SELECT pd.discount_pct FROM product_discounts pd
+elec-app/server/controllers\divisionItemGroupController.js:72:           JOIN products p ON p.brand_id = pd.brand_id
+elec-app/server/controllers\divisionItemGroupController.js:81:        `INSERT INTO panel_crm_items (
+elec-app/server/controllers\divisionItemGroupController.js:149:       FROM division_item_group_instances dig
+elec-app/server/controllers\divisionItemGroupController.js:150:       JOIN panel_divisions pd ON dig.division_id = pd.id
+elec-app/server/controllers\divisionItemGroupController.js:151:       JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+elec-app/server/controllers\divisionItemGroupController.js:166:      'SELECT * FROM panel_crm_items WHERE source_group_instance_id = ?',
+elec-app/server/controllers\divisionItemGroupController.js:172:      'SELECT * FROM item_group_items WHERE group_id = ?',
+elec-app/server/controllers\divisionItemGroupController.js:185:      await conn.execute('UPDATE panel_crm_items SET qty = ? WHERE id = ?', [newItemQty, item.id]);
+elec-app/server/controllers\divisionItemGroupController.js:189:      'UPDATE division_item_group_instances SET quantity=?, description=COALESCE(?, description) WHERE id=?',
+elec-app/server/controllers\divisionItemGroupController.js:235:       FROM division_item_group_instances dig
+elec-app/server/controllers\divisionItemGroupController.js:236:       JOIN panel_divisions pd ON dig.division_id = pd.id
+elec-app/server/controllers\divisionItemGroupController.js:237:       JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+elec-app/server/controllers\divisionItemGroupController.js:248:    await conn.execute('DELETE FROM panel_crm_items WHERE source_group_instance_id = ?', [instanceId]);
+elec-app/server/controllers\divisionItemGroupController.js:251:    await conn.execute('DELETE FROM division_item_group_instances WHERE id = ?', [instanceId]);
+elec-app/server/controllers\divisionItemGroupController.js:286:      `SELECT pcp.project_id FROM panel_divisions pd
+elec-app/server/controllers\divisionItemGroupController.js:287:       JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+elec-app/server/controllers\divisionItemGroupController.js:296:       FROM division_item_group_instances dig
+elec-app/server/controllers\divisionItemGroupController.js:297:       JOIN item_groups ig ON dig.item_group_id = ig.id
+elec-app/server/controllers\divisionItemGroupController.js:307:         FROM panel_crm_items pci
+elec-app/server/controllers\divisionItemGroupController.js:308:         LEFT JOIN products pr ON pci.product_id = pr.id
+elec-app/server/controllers\divisionItemGroupController.js:309:         LEFT JOIN brands b ON pr.brand_id = b.id
+elec-app/server/controllers\divisionTypeController.js:4:  (SELECT COUNT(*) FROM panel_divisions pd WHERE pd.division_type=dt.name) usage_count
+elec-app/server/controllers\divisionTypeController.js:5:  FROM division_types dt LEFT JOIN workers w ON w.id=dt.created_by
+elec-app/server/controllers\divisionTypeController.js:9:async function createDivisionType(req,res,next){try{const name=String(req.body.name||'').trim();const color=String(req.body.color||'#64748b').trim();if(!name||name.length>100)return res.status(400).json({error:'Division name is required and must be 100 characters or less'});if(!/^#[0-9a-f]{6}$/i.test(color))return res.status(400).json({error:'Choose a valid color'});const [[order]]=await db.execute('SELECT COALESCE(MAX(sort_order),0)+1 n FROM division_types');const [result]=await db.execute('INSERT INTO division_types(name,color,sort_order,created_by) VALUES(?,?,?,?)',[name,color,order.n,req.worker.id]);const [[row]]=await db.execute('SELECT * FROM division_types WHERE id=?',[result.insertId]);res.status(201).json(row);}catch(e){if(e.code==='ER_DUP_ENTRY')return res.status(409).json({error:'This division type already exists'});next(e)}}
+elec-app/server/controllers\divisionTypeController.js:11:async function updateDivisionType(req,res,next){try{const [[old]]=await db.execute('SELECT * FROM division_types WHERE id=?',[req.params.id]);if(!old)return res.status(404).json({error:'Division type not found'});const name=String(req.body.name??old.name).trim();const color=String(req.body.color??old.color).trim();const active=req.body.is_active===undefined?old.is_active:(req.body.is_active?1:0);if(!name||name.length>100)return res.status(400).json({error:'Invalid division name'});if(!/^#[0-9a-f]{6}$/i.test(color))return res.status(400).json({error:'Choose a valid color'});const conn=await db.getConnection();try{await conn.beginTransaction();await conn.execute('UPDATE division_types SET name=?,color=?,is_active=? WHERE id=?',[name,color,active,req.params.id]);if(name!==old.name)await conn.execute('UPDATE panel_divisions SET division_type=? WHERE division_type=?',[name,old.name]);await conn.commit();}catch(e){await conn.rollback();throw e}finally{conn.release()}const [[row]]=await db.execute('SELECT * FROM division_types WHERE id=?',[req.params.id]);res.json(row);}catch(e){if(e.code==='ER_DUP_ENTRY')return res.status(409).json({error:'This division type already exists'});next(e)}}
+elec-app/server/controllers\divisionTypeController.js:13:async function deleteDivisionType(req,res,next){try{const [[type]]=await db.execute('SELECT * FROM division_types WHERE id=?',[req.params.id]);if(!type)return res.status(404).json({error:'Division type not found'});const [[used]]=await db.execute('SELECT COUNT(*) n FROM panel_divisions WHERE division_type=?',[type.name]);if(Number(used.n)){await db.execute('UPDATE division_types SET is_active=0 WHERE id=?',[req.params.id]);return res.json({message:'Division type is in use, so it was archived instead of deleted',archived:true});}await db.execute('DELETE FROM division_types WHERE id=?',[req.params.id]);res.json({message:'Division type deleted'});}catch(e){next(e)}}
+elec-app/server/controllers\engineerRequestController.js:9:       FROM project_engineer_requests er
+elec-app/server/controllers\engineerRequestController.js:10:       JOIN projects p ON er.project_id = p.id
+elec-app/server/controllers\engineerRequestController.js:11:       JOIN workers req_w ON er.requested_by = req_w.id
+elec-app/server/controllers\engineerRequestController.js:25:       FROM project_engineer_requests er
+elec-app/server/controllers\engineerRequestController.js:26:       JOIN projects p ON er.project_id = p.id
+elec-app/server/controllers\engineerRequestController.js:27:       JOIN workers t_w ON er.target_engineer_id = t_w.id
+elec-app/server/controllers\engineerRequestController.js:50:      "SELECT id FROM workers WHERE id=? AND role='engineer'",
+elec-app/server/controllers\engineerRequestController.js:57:      'SELECT id, status FROM project_engineer_requests WHERE project_id=? AND target_engineer_id=?',
+elec-app/server/controllers\engineerRequestController.js:68:        'UPDATE project_engineer_requests SET requested_by=?,status=\'pending\',rejection_reason=NULL WHERE id=?',
+elec-app/server/controllers\engineerRequestController.js:71:      const [[project]] = await db.execute('SELECT project_name FROM projects WHERE id=?', [project_id]);
+elec-app/server/controllers\engineerRequestController.js:74:      const [[resent]] = await db.execute('SELECT * FROM project_engineer_requests WHERE id=?', [existing[0].id]);
+elec-app/server/controllers\engineerRequestController.js:78:      'INSERT INTO project_engineer_requests(project_id,requested_by,target_engineer_id) VALUES(?,?,?)',
+elec-app/server/controllers\engineerRequestController.js:81:    const [project] = await db.execute('SELECT project_name FROM projects WHERE id=?', [project_id]);
+elec-app/server/controllers\engineerRequestController.js:87:    const [row] = await db.execute('SELECT * FROM project_engineer_requests WHERE id=?', [r.insertId]);
+elec-app/server/controllers\engineerRequestController.js:102:      'SELECT * FROM project_engineer_requests WHERE id=? AND target_engineer_id=?',
+elec-app/server/controllers\engineerRequestController.js:111:      'UPDATE project_engineer_requests SET status=?, rejection_reason=? WHERE id=?',
+elec-app/server/controllers\engineerRequestController.js:114:    const [row] = await db.execute('SELECT * FROM project_engineer_requests WHERE id=?', [req.params.requestId]);
+elec-app/server/controllers\engineerRequestController.js:118:    const [project] = await db.execute('SELECT project_name FROM projects WHERE id=?', [row[0].project_id]);
+elec-app/server/controllers\engineerRequestController.js:132:      'DELETE FROM project_engineer_requests WHERE id=? AND (requested_by=? OR target_engineer_id=?)',
+elec-app/server/controllers\engineerRequestController.js:147:       FROM project_engineer_requests er
+elec-app/server/controllers\engineerRequestController.js:148:       JOIN workers w ON er.target_engineer_id = w.id
+elec-app/server/controllers\executionController.js:12:      'SELECT id FROM project_technicians WHERE project_id=? AND worker_id=?',
+elec-app/server/controllers\executionController.js:35:       FROM projects p LEFT JOIN clients c ON p.client_id = c.id
+elec-app/server/controllers\executionController.js:42:      'SELECT id, panel_number, panel_name FROM project_crm_panels WHERE project_id=? ORDER BY panel_number',
+elec-app/server/controllers\executionController.js:51:        'SELECT id, panel_id, division_type FROM panel_divisions WHERE panel_id IN (?) ORDER BY id',
+elec-app/server/controllers\executionController.js:60:           FROM panel_crm_items i
+elec-app/server/controllers\executionController.js:61:           LEFT JOIN products p ON i.product_id = p.id
+elec-app/server/controllers\executionController.js:101:       FROM panel_completion pc
+elec-app/server/controllers\executionController.js:102:       LEFT JOIN workers w ON pc.completed_by = w.id
+elec-app/server/controllers\executionController.js:108:       FROM item_completion ic
+elec-app/server/controllers\executionController.js:109:       LEFT JOIN workers w ON ic.completed_by = w.id
+elec-app/server/controllers\executionController.js:133:      'SELECT id FROM project_crm_panels WHERE id=? AND project_id=?',
+elec-app/server/controllers\executionController.js:141:      'SELECT is_completed FROM panel_completion WHERE project_id = ? AND panel_id = ?',
+elec-app/server/controllers\executionController.js:158:        `UPDATE panel_completion SET ${sets.join(', ')} WHERE project_id = ? AND panel_id = ?`,
+elec-app/server/controllers\executionController.js:165:        'INSERT INTO panel_completion (project_id, panel_id, is_completed, description, completed_by, completed_at) VALUES (?, ?, ?, ?, ?, ?)',
+elec-app/server/controllers\executionController.js:186:        `SELECT i.id, i.qty FROM panel_crm_items i
+elec-app/server/controllers\executionController.js:187:         JOIN panel_divisions d ON i.division_id = d.id
+elec-app/server/controllers\executionController.js:195:          'SELECT id FROM item_completion WHERE project_id=? AND item_id=?',
+elec-app/server/controllers\executionController.js:200:            'UPDATE item_completion SET is_completed=?, qty_done=?, completed_by=?, completed_at=? WHERE project_id=? AND item_id=?',
+elec-app/server/controllers\executionController.js:205:            'INSERT INTO item_completion (project_id, item_id, is_completed, qty_done, completed_by, completed_at) VALUES (?,?,?,?,?,?)',
+elec-app/server/controllers\executionController.js:213:           FROM item_completion ic
+elec-app/server/controllers\executionController.js:214:           LEFT JOIN workers w ON ic.completed_by = w.id
+elec-app/server/controllers\executionController.js:224:       FROM panel_completion pc
+elec-app/server/controllers\executionController.js:225:       LEFT JOIN workers w ON pc.completed_by = w.id
+elec-app/server/controllers\executionController.js:245:       FROM panel_crm_items i
+elec-app/server/controllers\executionController.js:246:       JOIN panel_divisions d ON d.id=i.division_id
+elec-app/server/controllers\executionController.js:247:       JOIN project_crm_panels p ON p.id=d.panel_id
+elec-app/server/controllers\executionController.js:263:      'SELECT id FROM item_completion WHERE project_id = ? AND item_id = ?',
+elec-app/server/controllers\executionController.js:285:        `UPDATE item_completion SET ${sets.join(', ')} WHERE project_id = ? AND item_id = ?`,
+elec-app/server/controllers\executionController.js:296:        `INSERT INTO item_completion (${cols.join(', ')}) VALUES (${placeholders})`,
+elec-app/server/controllers\executionController.js:311:       FROM item_completion ic
+elec-app/server/controllers\executionController.js:312:       LEFT JOIN workers w ON ic.completed_by = w.id
+elec-app/server/controllers\exportController.js:27:       FROM products p
+elec-app/server/controllers\exportController.js:28:        LEFT JOIN brands b ON b.id = p.brand_id
+elec-app/server/controllers\exportController.js:65:       FROM projects p
+elec-app/server/controllers\exportController.js:66:        LEFT JOIN workers w ON w.id = p.engineer_id
+elec-app/server/controllers\exportController.js:67:        LEFT JOIN clients c ON c.id = p.client_id
+elec-app/server/controllers\exportController.js:104:       FROM workers w
+elec-app/server/controllers\exportController.js:105:       LEFT JOIN projects p ON p.engineer_id = w.id AND p.deleted_at IS NULL
+elec-app/server/controllers\exportController.js:134:      SELECT per.project_id FROM project_engineer_requests per
+elec-app/server/controllers\exportController.js:164:      FROM panel_crm_items pci
+elec-app/server/controllers\exportController.js:165:      JOIN panel_divisions pd ON pci.division_id = pd.id
+elec-app/server/controllers\exportController.js:166:      JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+elec-app/server/controllers\exportController.js:167:      JOIN projects p ON pcp.project_id = p.id
+elec-app/server/controllers\exportController.js:168:      LEFT JOIN products pr ON pci.product_id = pr.id
+elec-app/server/controllers\exportController.js:169:      LEFT JOIN brands b ON pr.brand_id = b.id
+elec-app/server/controllers\exportController.js:170:      LEFT JOIN workers w ON p.engineer_id = w.id
+elec-app/server/controllers\exportController.js:171:      LEFT JOIN clients c ON p.client_id = c.id
+elec-app/server/controllers\exportController.js:222:      FROM panel_crm_items i
+elec-app/server/controllers\exportController.js:223:      JOIN panel_divisions pd ON i.division_id = pd.id
+elec-app/server/controllers\exportController.js:224:      JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+elec-app/server/controllers\exportController.js:225:      LEFT JOIN products pr ON i.product_id = pr.id
+elec-app/server/controllers\itemGroupController.js:8:        (SELECT COUNT(*) FROM item_group_items WHERE group_id=g.id) AS item_count
+elec-app/server/controllers\itemGroupController.js:9:       FROM item_groups g
+elec-app/server/controllers\itemGroupController.js:10:       JOIN workers w ON w.id = g.created_by
+elec-app/server/controllers\itemGroupController.js:27:       FROM item_groups g
+elec-app/server/controllers\itemGroupController.js:28:       JOIN workers w ON w.id = g.created_by
+elec-app/server/controllers\itemGroupController.js:46:      'INSERT INTO item_groups (name, description, created_by, is_public) VALUES (?, ?, ?, ?)',
+elec-app/server/controllers\itemGroupController.js:52:       FROM item_groups g JOIN workers w ON w.id=g.created_by WHERE g.id=?`,
+elec-app/server/controllers\itemGroupController.js:68:      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role IN (\'owner\',\'head_engineer\')))',
+elec-app/server/controllers\itemGroupController.js:75:      await db.execute('UPDATE item_groups SET name=? WHERE id=?', [name.trim(), id]);
+elec-app/server/controllers\itemGroupController.js:78:      await db.execute('UPDATE item_groups SET is_public=? WHERE id=?', [is_public ? 1 : 0, id]);
+elec-app/server/controllers\itemGroupController.js:81:      await db.execute('UPDATE item_groups SET description=? WHERE id=?', [description?.trim() || null, id]);
+elec-app/server/controllers\itemGroupController.js:86:       FROM item_groups g JOIN workers w ON w.id=g.created_by WHERE g.id=?`,
+elec-app/server/controllers\itemGroupController.js:100:      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role IN (\'owner\',\'head_engineer\')))',
+elec-app/server/controllers\itemGroupController.js:105:    await db.execute('DELETE FROM item_groups WHERE id=?', [id]);
+elec-app/server/controllers\itemGroupController.js:121:       FROM item_group_items gi
+elec-app/server/controllers\itemGroupController.js:122:       LEFT JOIN products p ON gi.product_id = p.id
+elec-app/server/controllers\itemGroupController.js:123:       LEFT JOIN brands b ON p.brand_id = b.id
+elec-app/server/controllers\itemGroupController.js:141:      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role=\'owner\'))',
+elec-app/server/controllers\itemGroupController.js:154:      'INSERT INTO item_group_items (group_id, product_id, is_manual, custom_name, description, price_usd, price_euro, qty) VALUES (?,?,?,?,?,?,?,?)',
+elec-app/server/controllers\itemGroupController.js:160:       FROM item_group_items gi
+elec-app/server/controllers\itemGroupController.js:161:       LEFT JOIN products p ON gi.product_id = p.id
+elec-app/server/controllers\itemGroupController.js:162:       LEFT JOIN brands b ON p.brand_id = b.id
+elec-app/server/controllers\itemGroupController.js:178:      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role=\'owner\'))',
+elec-app/server/controllers\itemGroupController.js:183:    await db.execute('DELETE FROM item_group_items WHERE id=? AND group_id=?', [itemId, id]);
+elec-app/server/controllers\manualProductRequestController.js:8:    'SELECT COUNT(*) as cnt FROM products WHERE reference LIKE ?',
+elec-app/server/controllers\manualProductRequestController.js:27:        `INSERT INTO products (reference, description, price_usd, price_euro, brand_id, stock_qty, reserved_qty)
+elec-app/server/controllers\manualProductRequestController.js:31:      const [newProduct] = await db.execute('SELECT * FROM products WHERE id=?', [result.insertId]);
+elec-app/server/controllers\manualProductRequestController.js:37:      `INSERT INTO manual_product_requests (name, description, price_usd, price_euro, brand, reference, created_by, status)
+elec-app/server/controllers\manualProductRequestController.js:48:       FROM manual_product_requests mpr
+elec-app/server/controllers\manualProductRequestController.js:49:       JOIN workers w ON w.id = mpr.created_by
+elec-app/server/controllers\manualProductRequestController.js:66:                 FROM manual_product_requests mpr
+elec-app/server/controllers\manualProductRequestController.js:67:                 JOIN workers w ON w.id = mpr.created_by
+elec-app/server/controllers\manualProductRequestController.js:99:      'SELECT * FROM manual_product_requests WHERE id=? AND status=?',
+elec-app/server/controllers\manualProductRequestController.js:112:      `INSERT INTO products (reference, description, price_usd, price_euro, brand_id, stock_qty, reserved_qty)
+elec-app/server/controllers\manualProductRequestController.js:118:    await conn.execute('UPDATE manual_product_requests SET status=? WHERE id=?', ['approved', id]);
+elec-app/server/controllers\manualProductRequestController.js:128:    const [newProduct] = await db.execute('SELECT * FROM products WHERE id=?', [productResult.insertId]);
+elec-app/server/controllers\manualProductRequestController.js:145:      'SELECT * FROM manual_product_requests WHERE id=? AND status=?',
+elec-app/server/controllers\manualProductRequestController.js:152:      'UPDATE manual_product_requests SET status=?, rejection_reason=? WHERE id=?',
+elec-app/server/controllers\messageController.js:9:    const [[{ total }]] = await pool.query('SELECT COUNT(*) as total FROM messages');
+elec-app/server/controllers\messageController.js:12:       FROM messages m
+elec-app/server/controllers\messageController.js:13:       LEFT JOIN workers w ON m.created_by = w.id
+elec-app/server/controllers\messageController.js:33:      'INSERT INTO messages (content, created_by) VALUES (?, ?)',
+elec-app/server/controllers\messageController.js:40:    const [allWorkers] = await pool.query('SELECT id, name, email FROM workers');
+elec-app/server/controllers\messageController.js:56:       FROM messages m LEFT JOIN workers w ON m.created_by = w.id WHERE m.id=?`,
+elec-app/server/controllers\messageController.js:68:    const [existing] = await pool.query('SELECT * FROM messages WHERE id=?', [req.params.id]);
+elec-app/server/controllers\messageController.js:76:    await pool.query('DELETE FROM messages WHERE id=?', [req.params.id]);
+elec-app/server/controllers\notificationController.js:13:      FROM notifications n
+elec-app/server/controllers\notificationController.js:28:      `SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = FALSE`,
+elec-app/server/controllers\notificationController.js:45:      `UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?`,
+elec-app/server/controllers\notificationController.js:61:      `UPDATE notifications SET is_read = TRUE WHERE user_id = ? AND is_read = FALSE`,
+elec-app/server/controllers\notificationController.js:78:      `DELETE FROM notifications WHERE id = ? AND user_id = ?`,
+elec-app/server/controllers\notificationController.js:93:      `SELECT id FROM notifications WHERE user_id = ? AND type = ? AND link = ? AND is_read = FALSE LIMIT 1`,
+elec-app/server/controllers\notificationController.js:98:        const [[wk]] = await pool.query('SELECT id, name, email FROM workers WHERE id = ?', [userId]);
+elec-app/server/controllers\notificationController.js:105:      `INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)`,
+elec-app/server/controllers\notificationController.js:110:      const [[worker]] = await pool.query('SELECT id, name, email FROM workers WHERE id = ?', [userId]);
+elec-app/server/controllers\notificationController.js:124:    const [owners] = await pool.query(`SELECT id FROM workers WHERE role = 'owner'`);
+elec-app/server/controllers\notificationController.js:136:    const [workers] = await pool.query('SELECT id FROM workers WHERE role IN (?)', [roles]);
+elec-app/server/controllers\notificationController.js:145:      `SELECT engineer_id FROM projects WHERE id = ?`,
+elec-app/server/controllers\notificationController.js:167:      FROM projects p
+elec-app/server/controllers\notificationController.js:168:      LEFT JOIN workers w ON w.id = p.engineer_id
+elec-app/server/controllers\notificationController.js:211:      FROM projects p
+elec-app/server/controllers\notificationController.js:212:      LEFT JOIN workers w ON w.id = p.engineer_id
+elec-app/server/controllers\notificationController.js:231:      FROM projects p
+elec-app/server/controllers\notificationController.js:232:      LEFT JOIN workers w ON w.id = p.engineer_id
+elec-app/server/controllers\notificationController.js:262:      FROM products
+elec-app/server/controllers\notificationController.js:298:      FROM projects p
+elec-app/server/controllers\notificationController.js:299:      LEFT JOIN workers w ON w.id = p.engineer_id
+elec-app/server/controllers\notificationController.js:300:      LEFT JOIN (SELECT project_id, SUM(amount) as paid FROM project_payments GROUP BY project_id) pay
+elec-app/server/controllers\paymentController.js:9:    'SELECT total_price, total_with_vat FROM projects WHERE id=?',
+elec-app/server/controllers\paymentController.js:25:       FROM project_payments pp
+elec-app/server/controllers\paymentController.js:26:       LEFT JOIN workers w ON pp.recorded_by = w.id
+elec-app/server/controllers\paymentController.js:32:    const [[project]] = await db.execute('SELECT payment_deadline FROM projects WHERE id=?', [req.params.projectId]);
+elec-app/server/controllers\paymentController.js:58:      `INSERT INTO project_payments (project_id, amount, payment_date, method, notes, recorded_by)
+elec-app/server/controllers\paymentController.js:75:      "SELECT COALESCE(SUM(amount),0) as paidSoFar FROM project_payments WHERE project_id=?",
+elec-app/server/controllers\paymentController.js:80:      await db.execute('UPDATE projects SET payment_deadline=NULL WHERE id=?', [req.params.projectId]);
+elec-app/server/controllers\paymentController.js:82:      await db.execute('UPDATE projects SET payment_deadline=? WHERE id=?', [next_payment_deadline || null, req.params.projectId]);
+elec-app/server/controllers\paymentController.js:87:       FROM project_payments pp
+elec-app/server/controllers\paymentController.js:88:       LEFT JOIN workers w ON pp.recorded_by = w.id
+elec-app/server/controllers\paymentController.js:103:      'SELECT amount FROM project_payments WHERE id=? AND project_id=?',
+elec-app/server/controllers\paymentController.js:108:    await db.execute('DELETE FROM project_payments WHERE id=? AND project_id=?', [req.params.paymentId, req.params.projectId]);
+elec-app/server/controllers\paymentController.js:126:      SELECT * FROM (
+elec-app/server/controllers\paymentController.js:133:        FROM projects p
+elec-app/server/controllers\paymentController.js:134:        LEFT JOIN clients c ON c.id = p.client_id
+elec-app/server/controllers\paymentController.js:135:        LEFT JOIN workers w ON w.id = p.engineer_id
+elec-app/server/controllers\paymentController.js:136:        LEFT JOIN (
+elec-app/server/controllers\paymentController.js:138:          FROM project_payments GROUP BY project_id
+elec-app/server/controllers\pdfImportController.js:151:        `SELECT id, name, description FROM item_groups
+elec-app/server/controllers\pdfImportController.js:161:          `SELECT id, name, description FROM item_groups
+elec-app/server/controllers\pdfImportController.js:178:      'SELECT id, reference, price_usd, price_euro FROM products WHERE reference = ? LIMIT 1',
+elec-app/server/controllers\pdfImportController.js:186:          'SELECT id, reference, price_usd, price_euro FROM products WHERE reference LIKE ? LIMIT 1',
+elec-app/server/controllers\pdfImportController.js:236:        'SELECT name FROM division_types WHERE is_active=1 ORDER BY sort_order,name'
+elec-app/server/controllers\pdfImportController.js:311:      `INSERT INTO projects(project_name,engineer_id,client_id,exchange_rate_eur_usd,deadline,total_panels,vat_pct,project_discount_pct,margin_warning_pct,payment_terms,client_pdf_note,project_stage)
+elec-app/server/controllers\pdfImportController.js:318:    await conn.execute('UPDATE projects SET quote_number=? WHERE id=?',[finalQuoteNumber,projectId]);
+elec-app/server/controllers\pdfImportController.js:327:        'INSERT INTO project_crm_panels(project_id,panel_number,panel_name,quantity) VALUES(?,?,?,?)',
+elec-app/server/controllers\pdfImportController.js:341:          'INSERT INTO panel_divisions(panel_id,division_type) VALUES(?,?)',
+elec-app/server/controllers\pdfImportController.js:361:              'INSERT INTO division_item_group_instances(division_id,item_group_id,quantity,description) VALUES(?,?,?,?)',
+elec-app/server/controllers\pdfImportController.js:369:                        SELECT pd.discount_pct FROM product_discounts pd
+elec-app/server/controllers\pdfImportController.js:374:               FROM item_group_items gi
+elec-app/server/controllers\pdfImportController.js:375:               LEFT JOIN products p ON p.id=gi.product_id
+elec-app/server/controllers\pdfImportController.js:392:                `INSERT INTO panel_crm_items(
+elec-app/server/controllers\pdfImportController.js:428:              'INSERT INTO panel_manual_products(project_id,name,description,price_usd,price_euro) VALUES(?,?,?,?,?)',
+elec-app/server/controllers\pdfImportController.js:442:            `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
+elec-app/server/controllers\pdfImportController.js:464:    const [createdPanels] = await db.execute('SELECT id FROM project_crm_panels WHERE project_id=?', [projectId]);
+elec-app/server/controllers\priceChangeController.js:23:    const [items] = await db.execute('SELECT * FROM panel_crm_items WHERE id=?', [item_id]);
+elec-app/server/controllers\priceChangeController.js:28:    const [divs] = await db.execute('SELECT panel_id FROM panel_divisions WHERE id=?', [item.division_id]);
+elec-app/server/controllers\priceChangeController.js:32:    const [panels] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [panelId]);
+elec-app/server/controllers\priceChangeController.js:41:      'SELECT id FROM crm_price_change_requests WHERE item_id=? AND status=\'pending\'',
+elec-app/server/controllers\priceChangeController.js:46:        `UPDATE crm_price_change_requests SET
+elec-app/server/controllers\priceChangeController.js:63:      const [updated] = await db.execute('SELECT * FROM crm_price_change_requests WHERE item_id=? AND status=\'pending\'', [item_id]);
+elec-app/server/controllers\priceChangeController.js:68:      `INSERT INTO crm_price_change_requests(
+elec-app/server/controllers\priceChangeController.js:88:    const [owners] = await db.execute("SELECT id FROM workers WHERE role IN ('owner','head_engineer')");
+elec-app/server/controllers\priceChangeController.js:99:        `INSERT INTO notifications(user_id, type, title, message, link) VALUES(?,?,?,?,?)`,
+elec-app/server/controllers\priceChangeController.js:106:    const [rows] = await db.execute('SELECT * FROM crm_price_change_requests WHERE id=?', [result.insertId]);
+elec-app/server/controllers\priceChangeController.js:130:       FROM crm_price_change_requests r
+elec-app/server/controllers\priceChangeController.js:131:       JOIN projects p ON p.id = r.project_id
+elec-app/server/controllers\priceChangeController.js:132:       JOIN workers req ON req.id = r.requested_by
+elec-app/server/controllers\priceChangeController.js:133:       LEFT JOIN workers app ON app.id = r.approved_by
+elec-app/server/controllers\priceChangeController.js:134:       LEFT JOIN panel_crm_items ci ON ci.id = r.item_id
+elec-app/server/controllers\priceChangeController.js:135:       LEFT JOIN products cp ON cp.id = ci.product_id
+elec-app/server/controllers\priceChangeController.js:136:       LEFT JOIN brands b ON cp.brand_id = b.id
+elec-app/server/controllers\priceChangeController.js:157:    const [requests] = await db.execute('SELECT * FROM crm_price_change_requests WHERE id=? AND status=\'pending\'', [requestId]);
+elec-app/server/controllers\priceChangeController.js:163:      `UPDATE panel_crm_items SET
+elec-app/server/controllers\priceChangeController.js:176:      'UPDATE crm_price_change_requests SET status=\'approved\', approved_by=? WHERE id=?',
+elec-app/server/controllers\priceChangeController.js:181:    const [updatedItem] = await db.execute('SELECT * FROM panel_crm_items WHERE id=?', [request.item_id]);
+elec-app/server/controllers\priceChangeController.js:185:        `UPDATE panel_crm_items SET markupP_amt=?,discount_amt=?,totalpriceT=?,manpower_amt=?,markupM_amt=?,totalfinalProduct=? WHERE id=?`,
+elec-app/server/controllers\priceChangeController.js:199:      `INSERT INTO notifications(user_id, type, title, message, link) VALUES(?,?,?,?,?)`,
+elec-app/server/controllers\priceChangeController.js:217:    const [requests] = await db.execute('SELECT * FROM crm_price_change_requests WHERE id=? AND status=\'pending\'', [requestId]);
+elec-app/server/controllers\priceChangeController.js:223:      'UPDATE crm_price_change_requests SET status=\'rejected\', approved_by=?, rejection_reason=? WHERE id=?',
+elec-app/server/controllers\priceChangeController.js:231:      `INSERT INTO notifications(user_id, type, title, message, link) VALUES(?,?,?,?,?)`,
+elec-app/server/controllers\priceChangeController.js:248:       FROM crm_price_change_requests r
+elec-app/server/controllers\priceChangeController.js:249:       JOIN projects p ON p.id = r.project_id
+elec-app/server/controllers\priceChangeController.js:250:       LEFT JOIN workers app ON app.id = r.approved_by
+elec-app/server/controllers\priceChangeController.js:274:       FROM crm_price_change_requests r
+elec-app/server/controllers\procurementController.js:10:    FROM panel_crm_items pci JOIN panel_divisions pd ON pd.id=pci.division_id
+elec-app/server/controllers\procurementController.js:11:    JOIN project_crm_panels pcp ON pcp.id=pd.panel_id LEFT JOIN products pr ON pr.id=pci.product_id
+elec-app/server/controllers\procurementController.js:12:    LEFT JOIN project_procurement_allocations ppa ON ppa.project_id=pcp.project_id AND ppa.product_id=pci.product_id
+elec-app/server/controllers\procurementController.js:21:      p.procurement_note,p.procurement_reviewed_at,w.name engineer_name,r.name reviewed_by_name FROM projects p
+elec-app/server/controllers\procurementController.js:22:      LEFT JOIN workers w ON w.id=p.engineer_id LEFT JOIN workers r ON r.id=p.procurement_reviewed_by
+elec-app/server/controllers\procurementController.js:33:    const [[project]]=await db.execute('SELECT id,project_name,project_stage,engineer_id FROM projects WHERE id=? AND deleted_at IS NULL',[projectId]);
+elec-app/server/controllers\procurementController.js:39:    await db.execute('UPDATE projects SET procurement_status=?,procurement_note=?,procurement_reviewed_by=?,procurement_reviewed_at=NOW() WHERE id=?',[status,note,req.worker.id,projectId]);
+elec-app/server/controllers\procurementController.js:51:    const [[project]]=await db.execute("SELECT id,project_name,project_stage FROM projects WHERE id=? AND deleted_at IS NULL",[projectId]);
+elec-app/server/controllers\procurementController.js:54:    const [[required]]=await db.execute(`SELECT pci.product_id FROM panel_crm_items pci JOIN panel_divisions pd ON pd.id=pci.division_id
+elec-app/server/controllers\procurementController.js:55:      JOIN project_crm_panels pcp ON pcp.id=pd.panel_id WHERE pcp.project_id=? AND pci.product_id=? LIMIT 1`,[projectId,productId]);
+elec-app/server/controllers\procurementController.js:57:    const [[product]]=await db.execute('SELECT id,reference FROM products WHERE id=?',[productId]);
+elec-app/server/controllers\procurementController.js:59:    await db.execute(`INSERT INTO project_procurement_allocations(project_id,product_id,allocated_qty,updated_by)
+elec-app/server/controllers\procurementController.js:60:      VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE allocated_qty=allocated_qty+VALUES(allocated_qty),updated_by=VALUES(updated_by)`,
+elec-app/server/controllers\procurementController.js:62:    const [[allocation]]=await db.execute('SELECT allocated_qty FROM project_procurement_allocations WHERE project_id=? AND product_id=?',[projectId,productId]);
+elec-app/server/controllers\productController.js:25:      `SELECT COUNT(*) as total FROM products p LEFT JOIN brands b ON p.brand_id=b.id ${where}`,
+elec-app/server/controllers\productController.js:32:       FROM products p
+elec-app/server/controllers\productController.js:33:       LEFT JOIN brands b ON p.brand_id = b.id
+elec-app/server/controllers\productController.js:51:       FROM products p LEFT JOIN brands b ON p.brand_id=b.id WHERE p.id=?`,
+elec-app/server/controllers\productController.js:60:       FROM order_items oi JOIN orders o ON oi.order_id=o.id
+elec-app/server/controllers\productController.js:80:    const [[before]] = await db.execute('SELECT stock_qty,reserved_qty,min_stock_level FROM products WHERE id=?', [req.params.id]);
+elec-app/server/controllers\productController.js:94:    await db.execute(`UPDATE products SET ${fields.join(',')} WHERE id=?`, params);
+elec-app/server/controllers\productController.js:97:      await db.execute(`INSERT INTO reservation_history(product_id,old_qty,new_qty,change_qty,reason,changed_by)
+elec-app/server/controllers\productController.js:105:       FROM products p LEFT JOIN brands b ON p.brand_id=b.id WHERE p.id=?`,
+elec-app/server/controllers\productController.js:118:    const [brands] = await db.execute('SELECT * FROM brands ORDER BY name');
+elec-app/server/controllers\productController.js:135:      'INSERT INTO products (reference, description, smart_code, stock_qty, reserved_qty) VALUES (?, ?, ?, ?, 0)',
+elec-app/server/controllers\productController.js:139:      'SELECT p.*, (p.stock_qty - p.reserved_qty) as available_qty FROM products p WHERE p.id=?',
+elec-app/server/controllers\projectController.js:16:    UPDATE products p
+elec-app/server/controllers\projectController.js:18:      SELECT SUM(sub.qty) FROM (
+elec-app/server/controllers\projectController.js:20:        FROM project_items pi
+elec-app/server/controllers\projectController.js:21:        JOIN projects prj ON pi.project_id = prj.id
+elec-app/server/controllers\projectController.js:26:        FROM panel_crm_items pci
+elec-app/server/controllers\projectController.js:27:        JOIN panel_divisions pd ON pci.division_id = pd.id
+elec-app/server/controllers\projectController.js:28:        JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+elec-app/server/controllers\projectController.js:29:        JOIN projects prj ON pcp.project_id = prj.id
+elec-app/server/controllers\projectController.js:42:     FROM project_items WHERE project_id=?`,
+elec-app/server/controllers\projectController.js:46:    'SELECT vat_pct, project_discount_pct FROM projects WHERE id=?',
+elec-app/server/controllers\projectController.js:58:    `UPDATE projects SET total_cost=?, total_price=?, project_discount_amount=?,
+elec-app/server/controllers\projectController.js:77:          SELECT per.project_id FROM project_engineer_requests per
+elec-app/server/controllers\projectController.js:85:              (SELECT COUNT(*) FROM project_items pi WHERE pi.project_id=p.id) as item_count,
+elec-app/server/controllers\projectController.js:87:                (SELECT COUNT(*) FROM project_crm_panels pcp WHERE pcp.project_id=p.id), 0
+elec-app/server/controllers\projectController.js:92:              COALESCE((SELECT SUM(pp.amount) FROM project_payments pp WHERE pp.project_id=p.id), 0) as total_paid,
+elec-app/server/controllers\projectController.js:94:                COALESCE((SELECT SUM(pp.amount) FROM project_payments pp WHERE pp.project_id=p.id), 0)) as outstanding_balance
+elec-app/server/controllers\projectController.js:95:       FROM projects p
+elec-app/server/controllers\projectController.js:96:       LEFT JOIN workers w ON p.engineer_id=w.id
+elec-app/server/controllers\projectController.js:97:       LEFT JOIN clients c ON p.client_id=c.id
+elec-app/server/controllers\projectController.js:121:        `SELECT p.id FROM projects p
+elec-app/server/controllers\projectController.js:122:         LEFT JOIN project_engineer_requests per ON per.project_id = p.id
+elec-app/server/controllers\projectController.js:133:              COALESCE((SELECT SUM(pp.amount) FROM project_payments pp WHERE pp.project_id=p.id), 0) as total_paid,
+elec-app/server/controllers\projectController.js:135:                COALESCE((SELECT SUM(pp.amount) FROM project_payments pp WHERE pp.project_id=p.id), 0)) as outstanding_balance
+elec-app/server/controllers\projectController.js:136:       FROM projects p
+elec-app/server/controllers\projectController.js:137:       LEFT JOIN workers w ON p.engineer_id=w.id
+elec-app/server/controllers\projectController.js:138:       LEFT JOIN clients c ON p.client_id=c.id
+elec-app/server/controllers\projectController.js:147:       FROM project_items pi
+elec-app/server/controllers\projectController.js:148:       JOIN products pr ON pi.product_id=pr.id
+elec-app/server/controllers\projectController.js:149:       LEFT JOIN brands b ON pr.brand_id=b.id
+elec-app/server/controllers\projectController.js:171:      `INSERT INTO projects(project_name,quote_number,engineer_id,client_id,exchange_rate_eur_usd,deadline,notes,total_panels,vat_pct,project_discount_pct,payment_terms,margin_warning_pct,client_pdf_note)
+elec-app/server/controllers\projectController.js:177:      await db.execute('UPDATE projects SET quote_number=? WHERE id=?', [generateQuotationNumber(project_name, projectId), projectId]);
+elec-app/server/controllers\projectController.js:183:      const [prod] = await db.execute('SELECT * FROM products WHERE id=?', [item.product_id]);
+elec-app/server/controllers\projectController.js:194:        `INSERT INTO project_items(project_id,product_id,qty,unit_cost,unit_price,price_currency,notes)
+elec-app/server/controllers\projectController.js:209:      'UPDATE projects SET total_cost=?, total_price=?, project_discount_amount=?, total_vat=?, total_with_vat=? WHERE id=?',
+elec-app/server/controllers\projectController.js:215:    const [created] = await db.execute('SELECT * FROM projects WHERE id=?', [projectId]);
+elec-app/server/controllers\projectController.js:244:    const [[existingProject]] = await db.execute('SELECT project_name, created_at FROM projects WHERE id=?', [req.params.id]);
+elec-app/server/controllers\projectController.js:271:    const [oldProj] = await db.execute('SELECT client_approval, admin_approval, ready_for_review FROM projects WHERE id=?', [req.params.id]);
+elec-app/server/controllers\projectController.js:276:    await db.execute(`UPDATE projects SET ${fields.join(',')} WHERE id=?`, params);
+elec-app/server/controllers\projectController.js:284:      const [panels] = await db.execute('SELECT id FROM project_crm_panels WHERE project_id=?', [req.params.id]);
+elec-app/server/controllers\projectController.js:297:    const [rows] = await db.execute('SELECT * FROM projects WHERE id=?', [req.params.id]);
+elec-app/server/controllers\projectController.js:314:    const [prod] = await db.execute('SELECT * FROM products WHERE id=?', [product_id]);
+elec-app/server/controllers\projectController.js:323:      `INSERT INTO project_items(project_id,product_id,qty,unit_cost,unit_price,price_currency,notes)
+elec-app/server/controllers\projectController.js:333:      `SELECT pi.*, pr.reference, pr.description FROM project_items pi
+elec-app/server/controllers\projectController.js:334:       JOIN products pr ON pi.product_id=pr.id WHERE pi.id=?`,
+elec-app/server/controllers\projectController.js:347:    await db.execute('DELETE FROM project_items WHERE id=? AND project_id=?', [req.params.itemId, req.params.id]);
+elec-app/server/controllers\projectController.js:359:    const [deleted] = await db.execute('DELETE FROM projects WHERE id=?', [req.params.id]);
+elec-app/server/controllers\projectController.js:372:    const [[project]] = await db.execute('SELECT id FROM projects WHERE id=? AND deleted_at IS NULL', [id]);
+elec-app/server/controllers\projectController.js:374:    await db.execute('UPDATE projects SET ready_for_review=TRUE WHERE id=?', [id]);
+elec-app/server/controllers\projectController.js:387:    const [[project]] = await db.execute('SELECT id FROM projects WHERE id=? AND deleted_at IS NULL', [req.params.id]);
+elec-app/server/controllers\projectController.js:389:    await db.execute('UPDATE projects SET admin_approval=?, rejection_note=? WHERE id=?',
+elec-app/server/controllers\projectController.js:393:    const [rows] = await db.execute('SELECT * FROM projects WHERE id=?', [req.params.id]);
+elec-app/server/controllers\projectController.js:422:       FROM projects p
+elec-app/server/controllers\reservationController.js:7:      SELECT per.project_id FROM project_engineer_requests per
+elec-app/server/controllers\reservationController.js:31:      'SELECT id, stock_qty, reserved_qty FROM products WHERE id = ?',
+elec-app/server/controllers\reservationController.js:50:    await db.execute('UPDATE products SET reserved_qty = ? WHERE id = ?', [newReserved, productId]);
+elec-app/server/controllers\reservationController.js:51:    await db.execute(`INSERT INTO reservation_history(product_id,old_qty,new_qty,change_qty,reason,changed_by)
+elec-app/server/controllers\reservationController.js:73:      FROM reservation_history h JOIN products p ON p.id=h.product_id
+elec-app/server/controllers\reservationController.js:74:      LEFT JOIN projects pr ON pr.id=h.project_id LEFT JOIN project_crm_panels pcp ON pcp.id=h.panel_id
+elec-app/server/controllers\reservationController.js:75:      LEFT JOIN workers w ON w.id=h.changed_by ${where} ORDER BY h.created_at DESC,h.id DESC LIMIT ?`, params);
+elec-app/server/controllers\reservationController.js:112:      FROM panel_crm_items pci
+elec-app/server/controllers\reservationController.js:113:      JOIN panel_divisions pd ON pci.division_id = pd.id
+elec-app/server/controllers\reservationController.js:114:      JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+elec-app/server/controllers\reservationController.js:115:      JOIN projects p ON pcp.project_id = p.id
+elec-app/server/controllers\reservationController.js:116:      LEFT JOIN products pr ON pci.product_id = pr.id
+elec-app/server/controllers\reservationController.js:117:      LEFT JOIN brands b ON pr.brand_id = b.id
+elec-app/server/controllers\reservationController.js:118:      LEFT JOIN workers w ON p.engineer_id = w.id
+elec-app/server/controllers\reservationController.js:119:      LEFT JOIN clients c ON p.client_id = c.id
+elec-app/server/controllers\reservationController.js:212:       FROM products p LEFT JOIN brands b ON p.brand_id=b.id WHERE p.id=?`,
+elec-app/server/controllers\reservationController.js:228:      FROM panel_crm_items pci
+elec-app/server/controllers\reservationController.js:229:      JOIN panel_divisions pd ON pci.division_id = pd.id
+elec-app/server/controllers\reservationController.js:230:      JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
+elec-app/server/controllers\reservationController.js:231:      JOIN projects p ON pcp.project_id = p.id
+elec-app/server/controllers\reservationController.js:232:      LEFT JOIN workers w ON p.engineer_id = w.id
+elec-app/server/controllers\reservationController.js:233:      LEFT JOIN clients c ON p.client_id   = c.id
+elec-app/server/controllers\technicianController.js:13:       FROM project_technicians pt
+elec-app/server/controllers\technicianController.js:14:       JOIN workers w ON pt.worker_id = w.id
+elec-app/server/controllers\technicianController.js:29:    const [[worker]] = await db.execute('SELECT id, name, role FROM workers WHERE id=?', [worker_id]);
+elec-app/server/controllers\technicianController.js:33:    const [[project]] = await db.execute('SELECT id, project_name FROM projects WHERE id=? AND deleted_at IS NULL', [req.params.projectId]);
+elec-app/server/controllers\technicianController.js:37:      'INSERT IGNORE INTO project_technicians(project_id, worker_id, assigned_by) VALUES(?,?,?)',
+elec-app/server/controllers\technicianController.js:48:       FROM project_technicians pt
+elec-app/server/controllers\technicianController.js:49:       JOIN workers w ON pt.worker_id = w.id
+elec-app/server/controllers\technicianController.js:61:      'DELETE FROM project_technicians WHERE project_id=? AND worker_id=?',
+elec-app/server/controllers\technicianController.js:79:                FROM project_crm_panels pcp
+elec-app/server/controllers\technicianController.js:80:                JOIN panel_divisions pd ON pd.panel_id=pcp.id
+elec-app/server/controllers\technicianController.js:81:                JOIN panel_crm_items pci ON pci.division_id=pd.id
+elec-app/server/controllers\technicianController.js:82:                LEFT JOIN item_completion ic ON ic.project_id=p.id AND ic.item_id=pci.id
+elec-app/server/controllers\technicianController.js:85:       FROM project_technicians pt
+elec-app/server/controllers\technicianController.js:86:       JOIN projects p ON pt.project_id = p.id
+elec-app/server/controllers\technicianController.js:87:       LEFT JOIN clients c ON p.client_id = c.id
+elec-app/server/controllers\updateController.js:11:      FROM app_updates u LEFT JOIN app_update_reads r ON r.update_id=u.id AND r.worker_id=?
+elec-app/server/controllers\updateController.js:12:      LEFT JOIN workers w ON w.id=u.created_by WHERE u.is_published=1 AND ${roleFilter}
+elec-app/server/controllers\updateController.js:27:    await db.execute('INSERT IGNORE INTO app_update_reads(update_id,worker_id) VALUES(?,?)', [req.params.updateId, req.worker.id]);
+elec-app/server/controllers\updateController.js:37:    await db.execute(`INSERT IGNORE INTO app_update_reads(worker_id,update_id)
+elec-app/server/controllers\updateController.js:38:      SELECT ?,id FROM app_updates WHERE is_published=1 AND ${roleFilter}`, params);
+elec-app/server/controllers\updateController.js:51:    const [result] = await db.execute(`INSERT INTO app_updates(version,title,summary,features,target_roles,created_by)
+elec-app/server/controllers\uploadController.js:42: *   3. Batch INSERT/UPDATE products in chunks of 500 rows
+elec-app/server/controllers\uploadController.js:117:        `INSERT IGNORE INTO brands(name) VALUES ${brandPlaceholders}`,
+elec-app/server/controllers\uploadController.js:123:    const [allBrands] = await db.execute('SELECT id, name FROM brands');
+elec-app/server/controllers\uploadController.js:157:          `INSERT INTO products (brand_id, reference, description, price_euro, price_usd, smart_code, price_cost)
+elec-app/server/controllers\uploadController.js:191:                `INSERT INTO products (brand_id,reference,description,price_euro,price_usd,smart_code,price_cost)
+elec-app/server/controllers\workerController.js:9:    let sql = `SELECT ${COLUMNS} FROM workers`;
+elec-app/server/controllers\workerController.js:27:      'INSERT INTO workers(name,email,phone,role,password_hash) VALUES(?,?,?,?,?)',
+elec-app/server/controllers\workerController.js:30:    const [rows] = await db.execute(`SELECT ${COLUMNS} FROM workers WHERE id=?`, [result.insertId]);
+elec-app/server/controllers\workerController.js:47:    await db.execute(`UPDATE workers SET ${fields.join(',')} WHERE id=?`, params);
+elec-app/server/controllers\workerController.js:48:    const [rows] = await db.execute(`SELECT ${COLUMNS} FROM workers WHERE id=?`, [req.params.id]);
+elec-app/server/controllers\workerController.js:63:    const [[target]] = await conn.execute('SELECT role FROM workers WHERE id=? FOR UPDATE', [workerId]);
+elec-app/server/controllers\workerController.js:74:      const [[{ owner_count }]] = await conn.execute("SELECT COUNT(*) AS owner_count FROM workers WHERE role='owner' FOR UPDATE");
+elec-app/server/controllers\workerController.js:81:    await conn.execute('DELETE FROM workers WHERE id=?', [workerId]);
+elec-app/server/controllers\workflowController.js:21:    FROM projects WHERE id=?`, [projectId]);
+elec-app/server/controllers\workflowController.js:22:  const [manualProducts] = await executor.execute('SELECT * FROM panel_manual_products WHERE project_id=? ORDER BY id', [projectId]);
+elec-app/server/controllers\workflowController.js:23:  const [panels] = await executor.execute('SELECT * FROM project_crm_panels WHERE project_id=? ORDER BY panel_number', [projectId]);
+elec-app/server/controllers\workflowController.js:25:    const [divisions] = await executor.execute('SELECT * FROM panel_divisions WHERE panel_id=? ORDER BY id', [panel.id]);
+elec-app/server/controllers\workflowController.js:28:        FROM panel_crm_items i LEFT JOIN products p ON p.id=i.product_id LEFT JOIN brands b ON b.id=p.brand_id
+elec-app/server/controllers\workflowController.js:53:    const [[incomplete]] = await db.execute(`SELECT COUNT(*) AS n FROM project_crm_panels p
+elec-app/server/controllers\workflowController.js:54:      LEFT JOIN panel_completion pc ON pc.panel_id=p.id AND pc.project_id=p.project_id
+elec-app/server/controllers\workflowController.js:68:    const [[project]] = await db.execute('SELECT * FROM projects WHERE id=? AND deleted_at IS NULL', [projectId]);
+elec-app/server/controllers\workflowController.js:72:      await db.execute('UPDATE projects SET quote_number=? WHERE id=?', [project.quote_number, projectId]);
+elec-app/server/controllers\workflowController.js:86:    await db.execute(`UPDATE projects SET project_stage=?,status=?,procurement_status=IF(?='procurement','pending',procurement_status),
+elec-app/server/controllers\workflowController.js:90:    await db.execute('INSERT INTO project_stage_history(project_id,from_stage,to_stage,note,changed_by) VALUES(?,?,?,?,?)', [projectId, project.project_stage || 'design', target, note, req.worker.id]);
+elec-app/server/controllers\workflowController.js:94:      await db.execute(`INSERT IGNORE INTO quotation_revisions(project_id,revision_number,quote_number,total_price,total_with_vat,notes,created_by,snapshot_json)
+elec-app/server/controllers\workflowController.js:100:    const [[updated]] = await db.execute('SELECT * FROM projects WHERE id=?', [projectId]);
+elec-app/server/controllers\workflowController.js:108:    const [rows] = await db.execute(`SELECT h.*,w.name changed_by_name FROM project_stage_history h
+elec-app/server/controllers\workflowController.js:109:      LEFT JOIN workers w ON w.id=h.changed_by WHERE h.project_id=? ORDER BY h.created_at DESC,h.id DESC`, [req.params.projectId]);
+elec-app/server/controllers\workflowController.js:119:    const [[p]] = await db.execute('SELECT quote_number,total_price,total_with_vat,project_name,created_at FROM projects WHERE id=?', [projectId]);
+elec-app/server/controllers\workflowController.js:123:      await db.execute('UPDATE projects SET quote_number=? WHERE id=?', [p.quote_number, projectId]);
+elec-app/server/controllers\workflowController.js:125:    const [[last]] = await db.execute('SELECT COALESCE(MAX(revision_number),0)+1 next_revision FROM quotation_revisions WHERE project_id=?', [projectId]);
+elec-app/server/controllers\workflowController.js:128:    await db.execute('INSERT INTO quotation_revisions(project_id,revision_number,quote_number,total_price,total_with_vat,notes,created_by,snapshot_json) VALUES(?,?,?,?,?,?,?,?)', [projectId, revision, p.quote_number, p.total_price, p.total_with_vat, req.body.notes?.trim() || null, req.worker.id, encodeSnapshot(snapshot)]);
+elec-app/server/controllers\workflowController.js:130:      1 has_snapshot,w.name created_by_name FROM quotation_revisions r
+elec-app/server/controllers\workflowController.js:131:      LEFT JOIN workers w ON w.id=r.created_by WHERE r.project_id=? AND r.revision_number=?`, [projectId, revision]);
+elec-app/server/controllers\workflowController.js:142:    const [[revision]] = await db.execute('SELECT * FROM quotation_revisions WHERE id=? AND project_id=?', [req.params.revisionId, projectId]);
+elec-app/server/controllers\workflowController.js:149:    const [[last]] = await conn.execute('SELECT COALESCE(MAX(revision_number),0)+1 n FROM quotation_revisions WHERE project_id=? FOR UPDATE', [projectId]);
+elec-app/server/controllers\workflowController.js:150:    await conn.execute(`INSERT INTO quotation_revisions(project_id,revision_number,quote_number,total_price,total_with_vat,notes,created_by,snapshot_json)
+elec-app/server/controllers\workflowController.js:153:    await conn.execute('DELETE FROM project_crm_panels WHERE project_id=?', [projectId]);
+elec-app/server/controllers\workflowController.js:154:    await conn.execute('DELETE FROM panel_manual_products WHERE project_id=?', [projectId]);
+elec-app/server/controllers\workflowController.js:155:    const [existingProductRows] = await conn.execute('SELECT id FROM products');
+elec-app/server/controllers\workflowController.js:159:      const [result] = await conn.execute(`INSERT INTO panel_manual_products(project_id,name,description,price_euro,price_usd,brand) VALUES(?,?,?,?,?,?)`,
+elec-app/server/controllers\workflowController.js:165:      const [panelResult] = await conn.execute(`INSERT INTO project_crm_panels(project_id,panel_number,panel_name,quantity,markupP,markupM,manpower_pct,total_price,is_completed,note,show_note_in_client_pdf,updated_by)
+elec-app/server/controllers\workflowController.js:169:        const [divResult] = await conn.execute(`INSERT INTO panel_divisions(panel_id,division_type,markupP,markupM,manpower_pct) VALUES(?,?,?,?,?)`,
+elec-app/server/controllers\workflowController.js:172:          await conn.execute(`INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,custom_name,custom_desc,custom_brand,custom_price_euro,custom_price_usd,qty,base_price_usd,base_price_euro,markupP_pct,markupP_amt,discount_pct,discount_amt,totalpriceT,manpower_pct,manpower_amt,markupM_pct,markupM_amt,totalfinalProduct,cost,cr_amount,override_markup,visible_in_client_pdf,notes)
+elec-app/server/controllers\workflowController.js:178:    await conn.execute(`UPDATE projects SET exchange_rate_eur_usd=?,vat_pct=?,project_discount_pct=?,project_discount_amount=?,total_vat=?,total_price=?,total_cost=?,total_with_vat=?,payment_terms=?,client_pdf_note=?,total_panels=?,completed_panels=0 WHERE id=?`,
+elec-app/server/controllers\workflowController.js:197:      (r.snapshot_json IS NOT NULL) has_snapshot,w.name created_by_name FROM quotation_revisions r LEFT JOIN workers w ON w.id=r.created_by
+elec-app/server/controllers\workflowController.js:207:    const [[row]] = await db.execute('SELECT snapshot_json FROM quotation_revisions WHERE id=? AND project_id=?', [req.params.revisionId, req.params.projectId]);
+elec-app/server/controllers\workflowController.js:220:      FROM workers w LEFT JOIN projects p ON p.engineer_id=w.id AND p.deleted_at IS NULL AND p.project_stage<>'delivered'

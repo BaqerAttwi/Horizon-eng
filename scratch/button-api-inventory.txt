@@ -1,0 +1,471 @@
+elec-app/client/src\App.jsx:42:  const load = () => api.get('/updates').then(r=>setUnread(r.data.unread_count||0)).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
+elec-app/client/src\App.jsx:140:                onClick={() => setMobileOpen(false)}
+elec-app/client/src\App.jsx:155:        <button className="nav-link tutorial-nav" onClick={onOpenTutorial}>
+elec-app/client/src\App.jsx:166:      <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+elec-app/client/src\App.jsx:184:          <button
+elec-app/client/src\App.jsx:187:            onClick={handleLogout}
+elec-app/client/src\App.jsx:244:          onClick={() => setMobileOpen(false)}
+elec-app/client/src\App.jsx:251:            <button className="btn-icon" onClick={() => setMobileOpen(true)} aria-label="Open menu">☰</button>
+elec-app/client/src\components\ActivityLog.jsx:30:    api.get(`/projects/${projectId}/activity`)
+elec-app/client/src\context\AuthContext.jsx:14:    api.get('/auth/me')
+elec-app/client/src\context\AuthContext.jsx:29:            const r = await api.get('/auth/me');
+elec-app/client/src\context\AuthContext.jsx:43:    const r = await api.post('/auth/login', { email, password });
+elec-app/client/src\context\AuthContext.jsx:55:    await api.post('/auth/logout');
+elec-app/client/src\hooks\useCrmProject.js:43:        api.get(`/projects/${id}/crm`),
+elec-app/client/src\hooks\useCrmProject.js:44:        api.get(`/projects/${id}/execution`),
+elec-app/client/src\hooks\useCrmProject.js:45:        api.get('/division-types')
+elec-app/client/src\hooks\useCrmProject.js:71:      await api.post(`/projects/${id}/items/apply-brand-discount`, { brand: previewBrand, discount_pct: previewDiscPct });
+elec-app/client/src\hooks\useCrmProject.js:102:      const r = await api.post(`/projects/${id}/panels`, { panel_number, markupP: 0, markupM: 0, manpower_pct: 0 });
+elec-app/client/src\hooks\useCrmProject.js:115:      const r = await api.get('/projects');
+elec-app/client/src\hooks\useCrmProject.js:124:      await api.post(`/projects/${id}/panels/copy-from`, {
+elec-app/client/src\hooks\useCrmProject.js:137:      await api.patch(`/projects/${id}/panels/${panelId}`, form);
+elec-app/client/src\hooks\useCrmProject.js:148:      await api.delete(`/projects/${id}/panels/${panelId}`);
+elec-app/client/src\hooks\useCrmProject.js:157:      const r = await api.patch(`/projects/${id}/panels/${panelId}/complete`);
+elec-app/client/src\hooks\useCrmProject.js:165:      const r = await api.post(`/projects/${id}/panels/${panelId}/divisions`, divData);
+elec-app/client/src\hooks\useCrmProject.js:175:      await api.delete(`/projects/${id}/panels/${div.panel_id}/divisions/${divisionId}`);
+elec-app/client/src\hooks\useCrmProject.js:188:      const r = await api.post(`/projects/${id}/panels/${div.panel_id}/divisions/${divisionId}/items`, { ...itemData, project_id: parseInt(id) });
+elec-app/client/src\hooks\useCrmProject.js:204:      const r = await api.patch(`/projects/${id}/panels/${panel.id}/divisions/${div.id}/items/${itemId}`, form);
+elec-app/client/src\hooks\useCrmProject.js:231:      await api.delete(`/projects/${id}/panels/${panel.id}/divisions/${div.id}/items/${itemId}`);
+elec-app/client/src\hooks\useCrmProject.js:249:      const r = await api.patch(`/projects/${id}/execution/panels/${panelId}`, { is_completed: is_completed ? 1 : 0, description });
+elec-app/client/src\hooks\useCrmProject.js:269:      const r = await api.patch(`/projects/${id}/execution/items/${itemId}`, body);
+elec-app/client/src\hooks\useCrmProject.js:279:      await api.patch(`/group-instances/${instanceId}`, { quantity: newQty });
+elec-app/client/src\hooks\useCrmProject.js:295:      await api.patch(`/group-instances/${instanceId}`, { description });
+elec-app/client/src\hooks\useCrmProject.js:306:      await api.delete(`/group-instances/${instanceId}`);
+elec-app/client/src\hooks\useCrmProject.js:325:      await api.patch(`/projects/${id}/ready-for-review`);
+elec-app/client/src\hooks\useCrmProject.js:355:      const r = await api.post(`/projects/${id}/items/bulk-update`, { item_ids, changes });
+elec-app/client/src\pages\AnalyticsPage.jsx:187:      api.get(`/analytics/summary?${qs}`),
+elec-app/client/src\pages\AnalyticsPage.jsx:188:      api.get(`/analytics/engineers?${qs}`),
+elec-app/client/src\pages\AnalyticsPage.jsx:189:      api.get(`/analytics/clients?${qs}`),
+elec-app/client/src\pages\AnalyticsPage.jsx:219:        <a href="/api/export/analytics" className="btn btn-secondary" style={{ textDecoration: 'none' }}>📥 Export CSV</a>
+elec-app/client/src\pages\AnalyticsPage.jsx:226:          <button key={p.label}
+elec-app/client/src\pages\AnalyticsPage.jsx:228:            onClick={() => setDatePreset(p.label)}>
+elec-app/client/src\pages\AnalyticsPage.jsx:287:        <div className={`tab${tab === 'summary' ? ' active' : ''}`} onClick={() => setTab('summary')}>📊 Summary</div>
+elec-app/client/src\pages\AnalyticsPage.jsx:288:        <div className={`tab${tab === 'engineers' ? ' active' : ''}`} onClick={() => setTab('engineers')}>👷 Engineers</div>
+elec-app/client/src\pages\AnalyticsPage.jsx:289:        <div className={`tab${tab === 'clients' ? ' active' : ''}`} onClick={() => setTab('clients')}>🏢 Clients</div>
+elec-app/client/src\pages\AnalyticsPage.jsx:290:        <div className={`tab${tab === 'debt' ? ' active' : ''}`} onClick={() => setTab('debt')}>💸 Debt</div>
+elec-app/client/src\pages\AnalyticsPage.jsx:463:            <div className="card" style={{ marginTop: 16, cursor: 'pointer' }} onClick={() => setTab('debt')}>
+elec-app/client/src\components\crm\CrmItemRow.jsx:69:        <td className="crm-actions-column"><button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }} onClick={() => onDelete(item.id)}>✕</button></td>
+elec-app/client/src\components\crm\CrmItemRow.jsx:136:          <button className="btn btn-sm btn-primary" style={{ marginRight: 4 }}
+elec-app/client/src\components\crm\CrmItemRow.jsx:137:            onClick={handleSave}>Save</button>
+elec-app/client/src\components\crm\CrmItemRow.jsx:138:          <button className="btn btn-sm btn-secondary" onClick={() => { setEditing(false); setForm({ ...item }); }}>Cancel</button>
+elec-app/client/src\components\crm\CrmItemRow.jsx:146:      onClick={() => { if (editView) setEditing(true); }}>
+elec-app/client/src\components\crm\CrmItemRow.jsx:147:      <td style={{ textAlign: 'center', verticalAlign: 'middle', width: 28 }} onClick={e => e.stopPropagation()}>
+elec-app/client/src\components\crm\CrmItemRow.jsx:152:      <td style={{ textAlign: 'center', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
+elec-app/client/src\components\crm\CrmItemRow.jsx:154:          onClick={async (e) => { e.stopPropagation(); await onUpdate(item.id, { visible_in_client_pdf: item.visible_in_client_pdf ? 0 : 1 }); }}
+elec-app/client/src\components\crm\CrmItemRow.jsx:182:      <td className="crm-actions-column" onClick={e => e.stopPropagation()}>
+elec-app/client/src\components\crm\CrmItemRow.jsx:183:        <button className="btn-icon" title="Edit" onClick={() => setEditing(true)}>✏️</button>
+elec-app/client/src\components\crm\CrmItemRow.jsx:184:        <button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }}
+elec-app/client/src\components\crm\CrmItemRow.jsx:185:          onClick={() => onDelete(item.id)}>✕</button>
+elec-app/client/src\pages\CalendarPage.jsx:18:    api.get('/projects')
+elec-app/client/src\pages\CalendarPage.jsx:56:          <button className="btn btn-secondary btn-sm" onClick={prevMonth}>← {MONTHS[viewMonth === 0 ? 11 : viewMonth - 1]}</button>
+elec-app/client/src\pages\CalendarPage.jsx:58:          <button className="btn btn-secondary btn-sm" onClick={nextMonth}>{MONTHS[viewMonth === 11 ? 0 : viewMonth + 1]} →</button>
+elec-app/client/src\components\DebtList.jsx:18:      const r = await api.patch(`/projects/${project.id}`, { payment_deadline: value || null });
+elec-app/client/src\components\DebtList.jsx:35:          <button className="btn-icon" title="Edit payment deadline" onClick={() => { setValue(project.payment_deadline ? project.payment_deadline.slice(0, 10) : ''); setEditing(true); }}>✏️</button>
+elec-app/client/src\components\DebtList.jsx:44:      <button className="btn btn-sm btn-primary" disabled={saving} onClick={save}>{saving ? <span className="spinner" /> : 'Save'}</button>
+elec-app/client/src\components\DebtList.jsx:45:      <button className="btn btn-sm btn-secondary" onClick={() => setEditing(false)}>Cancel</button>
+elec-app/client/src\components\DebtList.jsx:61:      const r = await api.get('/debt');
+elec-app/client/src\components\DebtList.jsx:114:                  onClick={() => setExpandedId(expanded ? null : p.id)}
+elec-app/client/src\components\DebtList.jsx:138:                    <div style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+elec-app/client/src\components\DebtList.jsx:142:                    <button className="btn btn-sm btn-secondary" onClick={e => { e.stopPropagation(); navigate(`/projects/${p.id}/crm`); }}>
+elec-app/client/src\components\crm\DivisionSection.jsx:24:    api.get(`/projects/${projectId}/manual-products`)
+elec-app/client/src\components\crm\DivisionSection.jsx:33:      api.get('/products', { params: { search: dq, limit: 15 } })
+elec-app/client/src\components\crm\DivisionSection.jsx:141:      const r = await api.post(`/projects/${project.id}/manual-products`, form);
+elec-app/client/src\components\crm\DivisionSection.jsx:149:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\components\crm\DivisionSection.jsx:150:      <div className="modal" onClick={e => e.stopPropagation()}>
+elec-app/client/src\components\crm\DivisionSection.jsx:153:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:185:          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:186:          <button className="btn btn-primary" onClick={save}>💾 Save</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:200:    api.get('/item-groups')
+elec-app/client/src\components\crm\DivisionSection.jsx:209:      await api.post(
+elec-app/client/src\components\crm\DivisionSection.jsx:224:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\components\crm\DivisionSection.jsx:225:      <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+elec-app/client/src\components\crm\DivisionSection.jsx:228:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:245:                  onClick={() => !adding && addGroupAsInstance(g)}>
+elec-app/client/src\components\crm\DivisionSection.jsx:258:          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:383:        <button className="btn-icon" title="Delete division" style={{ color: 'var(--danger)', flexShrink: 0 }}
+elec-app/client/src\components\crm\DivisionSection.jsx:384:          onClick={() => onDivisionDelete(division.id)}>✕</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:500:            <button className="btn btn-sm btn-primary" onClick={confirmAdd}>Add</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:501:            <button className="btn btn-sm btn-secondary" onClick={cancelAdd}>Cancel</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:515:            <button className="btn btn-sm btn-primary" onClick={confirmManualAdd}>Add</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:516:            <button className="btn btn-sm btn-secondary" onClick={() => { setPendingManual(null); setPendingQty(null); }}>Cancel</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:527:            <button className="btn btn-sm btn-secondary" onClick={() => setShowAdd(false)} style={{ marginTop: 1 }}>Cancel</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:534:          <button className="btn btn-sm btn-secondary" onClick={() => setShowAdd(true)}>+ Add Product</button>
+elec-app/client/src\components\crm\DivisionSection.jsx:535:          <button className="btn btn-sm btn-secondary" onClick={() => setShowGroup(true)}>+ Add Group</button>
+elec-app/client/src\pages\ClientExportPage.jsx:39:    api.get(`/projects/${id}/crm`).then(({ data }) => {
+elec-app/client/src\pages\ClientExportPage.jsx:62:    <div className="page-header"><div><button className="btn btn-sm btn-secondary" onClick={() => navigate('/projects')}>← Projects</button><div className="page-title" style={{ marginTop: 8 }}>Client Export Editor</div><div className="page-subtitle">Edit details and see the document update live.</div></div><button className="btn btn-primary" disabled={exporting} onClick={exportPdf}>{exporting ? 'Exporting...' : `Export ${form.format === 'quotation' ? documentTitle : 'Technical Quotation'}`}</button></div>
+elec-app/client/src\pages\ClientExportPage.jsx:76:      </div><button className="btn btn-primary" style={{ width: '100%', marginTop: 14 }} disabled={exporting} onClick={exportPdf}>{exporting ? 'Exporting...' : 'Export PDF'}</button></div></div>
+elec-app/client/src\components\FileAttachments.jsx:23:      const r = await api.patch(`/projects/${projectId}`, { onedrive_folder_link: projectLinkDraft || null });
+elec-app/client/src\components\FileAttachments.jsx:34:      const r = await api.get(`/projects/${projectId}/attachments`);
+elec-app/client/src\components\FileAttachments.jsx:49:      await api.post(`/projects/${projectId}/attachments`, {
+elec-app/client/src\components\FileAttachments.jsx:68:      await api.delete(`/projects/${projectId}/attachments/${id}`);
+elec-app/client/src\components\FileAttachments.jsx:86:            <button className="btn btn-sm btn-primary" disabled={savingProjectLink} onClick={saveProjectLink}>
+elec-app/client/src\components\FileAttachments.jsx:89:            <button className="btn btn-sm btn-secondary" onClick={() => setEditingProjectLink(false)}>Cancel</button>
+elec-app/client/src\components\FileAttachments.jsx:93:            <a href={project.onedrive_folder_link} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
+elec-app/client/src\components\FileAttachments.jsx:96:            {canUpload && <button className="btn-icon" title="Edit link" onClick={() => { setProjectLinkDraft(project.onedrive_folder_link || ''); setEditingProjectLink(true); }}>✏️</button>}
+elec-app/client/src\components\FileAttachments.jsx:99:          <button className="btn btn-sm btn-secondary" onClick={() => { setProjectLinkDraft(''); setEditingProjectLink(true); }}>
+elec-app/client/src\components\FileAttachments.jsx:129:            <button className="btn btn-primary" onClick={handleAddLink} disabled={addingLink}>
+elec-app/client/src\components\FileAttachments.jsx:150:                <a href={f.storage === 'link' ? f.link_url : `/api/attachments/${f.id}/download`} target="_blank" rel="noreferrer"
+elec-app/client/src\components\FileAttachments.jsx:162:                <button className="btn-icon" style={{ color: 'var(--danger)', flexShrink: 0 }}
+elec-app/client/src\components\FileAttachments.jsx:163:                  onClick={() => handleDelete(f.id)}>✕</button>
+elec-app/client/src\components\crm\ExecutionPanel.jsx:16:        onClick={() => setExpanded(!expanded)}>
+elec-app/client/src\components\crm\ExecutionPanel.jsx:59:                          <button onClick={() => onToggleItem(item.id, null, Math.max(0, itemDoneQty - 1))}
+elec-app/client/src\components\crm\ExecutionPanel.jsx:65:                          <button onClick={() => onToggleItem(item.id, null, Math.min(itemQty, itemDoneQty + 1))}
+elec-app/client/src\utils\pdfExport.js:121:  const { data } = await api.get(`/projects/${projectId}/crm`);
+elec-app/client/src\pages\ClientsPage.jsx:14:        ? await api.patch(`/clients/${client.id}`, form)
+elec-app/client/src\pages\ClientsPage.jsx:15:        : await api.post('/clients', form);
+elec-app/client/src\pages\ClientsPage.jsx:26:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\ClientsPage.jsx:27:      <div className="modal" onClick={e=>e.stopPropagation()}>
+elec-app/client/src\pages\ClientsPage.jsx:30:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\ClientsPage.jsx:72:          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+elec-app/client/src\pages\ClientsPage.jsx:73:          <button className="btn btn-primary" onClick={save} disabled={saving}>
+elec-app/client/src\pages\ClientsPage.jsx:90:      const r = await api.get('/clients');
+elec-app/client/src\pages\ClientsPage.jsx:101:      await api.delete(`/clients/${c.id}`);
+elec-app/client/src\pages\ClientsPage.jsx:119:        <button className="btn btn-primary" onClick={()=>setModal({})}>+ Add Client</button>
+elec-app/client/src\pages\ClientsPage.jsx:139:                    <button className="btn-icon" onClick={()=>setModal(c)}>✏️</button>
+elec-app/client/src\pages\ClientsPage.jsx:140:                    <button className="btn-icon" onClick={()=>del(c)} style={{color:'var(--danger)'}}>🗑</button>
+elec-app/client/src\components\crm\GroupInstanceSection.jsx:23:        <button className="btn-icon" style={{ color: 'var(--danger)', fontSize: 12 }}
+elec-app/client/src\components\crm\GroupInstanceSection.jsx:24:          onClick={() => onInstanceRemove(instance.id)}>✕</button>
+elec-app/client/src\components\NotificationBell.jsx:60:          <button
+elec-app/client/src\components\NotificationBell.jsx:61:            onClick={() => onRead(n.id)}
+elec-app/client/src\components\NotificationBell.jsx:69:        <button
+elec-app/client/src\components\NotificationBell.jsx:70:          onClick={() => onDelete(n.id)}
+elec-app/client/src\components\NotificationBell.jsx:90:    api.get('/notifications?limit=20')
+elec-app/client/src\components\NotificationBell.jsx:117:    api.patch(`/notifications/${id}/read`).then(() => {
+elec-app/client/src\components\NotificationBell.jsx:124:    api.patch('/notifications/read-all').then(() => {
+elec-app/client/src\components\NotificationBell.jsx:131:    api.delete(`/notifications/${id}`).then(() => {
+elec-app/client/src\components\NotificationBell.jsx:138:      <button
+elec-app/client/src\components\NotificationBell.jsx:140:        onClick={() => setOpen(!open)}
+elec-app/client/src\components\NotificationBell.jsx:197:                <button
+elec-app/client/src\components\NotificationBell.jsx:198:                  onClick={handleReadAll}
+elec-app/client/src\components\NotificationBell.jsx:235:                onClick={() => setOpen(false)}
+elec-app/client/src\pages\CrmProjectPage.jsx:20:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\CrmProjectPage.jsx:21:      <div className="modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+elec-app/client/src\pages\CrmProjectPage.jsx:24:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:38:          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:39:          <button className="btn btn-primary" disabled={!hasAny} onClick={() => {
+elec-app/client/src\pages\CrmProjectPage.jsx:75:      await api.post(`/projects/${projectId}/items/bulk-update`, { item_ids: group.items.map(item => item.id), changes: { cr_amount: value } });
+elec-app/client/src\pages\CrmProjectPage.jsx:92:      <td><button className="btn btn-sm btn-primary" disabled={saving === group.key || edits[group.key] === undefined || edits[group.key] === ''} onClick={() => apply(group)}>{saving === group.key ? 'Saving...' : 'Apply to all'}</button></td>
+elec-app/client/src\pages\CrmProjectPage.jsx:141:      await api.post(`/projects/${projectId}/items/bulk-update`, { item_ids: itemIds, changes: values });
+elec-app/client/src\pages\CrmProjectPage.jsx:151:      await api.post(`/projects/${projectId}/items/bulk-update`, { item_ids: row.items.map(item => item.id), changes: row.panelValues });
+elec-app/client/src\pages\CrmProjectPage.jsx:160:    <button className="btn btn-primary" style={{ marginTop: 10 }} disabled={!hasValues || saving} onClick={apply}>{saving ? 'Applying...' : 'Apply Markup to Entire Project'}</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:167:        <td style={{ padding: 4 }}><button className="btn btn-sm btn-primary" disabled={!row.panelHasValues || savingPanel === row.panel.id} onClick={() => applyPanel(row)}>{savingPanel === row.panel.id ? 'Applying...' : 'Apply Panel'}</button></td>
+elec-app/client/src\pages\CrmProjectPage.jsx:222:            <button className="btn btn-sm btn-secondary" onClick={() => navigate('/projects')}>← Back</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:247:          {!commercialLocked && <button className="btn btn-primary" onClick={() => setShowAddPanel(true)}>+ Add Panel</button>}
+elec-app/client/src\pages\CrmProjectPage.jsx:248:          <a href={`/api/export/crm/${project.id}`} className="btn btn-secondary" style={{ textDecoration: 'none' }}>📥 CSV</a>
+elec-app/client/src\pages\CrmProjectPage.jsx:249:          {!commercialLocked && <button className="btn btn-secondary" onClick={openCopyPanel}>📋 Copy from existing</button>}
+elec-app/client/src\pages\CrmProjectPage.jsx:250:          <button className="btn btn-success" onClick={handleReadyForReview}
+elec-app/client/src\pages\CrmProjectPage.jsx:262:        <button onClick={() => setActiveTab('items')}
+elec-app/client/src\pages\CrmProjectPage.jsx:267:          <button onClick={() => setEditView(v => !v)}
+elec-app/client/src\pages\CrmProjectPage.jsx:272:        {!hideCost && <button onClick={() => setActiveTab('brands')}
+elec-app/client/src\pages\CrmProjectPage.jsx:276:        {isRole('owner','head_engineer') && <button onClick={() => setActiveTab('cr-items')}
+elec-app/client/src\pages\CrmProjectPage.jsx:280:        {isRole('owner','head_engineer') && <button onClick={() => setActiveTab('markup')}
+elec-app/client/src\pages\CrmProjectPage.jsx:284:        <button onClick={() => setActiveTab('report')}
+elec-app/client/src\pages\CrmProjectPage.jsx:288:        {isRole('owner','head_engineer') && (<button onClick={() => setActiveTab('testing')}
+elec-app/client/src\pages\CrmProjectPage.jsx:294:          <button onClick={() => setActiveTab('execution')}
+elec-app/client/src\pages\CrmProjectPage.jsx:300:          <button onClick={() => setActiveTab('payments')}
+elec-app/client/src\pages\CrmProjectPage.jsx:305:        <button onClick={() => setActiveTab('activity')}
+elec-app/client/src\pages\CrmProjectPage.jsx:309:        <button onClick={() => setActiveTab('files')}
+elec-app/client/src\pages\CrmProjectPage.jsx:316:        <div className="modal-overlay" onClick={() => setShowAddPanel(false)}>
+elec-app/client/src\pages\CrmProjectPage.jsx:317:          <div className="modal" onClick={e => e.stopPropagation()}>
+elec-app/client/src\pages\CrmProjectPage.jsx:320:              <button className="btn-icon" onClick={() => setShowAddPanel(false)}>✕</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:330:              <button className="btn btn-secondary" onClick={() => setShowAddPanel(false)}>Cancel</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:331:              <button className="btn btn-primary" onClick={() => {
+elec-app/client/src\pages\CrmProjectPage.jsx:341:        <div className="modal-overlay" onClick={() => setShowCopyPanel(false)}>
+elec-app/client/src\pages\CrmProjectPage.jsx:342:          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
+elec-app/client/src\pages\CrmProjectPage.jsx:345:              <button className="btn-icon" onClick={() => setShowCopyPanel(false)}>✕</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:355:                        onClick={async () => {
+elec-app/client/src\pages\CrmProjectPage.jsx:359:                            const r = await api.get(`/projects/${p.id}/crm`);
+elec-app/client/src\pages\CrmProjectPage.jsx:376:                    <button className="btn btn-sm btn-secondary" onClick={() => { setCopyStep('projects'); setSelectedSourcePanel(null); }}>← Back</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:383:                        onClick={() => setSelectedSourcePanel(p)}>
+elec-app/client/src\pages\CrmProjectPage.jsx:395:              <button className="btn btn-secondary" onClick={() => setShowCopyPanel(false)}>Cancel</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:397:                <button className="btn btn-primary" disabled={!selectedSourcePanel || copying} onClick={copyPanel}>
+elec-app/client/src\pages\CrmProjectPage.jsx:448:          <button className="btn btn-sm btn-primary" onClick={() => setShowBulkEdit(true)}>✏️ Edit Selected</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:449:          <button className="btn btn-sm btn-secondary" onClick={clearSelection}>Clear</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:494:                    try { await api.patch(`/projects/${project.id}/execution/panels/${pid}`, { description }); }
+elec-app/client/src\pages\CrmProjectPage.jsx:567:                          <button className="btn btn-sm btn-primary" style={{ fontSize: 11, padding: '4px 10px' }}
+elec-app/client/src\pages\CrmProjectPage.jsx:568:                            onClick={() => openBrandPreview(b.brand)}
+elec-app/client/src\pages\CrmProjectPage.jsx:600:        <div className="modal-overlay" onClick={() => setShowBrandPreview(false)}>
+elec-app/client/src\pages\CrmProjectPage.jsx:601:          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
+elec-app/client/src\pages\CrmProjectPage.jsx:604:              <button className="btn-icon" onClick={() => setShowBrandPreview(false)}>✕</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:648:              <button className="btn btn-secondary" onClick={() => setShowBrandPreview(false)} disabled={applyingBrandDisc}>Cancel</button>
+elec-app/client/src\pages\CrmProjectPage.jsx:649:              <button className="btn btn-primary" onClick={handleConfirmBrandDiscount} disabled={applyingBrandDisc}>
+elec-app/client/src\components\crm\PanelSection.jsx:48:        onClick={() => setCollapsed(!collapsed)}>
+elec-app/client/src\components\crm\PanelSection.jsx:76:            <a href={panel.onedrive_link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+elec-app/client/src\components\crm\PanelSection.jsx:91:              <button className="btn btn-sm btn-primary" onClick={e => { e.stopPropagation(); handleSavePanel(); }}>Save</button>
+elec-app/client/src\components\crm\PanelSection.jsx:92:              <button className="btn btn-sm btn-secondary" onClick={e => { e.stopPropagation(); setEditing(false); setForm(panelForm()); }}>Cancel</button>
+elec-app/client/src\components\crm\PanelSection.jsx:96:              <button className="btn btn-sm" style={{ background: panel.is_completed ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.2)', color: panel.is_completed ? 'var(--success)' : '#fff', flexShrink: 0 }}
+elec-app/client/src\components\crm\PanelSection.jsx:97:                onClick={e => { e.stopPropagation(); onToggleComplete(panel.id); }}>
+elec-app/client/src\components\crm\PanelSection.jsx:100:              <button className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}
+elec-app/client/src\components\crm\PanelSection.jsx:101:                onClick={e => { e.stopPropagation(); setEditing(true); setForm(panelForm()); }}>Edit Panel</button>
+elec-app/client/src\components\crm\PanelSection.jsx:104:          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.25)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}
+elec-app/client/src\components\crm\PanelSection.jsx:105:            onClick={e => { e.stopPropagation(); onDeletePanel(panel.id); }}>Delete</button>
+elec-app/client/src\components\crm\PanelSection.jsx:182:              <button key={type} className="btn btn-sm btn-secondary" style={{ fontSize: 11, padding: '4px 10px',borderColor:typeRow.color,color:typeRow.color }}
+elec-app/client/src\components\crm\PanelSection.jsx:183:                onClick={() => onAddDivision(panel.id, { division_type: type, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct })}>
+elec-app/client/src\components\crm\ProjectPayments.jsx:19:      const r = await api.get(`/projects/${projectId}/payments`);
+elec-app/client/src\components\crm\ProjectPayments.jsx:33:      await api.post(`/projects/${projectId}/payments`, {
+elec-app/client/src\components\crm\ProjectPayments.jsx:48:      await api.delete(`/projects/${projectId}/payments/${id}`);
+elec-app/client/src\components\crm\ProjectPayments.jsx:89:            <button className="btn btn-primary" onClick={() => setShowAdd(true)}>+ Record Payment</button>
+elec-app/client/src\components\crm\ProjectPayments.jsx:99:        <div className="modal-overlay" onClick={() => setShowAdd(false)}>
+elec-app/client/src\components\crm\ProjectPayments.jsx:100:          <div className="modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+elec-app/client/src\components\crm\ProjectPayments.jsx:103:              <button className="btn-icon" onClick={() => setShowAdd(false)}>✕</button>
+elec-app/client/src\components\crm\ProjectPayments.jsx:145:              <button className="btn btn-secondary" onClick={() => setShowAdd(false)}>Cancel</button>
+elec-app/client/src\components\crm\ProjectPayments.jsx:146:              <button className="btn btn-primary" disabled={saving} onClick={handleAdd}>
+elec-app/client/src\components\crm\ProjectPayments.jsx:175:                          <button className="btn-icon" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(p.id)}>✕</button>
+elec-app/client/src\components\RoleTutorial.jsx:56:      <button className="tutorial-close" onClick={close} aria-label="Close tutorial">×</button>
+elec-app/client/src\components\RoleTutorial.jsx:64:        <button className="btn btn-secondary" disabled={step === 0} onClick={() => setStep(v => v - 1)}>Back</button>
+elec-app/client/src\components\RoleTutorial.jsx:65:        <button className="btn btn-secondary" onClick={() => { close(); navigate(item.path); }}>Open page</button>
+elec-app/client/src\components\RoleTutorial.jsx:67:          ? <button className="btn btn-primary" onClick={() => setStep(v => v + 1)}>Next</button>
+elec-app/client/src\components\RoleTutorial.jsx:68:          : <button className="btn btn-primary" onClick={close}>Finish</button>}
+elec-app/client/src\pages\DashboardPage.jsx:150:    api.get('/dashboard')
+elec-app/client/src\pages\DashboardPage.jsx:175:          <button key={t.key} onClick={() => setTab(t.key)} style={{
+elec-app/client/src\components\crm\ProjectTechnicians.jsx:15:        api.get(`/projects/${projectId}/technicians`),
+elec-app/client/src\components\crm\ProjectTechnicians.jsx:16:        api.get('/workers', { params: { role: 'technician' } }),
+elec-app/client/src\components\crm\ProjectTechnicians.jsx:29:      await api.post(`/projects/${projectId}/technicians`, { worker_id: pickerId });
+elec-app/client/src\components\crm\ProjectTechnicians.jsx:38:      await api.delete(`/projects/${projectId}/technicians/${workerId}`);
+elec-app/client/src\components\crm\ProjectTechnicians.jsx:56:          <button className="btn-icon" title="Remove" onClick={() => remove(t.worker_id)} style={{ color: 'var(--danger)' }}>🗑</button>
+elec-app/client/src\components\crm\ProjectTechnicians.jsx:64:        <button className="btn btn-secondary btn-sm" disabled={!pickerId} onClick={assign}>+ Assign</button>
+elec-app/client/src\components\SummaryTesting.jsx:68:      api.get('/products', { params: { search: dq, limit: 10 } })
+elec-app/client/src\components\SummaryTesting.jsx:78:    api.get('/projects').then(r => setAllProjects(r.data || [])).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
+elec-app/client/src\components\SummaryTesting.jsx:84:    api.get(`/projects/${projectA}/crm`)
+elec-app/client/src\components\SummaryTesting.jsx:91:    api.get(`/projects/${projectB}/crm`)
+elec-app/client/src\components\SummaryTesting.jsx:149:        await api.post(`/projects/${id}/items/bulk-replace`, {
+elec-app/client/src\components\SummaryTesting.jsx:232:            <button key={m.key} className={`btn btn-sm ${mode === m.key ? 'btn-primary' : 'btn-secondary'}`}
+elec-app/client/src\components\SummaryTesting.jsx:233:              onClick={() => { setMode(m.key); setSelectedItem(null); setAlternative(null); setSearchQ(''); setSelectedItem(null); }}>
+elec-app/client/src\components\SummaryTesting.jsx:279:                    onClick={() => { setSelectedItem(item); setAlternative(null); setSearchQ(''); }}>
+elec-app/client/src\components\SummaryTesting.jsx:306:                          onClick={() => handleSelectAlt(p)}>
+elec-app/client/src\components\SummaryTesting.jsx:353:                      <button className="btn btn-primary"
+elec-app/client/src\components\SummaryTesting.jsx:354:                        onClick={() => setShowConfirm(true)}
+elec-app/client/src\components\SummaryTesting.jsx:469:          <div className="modal-overlay" onClick={() => setShowConfirm(false)}>
+elec-app/client/src\components\SummaryTesting.jsx:470:            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+elec-app/client/src\components\SummaryTesting.jsx:473:                <button className="btn-icon" onClick={() => setShowConfirm(false)}>✕</button>
+elec-app/client/src\components\SummaryTesting.jsx:501:                <button className="btn btn-secondary" onClick={() => setShowConfirm(false)} disabled={applying}>Cancel</button>
+elec-app/client/src\components\SummaryTesting.jsx:502:                <button className="btn btn-primary" onClick={handleApply} disabled={applying}>
+elec-app/client/src\pages\DiscountsPage.jsx:22:        api.get('/discounts'),
+elec-app/client/src\pages\DiscountsPage.jsx:23:        api.get('/brands'),
+elec-app/client/src\pages\DiscountsPage.jsx:45:      await api.post('/discounts', {
+elec-app/client/src\pages\DiscountsPage.jsx:60:      await api.delete(`/discounts/${id}`);
+elec-app/client/src\pages\DiscountsPage.jsx:82:      await api.post('/discounts/bulk-brand', { discounts: payload });
+elec-app/client/src\pages\DiscountsPage.jsx:100:          {canManage && <button className={`btn ${bulkMode ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setBulkMode(b => !b)}>
+elec-app/client/src\pages\DiscountsPage.jsx:103:          {canManage && !bulkMode && <button className="btn btn-primary" onClick={() => setShowForm(s => !s)}>
+elec-app/client/src\pages\DiscountsPage.jsx:134:              <button className="btn btn-primary" onClick={save}>💾 Save</button>
+elec-app/client/src\pages\DiscountsPage.jsx:146:              <button className="btn btn-sm btn-secondary" onClick={randomize}>🎲 Randomize 1-20%</button>
+elec-app/client/src\pages\DiscountsPage.jsx:147:              <button className="btn btn-sm btn-primary" onClick={saveBulk} disabled={savingBulk}>
+elec-app/client/src\pages\DiscountsPage.jsx:187:                    <button className="btn-icon" style={{ color: 'var(--danger)' }}
+elec-app/client/src\pages\DiscountsPage.jsx:188:                      onClick={() => del(d.id)}>🗑</button>
+elec-app/client/src\pages\DivisionTypesPage.jsx:2:export default function DivisionTypesPage(){const[types,setTypes]=useState([]);const[name,setName]=useState('');const[color,setColor]=useState('#64748b');const[loading,setLoading]=useState(true);const load=async()=>{try{setTypes((await api.get('/division-types',{params:{include_inactive:true}})).data)}catch(e){toast.error(e.message)}finally{setLoading(false)}};useEffect(()=>{load()},[]);const add=async()=>{try{await api.post('/division-types',{name,color});setName('');toast.success('Division type added');load()}catch(e){toast.error(e.response?.data?.error||e.message)}};const edit=async(type)=>{const next=prompt('Division type name:',type.name);if(next===null)return;try{await api.patch(`/division-types/${type.id}`,{name:next,color:type.color,is_active:Boolean(type.is_active)});toast.success('Division type updated everywhere');load()}catch(e){toast.error(e.response?.data?.error||e.message)}};const toggle=async type=>{try{await api.patch(`/division-types/${type.id}`,{is_active:!type.is_active});load()}catch(e){toast.error(e.response?.data?.error||e.message)}};const remove=async type=>{if(!confirm(`Delete ${type.name}? Types already used in projects will be archived.`))return;try{const r=await api.delete(`/division-types/${type.id}`);toast.success(r.data.message);load()}catch(e){toast.error(e.response?.data?.error||e.message)}};return <div className="page"><div className="page-header"><div><h1 className="page-title">🧩 Division Types</h1><p className="page-subtitle">Manage the division choices available inside every CRM panel</p></div></div><div className="card" style={{marginBottom:18}}><div className="card-body"><div className="form-row" style={{alignItems:'end'}}><div className="form-group"><label className="form-label">New division name</label><input className="form-input" value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Capacitor Bank"/></div><div className="form-group"><label className="form-label">Color</label><input className="form-input" type="color" value={color} onChange={e=>setColor(e.target.value)} style={{height:40,padding:4}}/></div><button className="btn btn-primary" disabled={!name.trim()} onClick={add}>+ Add Division Type</button></div></div></div><div className="card"><div className="table-wrap"><table><thead><tr><th>Color</th><th>Name</th><th>Used</th><th>Status</th><th>Created by</th><th>Actions</th></tr></thead><tbody>{loading?<tr><td colSpan="6"><div className="empty"><span className="spinner"/></div></td></tr>:types.map(type=><tr key={type.id}><td><span style={{display:'block',width:24,height:24,borderRadius:7,background:type.color}}/></td><td style={{fontWeight:700,color:'var(--white)'}}>{type.name}</td><td><span className="badge badge-blue">{type.usage_count||0} divisions</span></td><td><span className={`badge ${type.is_active?'badge-green':'badge-gray'}`}>{type.is_active?'Active':'Archived'}</span></td><td>{type.created_by_name||'System'}</td><td style={{display:'flex',gap:6}}><button className="btn btn-sm btn-secondary" onClick={()=>edit(type)}>Edit name</button><button className="btn btn-sm btn-secondary" onClick={()=>toggle(type)}>{type.is_active?'Archive':'Activate'}</button><button className="btn-icon" style={{color:'var(--danger)'}} onClick={()=>remove(type)}>🗑</button></td></tr>)}</tbody></table></div></div><div className="tint-box" style={{marginTop:14}}>Renaming a division type updates all existing projects. Deleting a type that is already used archives it, preserving historical CRM data.</div></div>}
+elec-app/client/src\pages\GroupsPage.jsx:35:        ? await api.patch(`/item-groups/${group.id}`, form)
+elec-app/client/src\pages\GroupsPage.jsx:36:        : await api.post('/item-groups', form);
+elec-app/client/src\pages\GroupsPage.jsx:45:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\GroupsPage.jsx:46:      <div className="modal" onClick={e => e.stopPropagation()}>
+elec-app/client/src\pages\GroupsPage.jsx:49:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\GroupsPage.jsx:69:          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+elec-app/client/src\pages\GroupsPage.jsx:70:          <button className="btn btn-primary" onClick={save} disabled={saving}>
+elec-app/client/src\pages\GroupsPage.jsx:93:    api.get('/products', { params: { search: dq, limit: 10 } })
+elec-app/client/src\pages\GroupsPage.jsx:101:      const r = await api.post(`/item-groups/${groupId}/items`, {
+elec-app/client/src\pages\GroupsPage.jsx:124:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\GroupsPage.jsx:125:      <div className="modal" onClick={e => e.stopPropagation()}>
+elec-app/client/src\pages\GroupsPage.jsx:128:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\GroupsPage.jsx:139:                    onClick={() => { setSelectedProduct(p); setCustomName(''); setQ(''); setRes([]); }}>
+elec-app/client/src\pages\GroupsPage.jsx:155:              <button className="btn btn-sm btn-secondary" style={{marginTop:4}} onClick={() => setSelectedProduct(null)}>Change</button>
+elec-app/client/src\pages\GroupsPage.jsx:191:          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+elec-app/client/src\pages\GroupsPage.jsx:192:          <button className="btn btn-primary" onClick={add} disabled={saving || (!selectedProduct && !customName)}>
+elec-app/client/src\pages\GroupsPage.jsx:212:      const r = await api.get(`/item-groups/${group.id}/items`);
+elec-app/client/src\pages\GroupsPage.jsx:225:      await api.delete(`/item-groups/${group.id}/items/${itemId}`);
+elec-app/client/src\pages\GroupsPage.jsx:236:        onClick={() => setExpanded(!expanded)}>
+elec-app/client/src\pages\GroupsPage.jsx:252:        <div style={{display:'flex',gap:4}} onClick={e => e.stopPropagation()}>
+elec-app/client/src\pages\GroupsPage.jsx:253:          <button className="btn-icon" title="Add item" onClick={() => setShowAdd(true)}>➕</button>
+elec-app/client/src\pages\GroupsPage.jsx:254:          <button className="btn-icon" title="Edit" onClick={() => onEdit(group)}>✏️</button>
+elec-app/client/src\pages\GroupsPage.jsx:255:          <button className="btn-icon" title="Delete" style={{color:'var(--danger)'}} onClick={() => onDelete(group.id)}>🗑</button>
+elec-app/client/src\pages\GroupsPage.jsx:282:                        <button className="btn-icon" style={{color:'var(--danger)',fontSize:11}} onClick={() => removeItem(item.id)}>✕</button>
+elec-app/client/src\pages\GroupsPage.jsx:308:      const r = await api.get('/item-groups');
+elec-app/client/src\pages\GroupsPage.jsx:324:      await api.delete(`/item-groups/${id}`);
+elec-app/client/src\pages\GroupsPage.jsx:338:          <button className="btn btn-primary" onClick={() => setModal({})}>+ New Group</button>
+elec-app/client/src\pages\MessagesPage.jsx:18:      const r = await api.get('/messages');
+elec-app/client/src\pages\MessagesPage.jsx:33:      await api.post('/messages', { content: content.trim() });
+elec-app/client/src\pages\MessagesPage.jsx:54:      await api.delete(`/messages/${id}`);
+elec-app/client/src\pages\MessagesPage.jsx:88:            <button className="btn btn-primary" onClick={send} disabled={sending || !content.trim()}
+elec-app/client/src\pages\MessagesPage.jsx:126:                    <button className="btn-icon" title="Delete" style={{ color: 'var(--danger)', flexShrink: 0, fontSize: 13 }}
+elec-app/client/src\pages\MessagesPage.jsx:127:                      onClick={() => del(msg.id)}>✕</button>
+elec-app/client/src\pages\NotificationsPage.jsx:28:    api.get(url)
+elec-app/client/src\pages\NotificationsPage.jsx:40:    api.patch(`/notifications/${id}/read`).then(load);
+elec-app/client/src\pages\NotificationsPage.jsx:44:    api.patch('/notifications/read-all').then(load);
+elec-app/client/src\pages\NotificationsPage.jsx:48:    api.delete(`/notifications/${id}`).then(load);
+elec-app/client/src\pages\NotificationsPage.jsx:60:            <div className={`tab${filter === 'all' ? ' active' : ''}`} onClick={() => setFilter('all')}>All</div>
+elec-app/client/src\pages\NotificationsPage.jsx:61:            <div className={`tab${filter === 'unread' ? ' active' : ''}`} onClick={() => setFilter('unread')}>
+elec-app/client/src\pages\NotificationsPage.jsx:66:            <button className="btn btn-sm btn-secondary" onClick={handleReadAll}>Mark all read</button>
+elec-app/client/src\pages\NotificationsPage.jsx:113:                      <button className="btn btn-sm btn-secondary" onClick={() => handleRead(n.id)}>Read</button>
+elec-app/client/src\pages\NotificationsPage.jsx:115:                    <button className="btn btn-sm btn-icon" onClick={() => handleDelete(n.id)}>✕</button>
+elec-app/client/src\pages\PriceChangesPage.jsx:51:      await api.patch(`/price-changes/${request.id}/reject`, { rejection_reason: reason });
+elec-app/client/src\pages\PriceChangesPage.jsx:63:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\PriceChangesPage.jsx:64:      <div className="modal" onClick={e => e.stopPropagation()}>
+elec-app/client/src\pages\PriceChangesPage.jsx:67:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\PriceChangesPage.jsx:82:          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+elec-app/client/src\pages\PriceChangesPage.jsx:83:          <button className="btn btn-primary" style={{ background: 'var(--badge-red)' }} onClick={handleReject} disabled={saving}>
+elec-app/client/src\pages\PriceChangesPage.jsx:102:      const r = await api.get('/price-changes', { params: { status: filter } });
+elec-app/client/src\pages\PriceChangesPage.jsx:115:      await api.patch(`/price-changes/${id}/approve`);
+elec-app/client/src\pages\PriceChangesPage.jsx:134:            <button
+elec-app/client/src\pages\PriceChangesPage.jsx:137:              onClick={() => setFilter(f)}
+elec-app/client/src\pages\PriceChangesPage.jsx:198:                          <button className="btn btn-sm" style={{ background: 'rgba(34,197,94,.15)', color: 'var(--badge-green)', border: '1px solid rgba(34,197,94,.3)' }}
+elec-app/client/src\pages\PriceChangesPage.jsx:199:                            onClick={() => handleApprove(r.id)}>
+elec-app/client/src\pages\PriceChangesPage.jsx:202:                          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,.15)', color: 'var(--badge-red)', border: '1px solid rgba(239,68,68,.3)' }}
+elec-app/client/src\pages\PriceChangesPage.jsx:203:                            onClick={() => setRejecting(r)}>
+elec-app/client/src\pages\ProcurementPage.jsx:7:  const load=()=>{setLoading(true);api.get('/procurement/projects').then(r=>setProjects(r.data)).catch(e=>toast.error(e.message)).finally(()=>setLoading(false));};
+elec-app/client/src\pages\ProcurementPage.jsx:9:  const review=async(project,action)=>{setSaving(project.id);try{await api.patch(`/procurement/projects/${project.id}/review`,{action,note:notes[project.id]||null});toast.success(`Procurement ${action==='approve'?'approved':'rejected'}`);load();}catch(e){toast.error(e.response?.data?.error||e.message);}finally{setSaving(null);}};
+elec-app/client/src\pages\ProcurementPage.jsx:10:  const receive=async(project,item)=>{const key=`${project.id}-${item.product_id}`,quantity=parseInt(receiveQty[key]);if(!quantity||quantity<1){toast.error('Enter the quantity allocated to this project');return;}setReceiving(key);try{await api.patch(`/procurement/projects/${project.id}/products/${item.product_id}/receive`,{quantity});toast.success(`Allocated ${quantity} of ${item.item_name} to this project (stock unchanged)`);setReceiveQty(q=>({...q,[key]:''}));load();}catch(e){toast.error(e.response?.data?.error||e.message);}finally{setReceiving(null);}};
+elec-app/client/src\pages\ProcurementPage.jsx:12:    <div className="page-header"><div><div className="page-title">📦 Procurement Queue</div><div className="page-subtitle">Stock Manager, Owner, or Head Engineer approval is required before Assembly</div></div><button className="btn btn-secondary" onClick={load}>↻ Refresh</button></div>
+elec-app/client/src\pages\ProcurementPage.jsx:17:          {project.items.map((item,index)=>{const key=`${project.id}-${item.product_id}`;return <tr key={`${item.product_id||'manual'}-${index}`}><td className="mono">{item.item_name}</td><td>{item.description||'—'}</td><td className="mono">{item.required_qty}</td><td className="mono">{item.stock_qty}</td><td className="mono">{item.reserved_qty}</td><td className="mono" style={{color:item.allocated_qty?'var(--accent2)':'var(--muted)'}}>{item.allocated_qty}</td><td className="mono" style={{fontWeight:700}}>{item.available_for_project}</td><td>{item.product_id?<div style={{display:'flex',gap:5,minWidth:150}}><input type="number" min="1" step="1" className="form-input" style={{width:72,padding:'4px 6px'}} placeholder={item.shortage_qty?String(item.shortage_qty):'Qty'} value={receiveQty[key]||''} onChange={e=>setReceiveQty(q=>({...q,[key]:e.target.value}))}/><button className="btn btn-sm btn-secondary" disabled={receiving===key} onClick={()=>receive(project,item)}>{receiving===key?'...':'+ Add'}</button></div>:<span style={{color:'var(--muted)'}}>Manual item</span>}</td><td className="mono" style={{color:item.shortage_qty?'var(--danger)':'var(--success)',fontWeight:700}}>{item.shortage_qty||'✓'}</td></tr>})}
+elec-app/client/src\pages\ProcurementPage.jsx:20:        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',marginTop:12}}><input className="form-input" style={{flex:'1 1 260px'}} placeholder="Review note (required when rejecting)" value={notes[project.id]||''} onChange={e=>setNotes(n=>({...n,[project.id]:e.target.value}))}/><button className="btn btn-danger" disabled={saving===project.id||!notes[project.id]?.trim()} onClick={()=>review(project,'reject')}>Reject</button><button className="btn btn-primary" disabled={saving===project.id||project.shortage_count>0||!project.items.length} onClick={()=>review(project,'approve')}>{project.shortage_count?`${project.shortage_count} shortage(s)`:'Approve Stock →'}</button></div>
+elec-app/client/src\pages\ProductsPage.jsx:25:    api.get(`/products/${productId}`)
+elec-app/client/src\pages\ProductsPage.jsx:34:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\ProductsPage.jsx:35:      <div className="modal" onClick={e => e.stopPropagation()}>
+elec-app/client/src\pages\ProductsPage.jsx:38:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\ProductsPage.jsx:85:      const r = await api.patch(`/products/${product.id}`, payload);
+elec-app/client/src\pages\ProductsPage.jsx:95:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\ProductsPage.jsx:96:      <div className="modal" onClick={e=>e.stopPropagation()}>
+elec-app/client/src\pages\ProductsPage.jsx:99:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\ProductsPage.jsx:143:          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+elec-app/client/src\pages\ProductsPage.jsx:144:          <button className="btn btn-primary" onClick={save} disabled={saving}>
+elec-app/client/src\pages\ProductsPage.jsx:179:      const r = await api.get('/manual-product-requests', { params: { status: 'pending' } });
+elec-app/client/src\pages\ProductsPage.jsx:194:      const r = await api.post('/manual-product-requests', manualForm);
+elec-app/client/src\pages\ProductsPage.jsx:211:      await api.patch(`/manual-product-requests/${id}/approve`);
+elec-app/client/src\pages\ProductsPage.jsx:221:      await api.patch(`/manual-product-requests/${id}/reject`, { reason: reason || null });
+elec-app/client/src\pages\ProductsPage.jsx:230:      const r = await api.get('/products', { params: { page, limit: LIMIT, search: debouncedSearch, brand: brandFilter } });
+elec-app/client/src\pages\ProductsPage.jsx:240:    api.get('/brands').then(r => setBrands(r.data)).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
+elec-app/client/src\pages\ProductsPage.jsx:258:          {!stockOnly && <button className="btn btn-secondary" onClick={() => setShowManualForm(!showManualForm)}>
+elec-app/client/src\pages\ProductsPage.jsx:261:          {stockOnly && <button className="btn btn-primary" onClick={async()=>{const smart_code=prompt('Smart code for new stock item:');if(!smart_code)return;const qty=parseInt(prompt('Starting stock quantity:')||'0',10)||0;try{await api.post('/products/provision',{smart_code,qty});toast.success('Stock item created');load();}catch(e){toast.error(e.response?.data?.error||e.message);}}}>➕ Add Stock Item</button>}
+elec-app/client/src\pages\ProductsPage.jsx:262:          <a href="/api/export/products" className="btn btn-secondary" style={{ textDecoration: 'none' }}>
+elec-app/client/src\pages\ProductsPage.jsx:312:              <button className="btn btn-secondary" onClick={() => setShowManualForm(false)}>Cancel</button>
+elec-app/client/src\pages\ProductsPage.jsx:313:              <button className="btn btn-primary" onClick={handleManualSubmit} disabled={submitting}>
+elec-app/client/src\pages\ProductsPage.jsx:332:              <button className="btn btn-sm btn-secondary" onClick={() => setShowPending(!showPending)}>
+elec-app/client/src\pages\ProductsPage.jsx:363:                          <button className="btn btn-sm" style={{ background: 'rgba(34,197,94,0.15)', color: 'var(--success)', border: 'none', marginRight: 4 }}
+elec-app/client/src\pages\ProductsPage.jsx:364:                            onClick={() => handleApproveRequest(r.id)}>✓ Approve</button>
+elec-app/client/src\pages\ProductsPage.jsx:365:                          <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', border: 'none' }}
+elec-app/client/src\pages\ProductsPage.jsx:366:                            onClick={() => handleRejectRequest(r.id)}>✕ Reject</button>
+elec-app/client/src\pages\ProductsPage.jsx:439:                      ? <button className="btn btn-sm" style={{background:'rgba(245,158,11,.15)',color:'var(--badge-yellow)',border:'1px solid rgba(245,158,11,.3)',cursor:'pointer'}}
+elec-app/client/src\pages\ProductsPage.jsx:440:                          onClick={()=>navigate('/reservations')}>
+elec-app/client/src\pages\ProductsPage.jsx:452:                      <button className="btn-icon" title="Edit" onClick={()=>setEditing(p)}>✏️</button>
+elec-app/client/src\pages\ProductsPage.jsx:464:            <button className="btn btn-sm btn-secondary" disabled={page<=1} onClick={()=>setPage(p=>p-1)}>← Prev</button>
+elec-app/client/src\pages\ProductsPage.jsx:466:            <button className="btn btn-sm btn-secondary" disabled={page>=totalPages} onClick={()=>setPage(p=>p+1)}>Next →</button>
+elec-app/client/src\pages\ProjectsPage.jsx:19:    try { const r = await api.patch(`/projects/${project.id}/stage`, { stage, note: note.trim() || null }); onChanged(r.data); setNote(''); toast.success(`Project moved to ${stage}`); }
+elec-app/client/src\pages\ProjectsPage.jsx:39:      <button className="btn btn-primary" disabled={!canAdvance || saving} onClick={()=>change(nextStage)}>
+elec-app/client/src\pages\ProjectsPage.jsx:58:      api.get('/projects/draft-notifications')
+elec-app/client/src\pages\ProjectsPage.jsx:110:    api.get('/workers', { params: { role: 'engineer' } }).then(r => setWorkers(r.data));
+elec-app/client/src\pages\ProjectsPage.jsx:111:    api.get('/clients').then(r => setClients(r.data));
+elec-app/client/src\pages\ProjectsPage.jsx:129:        ? await api.patch(`/projects/${project.id}`, payload)
+elec-app/client/src\pages\ProjectsPage.jsx:130:        : await api.post('/projects', payload);
+elec-app/client/src\pages\ProjectsPage.jsx:141:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\ProjectsPage.jsx:142:      <div className="modal" onClick={e => e.stopPropagation()}>
+elec-app/client/src\pages\ProjectsPage.jsx:145:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\ProjectsPage.jsx:219:          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+elec-app/client/src\pages\ProjectsPage.jsx:220:          <button className="btn btn-primary" onClick={save} disabled={saving}>
+elec-app/client/src\pages\ProjectsPage.jsx:259:    api.get(`/projects/${projectId}/engineers`).then(r => setCollaborators(r.data)).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
+elec-app/client/src\pages\ProjectsPage.jsx:261:      api.get('/workers').then(r => setWorkers(r.data.filter(w => w.role === 'engineer'))).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
+elec-app/client/src\pages\ProjectsPage.jsx:269:      await api.post('/engineer-requests', { project_id: projectId, target_engineer_id: parseInt(inviteEngId) });
+elec-app/client/src\pages\ProjectsPage.jsx:279:      const r = await api.get(`/projects/${projectId}`);
+elec-app/client/src\pages\ProjectsPage.jsx:281:      api.get(`/projects/${projectId}/quotation-revisions`).then(x=>setRevisions(x.data)).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
+elec-app/client/src\pages\ProjectsPage.jsx:307:      const r = await api.patch(`/projects/${projectId}`, payload);
+elec-app/client/src\pages\ProjectsPage.jsx:319:      const r = await api.patch(`/projects/${projectId}/admin-approval`, { admin_approval });
+elec-app/client/src\pages\ProjectsPage.jsx:341:    try { const r=await api.post(`/projects/${projectId}/quotation-revisions`,{notes}); setRevisions(v=>[r.data,...v]); toast.success(`Created ${project.quote_number}-R${r.data.revision_number}`); }
+elec-app/client/src\pages\ProjectsPage.jsx:349:      const r = await api.post(`/projects/${projectId}/quotation-revisions/${revision.id}/restore`);
+elec-app/client/src\pages\ProjectsPage.jsx:362:      const r = await api.get(`/projects/${projectId}/quotation-revisions/${revision.id}/snapshot`);
+elec-app/client/src\pages\ProjectsPage.jsx:375:      <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\ProjectsPage.jsx:376:        <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+elec-app/client/src\pages\ProjectsPage.jsx:384:            <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\ProjectsPage.jsx:406:                      <button className="btn btn-sm btn-secondary" onClick={()=>toggleRevision(revision)}>{open?'Hide':'View items'}</button>
+elec-app/client/src\pages\ProjectsPage.jsx:415:                        {isRole('owner','head_engineer') && <button className="btn btn-danger btn-sm" disabled={restoringRevision===revision.id} onClick={()=>restoreRevision(revision)}>{restoringRevision===revision.id?'Restoring…':'Restore this version'}</button>}
+elec-app/client/src\pages\ProjectsPage.jsx:491:                    <button key={a} className={`btn btn-sm ${project.admin_approval === a ? 'btn-primary' : 'btn-secondary'}`}
+elec-app/client/src\pages\ProjectsPage.jsx:493:                      onClick={() => changeAdminApproval(a)}
+elec-app/client/src\pages\ProjectsPage.jsx:513:                    <button key={a} className={`btn btn-sm ${project.client_approval === a ? 'btn-primary' : 'btn-secondary'}`}
+elec-app/client/src\pages\ProjectsPage.jsx:515:                      onClick={() => changeClientApproval(a)}>{a}</button>
+elec-app/client/src\pages\ProjectsPage.jsx:557:                  <button className="btn btn-sm btn-primary" disabled={inviting || !inviteEngId} onClick={handleInvite}>
+elec-app/client/src\pages\ProjectsPage.jsx:566:              <button className="btn btn-primary" onClick={() => { onClose(); window.open(`/projects/${project.id}/crm`, '_blank'); }}>
+elec-app/client/src\pages\ProjectsPage.jsx:570:                <button className="btn btn-secondary" onClick={() => setShowEdit(true)}>
+elec-app/client/src\pages\ProjectsPage.jsx:575:                <button className="btn btn-secondary" onClick={() => handleExportPdf('owner')} disabled={pdfExporting}
+elec-app/client/src\pages\ProjectsPage.jsx:580:              {isRole('owner','head_engineer') && <button className="btn btn-secondary" onClick={createRevision}>🧾 Create Quotation Revision</button>}
+elec-app/client/src\pages\ProjectsPage.jsx:581:              <button className="btn btn-secondary" onClick={() => window.open(`/projects/${project.id}/client-export`, '_blank')} disabled={pdfExporting}
+elec-app/client/src\pages\ProjectsPage.jsx:603:                <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={pdfExporting || !clientExport.quoteNumber.trim()} onClick={() => handleExportPdf(clientExport.format, clientExport)}>
+elec-app/client/src\pages\ProjectsPage.jsx:645:      const r = await api.get('/projects');
+elec-app/client/src\pages\ProjectsPage.jsx:656:      await api.delete(`/projects/${p.id}`);
+elec-app/client/src\pages\ProjectsPage.jsx:688:        <button className="btn btn-primary" onClick={() => setModal({})}>+ New Project</button>
+elec-app/client/src\pages\ProjectsPage.jsx:689:        <button className="btn btn-secondary" onClick={() => setImportModal(true)}>📄 Import PDF</button>
+elec-app/client/src\pages\ProjectsPage.jsx:690:        <button className="btn btn-secondary" onClick={() => setViewMode(v => v === 'progress' ? 'table' : 'progress')}>
+elec-app/client/src\pages\ProjectsPage.jsx:693:        {isRole('owner','head_engineer','accounting') && <a href="/api/export/projects" className="btn btn-secondary" style={{ textDecoration: 'none' }}>📥 CSV</a>}
+elec-app/client/src\pages\ProjectsPage.jsx:709:                return <button className="project-progress-card" key={project.id} onClick={() => setDetail(project.id)}>
+elec-app/client/src\pages\ProjectsPage.jsx:743:                    <td style={{ fontWeight: 600, color: 'var(--white)', cursor: 'pointer' }} onClick={() => setDetail(p.id)}>
+elec-app/client/src\pages\ProjectsPage.jsx:766:                      <button className="btn btn-sm btn-secondary" onClick={() => window.open(`/projects/${p.id}/crm`, '_blank')} style={{ fontSize: 11, padding: '2px 8px' }}>CRM</button>
+elec-app/client/src\pages\ProjectsPage.jsx:767:                      <button className="btn-icon" title="View" onClick={() => setDetail(p.id)}>👁</button>
+elec-app/client/src\pages\ProjectsPage.jsx:768:                      {isRole('owner','head_engineer') && <button className="btn-icon" title="Delete" onClick={() => del(p)} style={{ color: 'var(--danger)' }}>🗑</button>}
+elec-app/client/src\pages\ProjectsPage.jsx:804:    api.get('/clients').then(r => setClients(r.data)).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
+elec-app/client/src\pages\ProjectsPage.jsx:805:    api.get('/workers').then(r => setEngineers(r.data.filter(w => w.role === 'engineer' || w.role === 'owner'))).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
+elec-app/client/src\pages\ProjectsPage.jsx:817:      const r = await api.post('/projects/import-pdf/preview', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+elec-app/client/src\pages\ProjectsPage.jsx:858:      const res = await api.post('/projects/import-pdf/create', {
+elec-app/client/src\pages\ProjectsPage.jsx:887:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\ProjectsPage.jsx:888:      <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+elec-app/client/src\pages\ProjectsPage.jsx:891:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\ProjectsPage.jsx:996:                <button className="btn btn-sm btn-secondary" onClick={() => setStep('form')}>Back</button>
+elec-app/client/src\pages\ProjectsPage.jsx:997:                <button className="btn btn-sm btn-primary" onClick={handleCreate} disabled={creating}>
+elec-app/client/src\pages\RequestsPage.jsx:15:        api.get('/engineer-requests/pending'),
+elec-app/client/src\pages\RequestsPage.jsx:16:        api.get('/engineer-requests/sent'),
+elec-app/client/src\pages\RequestsPage.jsx:31:      await api.patch(`/engineer-requests/${id}/respond`, { action });
+elec-app/client/src\pages\RequestsPage.jsx:40:      await api.patch(`/engineer-requests/${rejectModal}/respond`, { action: 'reject', rejection_reason: rejectReason });
+elec-app/client/src\pages\RequestsPage.jsx:51:      await api.delete(`/engineer-requests/${id}`);
+elec-app/client/src\pages\RequestsPage.jsx:64:        <button className={`btn btn-sm ${tab === 'incoming' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('incoming')}>
+elec-app/client/src\pages\RequestsPage.jsx:67:        <button className={`btn btn-sm ${tab === 'sent' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('sent')}>
+elec-app/client/src\pages\RequestsPage.jsx:86:                    <button className="btn btn-sm" style={{ background: 'rgba(34,197,94,0.15)', color: 'var(--success)' }} onClick={() => handleRespond(r.id, 'accept')}>Accept</button>
+elec-app/client/src\pages\RequestsPage.jsx:87:                    <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)' }} onClick={() => handleRespond(r.id, 'reject')}>Reject</button>
+elec-app/client/src\pages\RequestsPage.jsx:114:                      <button className="btn btn-sm btn-secondary" onClick={() => handleRevoke(r.id)}>Revoke</button>
+elec-app/client/src\pages\RequestsPage.jsx:125:        <div className="modal-overlay" onClick={() => { setRejectModal(null); setRejectReason(''); }}>
+elec-app/client/src\pages\RequestsPage.jsx:126:          <div className="modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+elec-app/client/src\pages\RequestsPage.jsx:137:              <button className="btn btn-sm btn-secondary" onClick={() => { setRejectModal(null); setRejectReason(''); }}>Cancel</button>
+elec-app/client/src\pages\RequestsPage.jsx:138:              <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.15)', color: 'var(--danger)' }} onClick={handleRejectConfirm}>Reject</button>
+elec-app/client/src\pages\ReservationsPage.jsx:19:        onClick={() => onExpand(item.product_id)}
+elec-app/client/src\pages\ReservationsPage.jsx:119:                  <button
+elec-app/client/src\pages\ReservationsPage.jsx:121:                    onClick={(e) => { e.stopPropagation(); onRelease(item.product_id, 1); }}
+elec-app/client/src\pages\ReservationsPage.jsx:127:                  <button
+elec-app/client/src\pages\ReservationsPage.jsx:129:                    onClick={(e) => { e.stopPropagation(); onReserve(item.product_id, 1); }}
+elec-app/client/src\pages\ReservationsPage.jsx:161:      const r = await api.get('/reservations');
+elec-app/client/src\pages\ReservationsPage.jsx:192:      const r = await api.patch(`/reservations/product/${productId}/reserved-qty`, { action: 'reserve', qty });
+elec-app/client/src\pages\ReservationsPage.jsx:221:      const r = await api.patch(`/reservations/product/${productId}/reserved-qty`, { action: 'release', qty });
+elec-app/client/src\pages\ReservationsPage.jsx:341:          {isRole('owner','head_engineer','stock_manager') && <button className="btn btn-secondary" onClick={async()=>{if(history){setHistory(null);return;}try{setHistory((await api.get('/reservation-history')).data);}catch(e){toast.error(e.message);}}}>🕘 Reservation Audit</button>}
+elec-app/client/src\pages\ReservationsPage.jsx:342:          <button className="btn btn-secondary" onClick={handleCsvDownload}>
+elec-app/client/src\pages\ReservationsPage.jsx:345:          <button className="btn btn-secondary" onClick={load} disabled={loading}>
+elec-app/client/src\pages\ReservationsPage.jsx:375:              onClick={() => setFilter(c.key)}
+elec-app/client/src\pages\TechnicianExecutionPage.jsx:18:        api.get(`/projects/${id}/execution/view`),
+elec-app/client/src\pages\TechnicianExecutionPage.jsx:19:        api.get(`/projects/${id}/execution`),
+elec-app/client/src\pages\TechnicianExecutionPage.jsx:32:      const r = await api.patch(`/projects/${id}/execution/panels/${panelId}`, { is_completed: is_completed ? 1 : 0, description });
+elec-app/client/src\pages\TechnicianExecutionPage.jsx:48:      const r = await api.patch(`/projects/${id}/execution/items/${itemId}`, body);
+elec-app/client/src\pages\TechnicianExecutionPage.jsx:69:            <button className="btn btn-sm btn-secondary" onClick={() => navigate('/my-projects')}>← Back</button>
+elec-app/client/src\pages\TechnicianExecutionPage.jsx:102:                  try { await api.patch(`/projects/${id}/execution/panels/${pid}`, { description }); }
+elec-app/client/src\pages\TechnicianProjectsPage.jsx:12:    api.get('/technicians/my-projects')
+elec-app/client/src\pages\TechnicianProjectsPage.jsx:41:                  <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/my-projects/${p.id}`)}>
+elec-app/client/src\pages\UpdatesPage.jsx:15:  const load = async () => { try { setData((await api.get('/updates')).data); } catch(e) { toast.error(e.message); } finally { setLoading(false); } };
+elec-app/client/src\pages\UpdatesPage.jsx:20:    await api.patch(`/updates/${update.id}/read`);
+elec-app/client/src\pages\UpdatesPage.jsx:24:  const markAll = async () => { await api.patch('/updates/read-all'); await load(); window.dispatchEvent(new Event('updates-read')); toast.success('All updates marked as read'); };
+elec-app/client/src\pages\UpdatesPage.jsx:28:      await api.post('/updates', { ...form, features: form.features.split('\n').map(v=>v.trim()).filter(Boolean), target_roles: form.target_roles.includes('all')?'all':form.target_roles });
+elec-app/client/src\pages\UpdatesPage.jsx:35:      {data.unread_count>0&&<button className="btn btn-secondary" onClick={markAll}>✓ Mark all read</button>}
+elec-app/client/src\pages\UpdatesPage.jsx:36:      {isRole('owner','head_engineer')&&<button className="btn btn-primary" onClick={()=>setShowCreate(v=>!v)}>+ Publish Update</button>}
+elec-app/client/src\pages\UpdatesPage.jsx:38:    {showCreate&&<div className="card update-compose"><div className="card-body"><h3>Publish a role-specific update</h3><div className="form-row"><div className="form-group"><label className="form-label">Version</label><input className="form-input" placeholder="e.g. 2.3" value={form.version} onChange={e=>setForm(p=>({...p,version:e.target.value}))}/></div><div className="form-group"><label className="form-label">Title</label><input className="form-input" value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))}/></div></div><div className="form-group"><label className="form-label">Summary</label><textarea className="form-textarea" value={form.summary} onChange={e=>setForm(p=>({...p,summary:e.target.value}))}/></div><div className="form-group"><label className="form-label">Features — one per line</label><textarea className="form-textarea" rows={5} value={form.features} onChange={e=>setForm(p=>({...p,features:e.target.value}))}/></div><div className="form-group"><label className="form-label">Audience</label><div className="update-role-picker"><button className={`badge ${form.target_roles.includes('all')?'badge-blue':'badge-gray'}`} onClick={()=>toggleRole('all')}>All users</button>{ROLES.map(role=><button key={role} className={`badge ${form.target_roles.includes(role)?'badge-purple':'badge-gray'}`} onClick={()=>toggleRole(role)}>{role.replace('_',' ')}</button>)}</div></div><button className="btn btn-primary" onClick={publish}>Publish and notify audience</button></div></div>}
+elec-app/client/src\pages\UpdatesPage.jsx:39:    {loading?<div className="empty"><span className="spinner"/></div>:<div className="updates-timeline">{data.updates.map(update=><article key={update.id} className={`update-card ${update.is_read?'':'unread'}`} onClick={()=>markRead(update)}><div className="update-version">v{update.version}</div><div className="update-content"><div className="update-title-row"><h2>{update.title}</h2>{!update.is_read&&<span className="badge badge-blue">NEW</span>}</div><p>{update.summary}</p><ul>{update.features.map((feature,index)=><li key={index}>✓ {feature}</li>)}</ul><div className="update-footer"><span>{update.target_roles==='all'?'All users':update.target_roles.split(',').map(r=>r.replace('_',' ')).join(' · ')}</span><span>{new Date(update.published_at).toLocaleDateString()}</span></div></div></article>)}</div>}
+elec-app/client/src\pages\UploadPage.jsx:28:      const r = await api.post('/upload', fd, {
+elec-app/client/src\pages\UploadPage.jsx:57:        onClick={() => inputRef.current.click()}
+elec-app/client/src\pages\UploadPage.jsx:89:      <button className="btn btn-primary" style={{minWidth:160}} onClick={upload} disabled={!file||loading}>
+elec-app/client/src\pages\WorkersPage.jsx:24:        ? await api.post('/workers', body)
+elec-app/client/src\pages\WorkersPage.jsx:25:        : await api.patch(`/workers/${worker.id}`, body);
+elec-app/client/src\pages\WorkersPage.jsx:37:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\WorkersPage.jsx:38:      <div className="modal" onClick={e=>e.stopPropagation()}>
+elec-app/client/src\pages\WorkersPage.jsx:41:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\WorkersPage.jsx:74:          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+elec-app/client/src\pages\WorkersPage.jsx:75:          <button className="btn btn-primary" onClick={save} disabled={saving}>
+elec-app/client/src\pages\WorkersPage.jsx:93:      await api.post('/auth/set-password', { worker_id: worker.id, new_password: newPass });
+elec-app/client/src\pages\WorkersPage.jsx:101:    <div className="modal-overlay" onClick={onClose}>
+elec-app/client/src\pages\WorkersPage.jsx:102:      <div className="modal" style={{maxWidth:380}} onClick={e=>e.stopPropagation()}>
+elec-app/client/src\pages\WorkersPage.jsx:105:          <button className="btn-icon" onClick={onClose}>✕</button>
+elec-app/client/src\pages\WorkersPage.jsx:119:          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+elec-app/client/src\pages\WorkersPage.jsx:120:          <button className="btn btn-primary" onClick={save} disabled={saving}>
+elec-app/client/src\pages\WorkersPage.jsx:140:      const r = await api.get('/workers', { params: roleFilter ? { role: roleFilter } : {} });
+elec-app/client/src\pages\WorkersPage.jsx:151:      await api.delete(`/workers/${w.id}`);
+elec-app/client/src\pages\WorkersPage.jsx:171:        <button className="btn btn-primary" onClick={()=>setModal({})}>+ Add Worker</button>
+elec-app/client/src\pages\WorkersPage.jsx:178:            onClick={()=>setRole(roleFilter===r ? '' : r)}>
+elec-app/client/src\pages\WorkersPage.jsx:209:                    {isRole('owner','head_engineer') && <button className="btn-icon" title="Edit" onClick={()=>setModal(w)}>✏️</button>}
+elec-app/client/src\pages\WorkersPage.jsx:210:                    {isRole('owner','head_engineer') && <button className="btn-icon" title="Set Password" onClick={()=>setSetPassFor(w)}>🔑</button>}
+elec-app/client/src\pages\WorkersPage.jsx:211:                    {isRole('owner') && <button className="btn-icon" title="Delete" onClick={()=>del(w)} style={{color:'var(--danger)'}}>🗑</button>}

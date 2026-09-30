@@ -1,5 +1,6 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { getErrorMessage } from './errorMessage';
 
 const api = axios.create({
   baseURL: '/api',
@@ -11,11 +12,13 @@ const api = axios.create({
 let sessionExpiredHandled = false;
 
 api.interceptors.response.use(
-  res => res,
+  res => {
+    if (res.config?.url?.includes('/auth/login')) sessionExpiredHandled = false;
+    return res;
+  },
   err => {
     const status = err.response?.status || 0;
-    const serverMsg = err.response?.data?.error;
-    const msg = serverMsg || (status === 0 ? 'Network error — check your connection' : err.message);
+    const msg = getErrorMessage(err);
 
     const url = err.config?.url || '';
     const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/me');

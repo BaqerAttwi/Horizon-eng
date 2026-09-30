@@ -1,3 +1,4 @@
+const { generateQuotationNumber } = require('../utils/quotationNumber');
 const { PDFParse } = require('pdf-parse');
 const db = require('../db/connection');
 const { recalcReservedQty } = require('./projectController');
@@ -313,7 +314,7 @@ async function createFromImport(req, res, next) {
        parseFloat(vat_pct)||0,parseFloat(project_discount_pct)||0,parseFloat(margin_warning_pct)||10,payment_terms||null,client_pdf_note||null]
     );
     const projectId = projResult.insertId;
-    const finalQuoteNumber = quote_number?.trim() || `Q-${String(projectId).padStart(6,'0')}`;
+    const finalQuoteNumber = quote_number?.trim() || generateQuotationNumber(project_name, projectId);
     await conn.execute('UPDATE projects SET quote_number=? WHERE id=?',[finalQuoteNumber,projectId]);
 
     // Collect all items from matched + unmatched to use as fallback

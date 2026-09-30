@@ -1,0 +1,3721 @@
+{
+  "timestamp": "2026-09-29T18:15:51.160Z",
+  "total": 670,
+  "serverFailures": [],
+  "results": [
+    {
+      "method": "GET",
+      "route": "/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/auth/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/brands",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/discounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations/product/:productId",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservation-history",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/workers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/clients",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/draft-notifications",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/stage-history",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot",
+      "status": 404,
+      "error": "Quotation revision not found"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-workload",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/crm",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/manual-products",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/pending",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/sent",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/engineers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/summary",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/engineers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/clients",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/projects/:projectId/team",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/notifications",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/my",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/project/:projectId",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id/items",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution/view",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/technicians/my-projects",
+      "status": 403,
+      "error": "Access denied — requires: technician"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/technicians",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/manual-product-requests",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/activity",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/attachments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/onedrive/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/payments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/debt",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/products",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/projects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/analytics",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/reservations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/crm/:projectId",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/messages",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/updates",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/division-types",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/procurement/projects",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/health [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/auth/me [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products/:id [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/brands [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/discounts [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations/product/:productId [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservation-history [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/workers [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/clients [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/draft-notifications [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:id [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/stage-history [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot [role: head_engineer]",
+      "status": 404,
+      "error": "Quotation revision not found"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-workload [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/crm [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/manual-products [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/pending [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/sent [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/engineers [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/summary [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/engineers [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/clients [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/projects/:projectId/team [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/dashboard [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/notifications [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/my [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/project/:projectId [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id/items [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution/view [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/technicians/my-projects [role: head_engineer]",
+      "status": 403,
+      "error": "Access denied — requires: technician"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/technicians [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/manual-product-requests [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/activity [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/attachments [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/onedrive/status [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/payments [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/debt [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/products [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/projects [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/analytics [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/reservations [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/crm/:projectId [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/messages [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/updates [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/division-types [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/procurement/projects [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/health [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/auth/me [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products/:id [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/brands [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/discounts [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations/product/:productId [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservation-history [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: owner or stock_manager or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/workers [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/clients [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/draft-notifications [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:id [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/stage-history [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-workload [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/crm [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/manual-products [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/pending [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/sent [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/engineers [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/summary [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/engineers [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/clients [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/projects/:projectId/team [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/dashboard [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/notifications [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/my [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/project/:projectId [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id [role: engineer]",
+      "status": 404,
+      "error": "Group not found"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id/items [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution/view [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/technicians/my-projects [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: technician"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/technicians [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/manual-product-requests [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/activity [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/attachments [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/onedrive/status [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/payments [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/debt [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/export/products [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/projects [role: engineer]",
+      "status": 403,
+      "error": "Financial project export is restricted to management and accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/export/analytics [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/export/reservations [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/crm/:projectId [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/messages [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/updates [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/division-types [role: engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/procurement/projects [role: engineer]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or stock_manager"
+    },
+    {
+      "method": "GET",
+      "route": "/health [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/auth/me [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products/:id [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/brands [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/discounts [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations/product/:productId [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservation-history [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or stock_manager or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/workers [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/clients [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/draft-notifications [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:id [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/stage-history [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-workload [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/crm [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/manual-products [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/pending [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/sent [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/engineers [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/summary [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/engineers [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/clients [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/projects/:projectId/team [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/dashboard [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/notifications [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/my [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/project/:projectId [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id [role: accounting]",
+      "status": 404,
+      "error": "Group not found"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id/items [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution/view [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/technicians/my-projects [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: technician"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/technicians [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/manual-product-requests [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/activity [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/attachments [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/onedrive/status [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/payments [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/debt [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/products [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/projects [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/analytics [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/export/reservations [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/crm/:projectId [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/messages [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/updates [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/division-types [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/procurement/projects [role: accounting]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or stock_manager"
+    },
+    {
+      "method": "GET",
+      "route": "/health [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/auth/me [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products/:id [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/brands [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/discounts [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations/product/:productId [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservation-history [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/workers [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer or accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/clients [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting or secretary or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — use /technicians/my-projects instead"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/draft-notifications [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:id [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — use the Execution view instead"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/stage-history [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-workload [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/crm [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/manual-products [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/pending [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/sent [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/engineers [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/summary [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/engineers [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/clients [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/projects/:projectId/team [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/dashboard [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting or engineer or secretary"
+    },
+    {
+      "method": "GET",
+      "route": "/notifications [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/my [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/project/:projectId [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id [role: stock_manager]",
+      "status": 404,
+      "error": "Group not found"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id/items [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution/view [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/technicians/my-projects [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: technician"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/technicians [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/manual-product-requests [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/activity [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/attachments [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/onedrive/status [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/payments [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/debt [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/export/products [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/projects [role: stock_manager]",
+      "status": 403,
+      "error": "Financial project export is restricted to management and accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/export/analytics [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/export/reservations [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/crm/:projectId [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/messages [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/updates [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/division-types [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/procurement/projects [role: stock_manager]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/health [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/auth/me [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products/:id [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/brands [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/discounts [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations/product/:productId [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservation-history [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or stock_manager or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/workers [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer or accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/clients [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/draft-notifications [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:id [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/stage-history [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-workload [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/crm [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/manual-products [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/pending [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/sent [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/engineers [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/summary [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/engineers [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/clients [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/projects/:projectId/team [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/dashboard [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/notifications [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/my [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/project/:projectId [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id [role: secretary]",
+      "status": 404,
+      "error": "Group not found"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id/items [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution/view [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/technicians/my-projects [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: technician"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/technicians [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/manual-product-requests [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/activity [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/attachments [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/onedrive/status [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/payments [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/debt [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/export/products [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/projects [role: secretary]",
+      "status": 403,
+      "error": "Financial project export is restricted to management and accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/export/analytics [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/export/reservations [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/crm/:projectId [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/messages [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/updates [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/division-types [role: secretary]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/procurement/projects [role: secretary]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or stock_manager"
+    },
+    {
+      "method": "GET",
+      "route": "/health [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/auth/me [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/products/:id [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/brands [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/discounts [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservations/product/:productId [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/reservation-history [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or stock_manager or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/workers [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer or accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/clients [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting or secretary or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects [role: technician]",
+      "status": 403,
+      "error": "Access denied — use /technicians/my-projects instead"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/draft-notifications [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:id [role: technician]",
+      "status": 403,
+      "error": "Access denied — use the Execution view instead"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/stage-history [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-workload [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/crm [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/manual-products [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/pending [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/sent [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/engineers [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/summary [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/engineers [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/clients [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/projects/:projectId/team [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/dashboard [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting or engineer or secretary"
+    },
+    {
+      "method": "GET",
+      "route": "/notifications [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/my [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/project/:projectId [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id [role: technician]",
+      "status": 404,
+      "error": "Group not found"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id/items [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution [role: technician]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution/view [role: technician]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/technicians/my-projects [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/technicians [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/manual-product-requests [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/activity [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/attachments [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/onedrive/status [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/payments [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/debt [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/export/products [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/projects [role: technician]",
+      "status": 403,
+      "error": "Financial project export is restricted to management and accounting"
+    },
+    {
+      "method": "GET",
+      "route": "/export/analytics [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/export/reservations [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/export/crm/:projectId [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or engineer"
+    },
+    {
+      "method": "GET",
+      "route": "/messages [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/updates [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/division-types [role: technician]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/procurement/projects [role: technician]",
+      "status": 403,
+      "error": "Access denied — requires: owner or head_engineer or stock_manager"
+    },
+    {
+      "method": "POST",
+      "route": "/auth/register [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/auth/change-password [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/auth/set-password [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/auth/me [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/auth/logout [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/upload [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/products [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/products/provision [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/products/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/products/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/brands [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/discounts [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/discounts [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/discounts/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/discounts/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/discounts/bulk-brand [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/reservations [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/reservations/product/:productId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/reservation-history [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/reservations/product/:productId/reserved-qty [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/workers [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/workers [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/workers/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/workers/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/clients [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/clients [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/clients/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/clients/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/draft-notifications [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/import-pdf/preview [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/import-pdf/create [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:id/admin-approval [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:id/ready-for-review [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/stage [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/stage-history [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/quotation-revisions [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/quotation-revisions/:revisionId/restore [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-workload [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:id/items [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:id/items/:itemId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/crm [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/panels [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/panels/copy-from [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/panels/:panelId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/panels/:panelId/complete [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/panels/:panelId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/panels/:panelId/divisions [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/manual-products [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/manual-products [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/manual-products/:productId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/items/bulk-update [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/items/bulk-replace [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/items/apply-brand-discount [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/pending [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/engineer-requests/sent [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/engineer-requests [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/engineer-requests/:requestId/respond [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/engineer-requests/:requestId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/engineers [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/summary [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/engineers [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/clients [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/projects/:projectId/team [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/dashboard [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/notifications [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/notifications/:notificationId/read [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/notifications/read-all [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/notifications/:notificationId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/price-changes [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/my [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/price-changes/project/:projectId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/price-changes/:requestId/approve [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/price-changes/:requestId/reject [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/item-groups [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/item-groups/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/item-groups/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/item-groups/:id/items [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/item-groups/:id/items [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/item-groups/:id/items/:itemId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/execution/view [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/execution/panels/:panelId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/execution/items/:itemId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/technicians/my-projects [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/technicians [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/technicians [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/technicians/:workerId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/group-instances/:instanceId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/group-instances/:instanceId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/manual-product-requests [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/manual-product-requests [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/manual-product-requests/:id/approve [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/manual-product-requests/:id/reject [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/activity [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/attachments [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/attachments [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/attachments/:attachmentId/download [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/attachments/:attachmentId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/onedrive/connect [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/onedrive/callback [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/onedrive/status [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/onedrive/disconnect [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/payments [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/payments [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/payments/:paymentId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/debt [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/export/products [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/export/projects [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/export/analytics [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/export/reservations [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/export/crm/:projectId [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/messages [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/messages [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/messages/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/updates [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/updates [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/updates/read-all [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/updates/:updateId/read [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/division-types [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/division-types [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/division-types/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "DELETE",
+      "route": "/division-types/:id [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/procurement/projects [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/procurement/projects/:projectId/review [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "PATCH",
+      "route": "/procurement/projects/:projectId/products/:productId/receive [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/upload [invalid request]",
+      "status": 400,
+      "error": "No file uploaded"
+    },
+    {
+      "method": "POST",
+      "route": "/products/provision [invalid request]",
+      "status": 400,
+      "error": "Smart code is required"
+    },
+    {
+      "method": "PATCH",
+      "route": "/products/:id [invalid request]",
+      "status": 400,
+      "error": "Nothing to update"
+    },
+    {
+      "method": "POST",
+      "route": "/discounts [invalid request]",
+      "status": 400,
+      "error": "Validation failed: : product_id or brand_id required"
+    },
+    {
+      "method": "PATCH",
+      "route": "/discounts/:id [invalid request]",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "route": "/discounts/:id [invalid request]",
+      "status": 404,
+      "error": "Discount not found"
+    },
+    {
+      "method": "POST",
+      "route": "/discounts/bulk-brand [invalid request]",
+      "status": 400,
+      "error": "discounts array required"
+    },
+    {
+      "method": "PATCH",
+      "route": "/reservations/product/:productId/reserved-qty [invalid request]",
+      "status": 400,
+      "error": "Action must be \"reserve\" or \"release\""
+    },
+    {
+      "method": "POST",
+      "route": "/workers [invalid request]",
+      "status": 400,
+      "error": "Validation failed: name: Invalid input: expected string, received undefined; role: Invalid option: expected one of \"owner\"|\"head_engineer\"|\"stock_manager\"|\"accounting\"|\"engineer\"|\"secretary\"|\"technician\"; password: Invalid input: expected string, received undefined"
+    },
+    {
+      "method": "PATCH",
+      "route": "/workers/:id [invalid request]",
+      "status": 400,
+      "error": "Nothing to update"
+    },
+    {
+      "method": "DELETE",
+      "route": "/workers/:id [invalid request]",
+      "status": 404,
+      "error": "Worker not found"
+    },
+    {
+      "method": "POST",
+      "route": "/clients [invalid request]",
+      "status": 400,
+      "error": "Validation failed: name: Invalid input: expected string, received undefined"
+    },
+    {
+      "method": "PATCH",
+      "route": "/clients/:id [invalid request]",
+      "status": 404,
+      "error": "Client not found"
+    },
+    {
+      "method": "DELETE",
+      "route": "/clients/:id [invalid request]",
+      "status": 404,
+      "error": "Client not found"
+    },
+    {
+      "method": "POST",
+      "route": "/projects [invalid request]",
+      "status": 400,
+      "error": "Validation failed: project_name: Invalid input: expected string, received undefined"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/import-pdf/preview [invalid request]",
+      "status": 400,
+      "error": "PDF file required"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/import-pdf/create [invalid request]",
+      "status": 400,
+      "error": "project_name required"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:id [invalid request]",
+      "status": 404,
+      "error": "Project not found. Refresh the project list and try again."
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:id/admin-approval [invalid request]",
+      "status": 400,
+      "error": "admin_approval must be pending, approved, or rejected"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:id/ready-for-review [invalid request]",
+      "status": 404,
+      "error": "Project not found"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/stage [invalid request]",
+      "status": 400,
+      "error": "Invalid project stage"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/quotation-revisions [invalid request]",
+      "status": 404,
+      "error": "Project not found"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/quotation-revisions/:revisionId/restore [invalid request]",
+      "status": 404,
+      "error": "Quotation revision not found"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:id [invalid request]",
+      "status": 404,
+      "error": "Project not found"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:id/items [invalid request]",
+      "status": 400,
+      "error": "product_id required"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:id/items/:itemId [invalid request]",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/panels [invalid request]",
+      "status": 400,
+      "error": "panel_number required"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/panels/copy-from [invalid request]",
+      "status": 400,
+      "error": "sourceProjectId and sourcePanelId required"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/panels/:panelId [invalid request]",
+      "status": 404,
+      "error": "Panel not found in this project"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/panels/:panelId/complete [invalid request]",
+      "status": 404,
+      "error": "Panel not found"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/panels/:panelId [invalid request]",
+      "status": 404,
+      "error": "Panel not found"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/panels/:panelId/divisions [invalid request]",
+      "status": 404,
+      "error": "Panel not found"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId [invalid request]",
+      "status": 404,
+      "error": "Panel not found"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId [invalid request]",
+      "status": 404,
+      "error": "Panel not found"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/manual-products [invalid request]",
+      "status": 400,
+      "error": "name required"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/manual-products/:productId [invalid request]",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items [invalid request]",
+      "status": 404,
+      "error": "Division not found"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId [invalid request]",
+      "status": 404,
+      "error": "Division not found"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId [invalid request]",
+      "status": 404,
+      "error": "Division not found"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/items/bulk-update [invalid request]",
+      "status": 400,
+      "error": "item_ids array and changes object required"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/items/bulk-replace [invalid request]",
+      "status": 400,
+      "error": "item_ids array and product_id required"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/items/apply-brand-discount [invalid request]",
+      "status": 400,
+      "error": "brand and discount_pct required"
+    },
+    {
+      "method": "POST",
+      "route": "/engineer-requests [invalid request]",
+      "status": 400,
+      "error": "project_id and target_engineer_id required"
+    },
+    {
+      "method": "PATCH",
+      "route": "/engineer-requests/:requestId/respond [invalid request]",
+      "status": 400,
+      "error": "action must be accept or reject"
+    },
+    {
+      "method": "DELETE",
+      "route": "/engineer-requests/:requestId [invalid request]",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "route": "/notifications/:notificationId/read [invalid request]",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "route": "/notifications/read-all [invalid request]",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "route": "/notifications/:notificationId [invalid request]",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/price-changes [invalid request]",
+      "status": 400,
+      "error": "item_id required"
+    },
+    {
+      "method": "PATCH",
+      "route": "/price-changes/:requestId/approve [invalid request]",
+      "status": 404,
+      "error": "Request not found or already processed"
+    },
+    {
+      "method": "PATCH",
+      "route": "/price-changes/:requestId/reject [invalid request]",
+      "status": 404,
+      "error": "Request not found or already processed"
+    },
+    {
+      "method": "POST",
+      "route": "/item-groups [invalid request]",
+      "status": 400,
+      "error": "Group name required"
+    },
+    {
+      "method": "PATCH",
+      "route": "/item-groups/:id [invalid request]",
+      "status": 404,
+      "error": "Group not found or access denied"
+    },
+    {
+      "method": "DELETE",
+      "route": "/item-groups/:id [invalid request]",
+      "status": 404,
+      "error": "Group not found or access denied"
+    },
+    {
+      "method": "POST",
+      "route": "/item-groups/:id/items [invalid request]",
+      "status": 404,
+      "error": "Group not found or access denied"
+    },
+    {
+      "method": "DELETE",
+      "route": "/item-groups/:id/items/:itemId [invalid request]",
+      "status": 404,
+      "error": "Group not found or access denied"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/execution/panels/:panelId [invalid request]",
+      "status": 404,
+      "error": "Panel not found in this project"
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/:projectId/execution/items/:itemId [invalid request]",
+      "status": 404,
+      "error": "Item not found in this project"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/technicians [invalid request]",
+      "status": 400,
+      "error": "worker_id required"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/technicians/:workerId [invalid request]",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances [invalid request]",
+      "status": 400,
+      "error": "item_group_id required"
+    },
+    {
+      "method": "PATCH",
+      "route": "/group-instances/:instanceId [invalid request]",
+      "status": 404,
+      "error": "Group instance not found"
+    },
+    {
+      "method": "DELETE",
+      "route": "/group-instances/:instanceId [invalid request]",
+      "status": 404,
+      "error": "Group instance not found"
+    },
+    {
+      "method": "POST",
+      "route": "/manual-product-requests [invalid request]",
+      "status": 400,
+      "error": "Product name is required"
+    },
+    {
+      "method": "PATCH",
+      "route": "/manual-product-requests/:id/approve [invalid request]",
+      "status": 404,
+      "error": "Pending request not found"
+    },
+    {
+      "method": "PATCH",
+      "route": "/manual-product-requests/:id/reject [invalid request]",
+      "status": 404,
+      "error": "Pending request not found"
+    },
+    {
+      "method": "POST",
+      "route": "/projects/:projectId/payments [invalid request]",
+      "status": 400,
+      "error": "amount must be greater than 0"
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/:projectId/payments/:paymentId [invalid request]",
+      "status": 404,
+      "error": "Payment not found"
+    },
+    {
+      "method": "POST",
+      "route": "/messages [invalid request]",
+      "status": 400,
+      "error": "Content is required"
+    },
+    {
+      "method": "DELETE",
+      "route": "/messages/:id [invalid request]",
+      "status": 404,
+      "error": "Message not found"
+    },
+    {
+      "method": "POST",
+      "route": "/updates [invalid request]",
+      "status": 400,
+      "error": "Version, title, summary, features, and audience are required"
+    },
+    {
+      "method": "PATCH",
+      "route": "/updates/read-all [invalid request]",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "route": "/updates/:updateId/read [invalid request]",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/division-types [invalid request]",
+      "status": 400,
+      "error": "Division name is required and must be 100 characters or less"
+    },
+    {
+      "method": "PATCH",
+      "route": "/division-types/:id [invalid request]",
+      "status": 404,
+      "error": "Division type not found"
+    },
+    {
+      "method": "DELETE",
+      "route": "/division-types/:id [invalid request]",
+      "status": 404,
+      "error": "Division type not found"
+    },
+    {
+      "method": "PATCH",
+      "route": "/procurement/projects/:projectId/review [invalid request]",
+      "status": 400,
+      "error": "action must be approve or reject"
+    },
+    {
+      "method": "PATCH",
+      "route": "/procurement/projects/:projectId/products/:productId/receive [invalid request]",
+      "status": 400,
+      "error": "quantity must be a positive whole number"
+    },
+    {
+      "method": "POST",
+      "route": "/projects",
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/28",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/28/admin-approval",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/28/ready-for-review",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/28/stage",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/28/quotation-revisions",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "route": "/projects/28/quotation-revisions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/28/quotation-revisions/13/snapshot",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/28/quotation-revisions/13/restore",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/28/payments",
+      "status": 201
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/28/payments/11",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/28/manual-products",
+      "status": 201
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/28/manual-products/4805",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/28/panels",
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/28/panels/164",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/28/panels/164/divisions",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "route": "/projects/28/panels/164/divisions/56/items",
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/28/panels/164/divisions/56/items/52887",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/28/items/bulk-update",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/28/items/bulk-replace",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/28/execution/items/52887",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "route": "/projects/28/execution/panels/164",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/28/panels/164/divisions/56/items/52887",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/28/panels/164/divisions/56",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/28/panels/164",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/28",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/clients",
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "route": "/clients/2",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "route": "/clients/2",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/item-groups",
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "route": "/item-groups/3",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/item-groups/3/items",
+      "status": 201
+    },
+    {
+      "method": "DELETE",
+      "route": "/item-groups/3/items/3",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "route": "/item-groups/3",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/discounts",
+      "status": 201
+    },
+    {
+      "method": "PATCH",
+      "route": "/discounts/1",
+      "status": 200
+    },
+    {
+      "method": "DELETE",
+      "route": "/discounts/1",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/projects/import-pdf/create",
+      "status": 201
+    },
+    {
+      "method": "DELETE",
+      "route": "/projects/29",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/upload [PL fixture]",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "route": "/upload [WrongSheet fixture]",
+      "status": 400,
+      "error": "Sheet \"PL\" not found. File has: WrongSheet"
+    }
+  ]
+}

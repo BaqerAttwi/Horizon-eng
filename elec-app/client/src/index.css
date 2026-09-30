@@ -273,6 +273,10 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; }
 thead { background: var(--panel2); }
 th { padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-family: var(--font-mono); border-bottom: 1px solid var(--border); white-space: nowrap; }
 td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+/* Keep table content aligned consistently, including cells with inline styles. */
+table th, table td { text-align: center !important; vertical-align: middle; }
+table input, table select, table textarea { text-align: center !important; }
+table input[type="number"] { font-variant-numeric: tabular-nums; }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--panel2); }
 .mono { font-family: var(--font-mono); font-size: 12px; }
@@ -431,6 +435,14 @@ tr:hover td { background: var(--panel2); }
 .mobile-header { display: none; }
 
 /* ── Responsive ───────────────────────────────────────────── */
+
+.client-export-layout { display: grid; grid-template-columns: minmax(0, 430px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.client-export-layout > * { min-width: 0; }
+.client-export-preview { position: sticky; top: 12px; overflow: auto; max-height: calc(100vh - 30px); }
+@media (max-width: 1200px) {
+  .client-export-layout { grid-template-columns: minmax(0, 1fr); }
+  .client-export-preview { position: static; }
+}
 
 /* Mobile-first breakpoints */
 @media (max-width: 480px) {

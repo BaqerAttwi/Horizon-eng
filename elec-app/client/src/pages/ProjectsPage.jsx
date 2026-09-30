@@ -57,7 +57,7 @@ function DraftNotification() {
     if (isRole('engineer', 'head_engineer', 'owner')) {
       api.get('/projects/draft-notifications')
         .then(r => { if (r.data.count > 0) setNotify(r.data); })
-        .catch(() => {});
+        .catch(e => toast.error(e.message, { id: 'api-' + e.message }));
     }
   }, []);
 
@@ -150,7 +150,7 @@ function ProjectModal({ project, onClose, onSaved }) {
             <input className="form-input" placeholder="e.g. Hospital Electrical Upgrade 2025..." {...f('project_name')} />
           </div>
           <div className="form-group">
-            <label className="form-label">Quotation Number</label>
+            <label className="form-label">EQ / Quotation Number</label>
             <input className="form-input" placeholder="Leave blank to generate automatically" {...f('quote_number')} />
             <small style={{ color: 'var(--muted)' }}>Must be unique across all projects.</small>
           </div>
@@ -256,9 +256,9 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
 
   useEffect(() => {
     if (!project) return;
-    api.get(`/projects/${projectId}/engineers`).then(r => setCollaborators(r.data)).catch(() => {});
+    api.get(`/projects/${projectId}/engineers`).then(r => setCollaborators(r.data)).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
     if (isRole('owner','head_engineer','engineer')) {
-      api.get('/workers').then(r => setWorkers(r.data.filter(w => w.role === 'engineer'))).catch(() => {});
+      api.get('/workers').then(r => setWorkers(r.data.filter(w => w.role === 'engineer'))).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
     }
   }, [project?.id]);
 
@@ -278,7 +278,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
     try {
       const r = await api.get(`/projects/${projectId}`);
       setProject(r.data);
-      api.get(`/projects/${projectId}/quotation-revisions`).then(x=>setRevisions(x.data)).catch(()=>{});
+      api.get(`/projects/${projectId}/quotation-revisions`).then(x=>setRevisions(x.data)).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
     } catch (e) { toast.error(e.message); onClose(); }
     finally { setLoading(false); }
   }, [projectId]);
@@ -628,10 +628,11 @@ export default function ProjectsPage() {
   const [detail, setDetail] = useState(null);
   const [importModal, setImportModal] = useState(false);
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState('progress');
+  const [viewMode, setViewMode] = useState('table');
 
   const filtered = projects.filter(p =>
     !search.trim() ||
+    p.quote_number?.toLowerCase().includes(search.trim().toLowerCase()) ||
     p.project_name?.toLowerCase().includes(search.toLowerCase()) ||
     String(p.id).includes(search) ||
     p.engineer_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -693,7 +694,7 @@ export default function ProjectsPage() {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <input className="form-input" placeholder="🔍 Search by name, ID, engineer, or client..."
+        <input className="form-input" placeholder="🔍 Search by EQ, name, ID, engineer, or client..."
           value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
@@ -730,7 +731,7 @@ export default function ProjectsPage() {
               </tr>
             </thead>
             <tbody>
-              {!projects.length && !loading && (
+              {!filtered.length && !loading && (
                 <tr><td colSpan={13}><div className="empty"><div className="empty-icon">{search ? '🔍' : '🔧'}</div><p>{search ? 'No projects match your search.' : 'No projects yet.'}</p></div></td></tr>
               )}
               {filtered.map(p => {
@@ -800,8 +801,8 @@ function ImportPdfModal({ onClose, onCreated }) {
   const [unmatchedAction, setUnmatchedAction] = useState({});
 
   useEffect(() => {
-    api.get('/clients').then(r => setClients(r.data)).catch(() => {});
-    api.get('/workers').then(r => setEngineers(r.data.filter(w => w.role === 'engineer' || w.role === 'owner'))).catch(() => {});
+    api.get('/clients').then(r => setClients(r.data)).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
+    api.get('/workers').then(r => setEngineers(r.data.filter(w => w.role === 'engineer' || w.role === 'owner'))).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
   }, []);
 
   const handleFileAndPreview = async (e) => {

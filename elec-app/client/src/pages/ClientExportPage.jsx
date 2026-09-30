@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { commercialTitle, isInvoiceStage, drawCommercialDocument } from '../utils/commercialDocument';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api/client';
@@ -8,7 +9,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const expiry = () => { const d = new Date(); d.setDate(d.getDate() + 14); return d.toISOString().slice(0, 10); };
 
 const defaults = {
-  format: 'quotation', quoteNumber: '', quoteDate: today(), expiryDate: expiry(), projectName: '', buyerName: '', buyerAddress: '', buyerPhone: '', buyerContact: '', buyerEmail: '', buyerVat: '',
+  format: 'quotation', quoteNumber: '', quoteDate: today(), expiryDate: expiry(), deliveryDate: '', projectName: '', buyerName: '', buyerAddress: '', buyerPhone: '', buyerContact: '', buyerEmail: '', buyerVat: '',
   paymentTerms: '', validity: '2 weeks', deliveryTime: 'TBD', currency: '$', currencyName: 'USD', incoterm: 'Ex-work our workshop in Beirut', incotermCode: 'EXW Beirut - Workshop',
   additionalInfo: 'Our offer is valid for 2 weeks.\nDelivery Time: TBD\nAttachment: Technical Offer\nOur offer is considered Ex-work our workshop in Beirut',
   bankAccount: '3254067424002', bankIban: 'LB93003900000003254067424002', bankName: 'BYBLOS BANK', bankBranch: 'Ghobeiry Branch',
@@ -33,42 +34,48 @@ export default function ClientExportPage() {
   const [project, setProject] = useState(null);
   const [form, setForm] = useState(defaults);
   const [exporting, setExporting] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+    setProject(null);
+    setLoadError('');
     api.get(`/projects/${id}/crm`).then(({ data }) => {
+      if (cancelled) return;
       setProject(data);
-      setForm(v => ({ ...v, format: isEngineer ? 'technical' : v.format, quoteNumber: data.quote_number || v.quoteNumber, projectName: data.project_name || '', buyerName: data.client_name || '', paymentTerms: data.payment_terms || '', vatPctOverride: String(Number(data.vat_pct) || 0) }));
-    }).catch(e => toast.error(e.message));
-  }, [id]);
+      setForm(v => ({ ...v, format: isEngineer ? 'technical' : v.format, additionalInfo: isInvoiceStage(data) ? defaults.additionalInfo.replace('Our offer is valid for 2 weeks.\n', '') : defaults.additionalInfo, quoteNumber: data.quote_number || v.quoteNumber, projectName: data.project_name || '', buyerName: data.client_name || '', paymentTerms: data.payment_terms || '', vatPctOverride: String(Number(data.vat_pct) || 0) }));
+    }).catch(e => {
+      if (!cancelled) setLoadError(e.message);
+    });
+    return () => { cancelled = true; };
+  }, [id, isEngineer, loadAttempt]);
 
-  const totals = useMemo(() => {
-    if (!project) return { subtotal: 0, vat: 0, total: 0 };
-    const gross = (project.panels || []).reduce((sum, p) => sum + (Number(p.total_price) || 0), 0);
-    const subtotal = gross * (1 - (Number(project.project_discount_pct) || 0) / 100);
-    const vat = form.vatAmountOverride !== '' ? Number(form.vatAmountOverride) || 0 : subtotal * (Number(form.vatPctOverride) || 0) / 100;
-    return { subtotal, vat, total: form.totalOverride !== '' ? Number(form.totalOverride) || 0 : subtotal + vat };
-  }, [project, form.vatPctOverride, form.vatAmountOverride, form.totalOverride]);
+  const invoice = isInvoiceStage(project);
+  const documentTitle = commercialTitle(project);
 
   const exportPdf = async () => {
-    if (!form.quoteNumber.trim()) return toast.error('Quotation number is required');
+    if (!form.quoteNumber.trim()) return toast.error(`${documentTitle} number is required`);
+    if (form.format === 'quotation' && invoice && !form.deliveryDate) return toast.error('Enter a delivery date');
     setExporting(true);
     try { const { exportProjectPdf } = await import('../utils/pdfExport'); await exportProjectPdf(id, form.format, form); toast.success('PDF exported'); }
     catch (e) { toast.error(`PDF export failed: ${e.message}`); }
     finally { setExporting(false); }
   };
 
+  if (loadError) return <div className="page"><div className="empty" role="alert"><p>{loadError}</p><button className="btn btn-primary" onClick={() => setLoadAttempt(value => value + 1)}>Retry</button> <button className="btn btn-secondary" onClick={() => navigate('/projects')}>Back to projects</button></div></div>;
   if (!project) return <div className="page"><div style={{ padding: 40, textAlign: 'center' }}><span className="spinner" /> Loading export editor...</div></div>;
   const panels = (project.panels || []).filter(p => p.panel_name || Number(p.total_price));
   const input = (label, name, type = 'text', wide = false) => <Field key={name} label={label} name={name} form={form} setForm={setForm} type={type} wide={wide} />;
 
   return <div className="page">
-    <div className="page-header"><div><button className="btn btn-sm btn-secondary" onClick={() => navigate('/projects')}>← Projects</button><div className="page-title" style={{ marginTop: 8 }}>Client Export Editor</div><div className="page-subtitle">Edit details and see the document update live.</div></div><button className="btn btn-primary" disabled={exporting} onClick={exportPdf}>{exporting ? 'Exporting...' : `Export ${form.format === 'quotation' ? 'Quotation' : 'Technical Quotation'}`}</button></div>
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(330px, 430px) minmax(620px, 1fr)', gap: 18, alignItems: 'start' }}>
+    <div className="page-header"><div><button className="btn btn-sm btn-secondary" onClick={() => navigate('/projects')}>← Projects</button><div className="page-title" style={{ marginTop: 8 }}>Client Export Editor</div><div className="page-subtitle">Edit details and see the document update live.</div></div><button className="btn btn-primary" disabled={exporting} onClick={exportPdf}>{exporting ? 'Exporting...' : `Export ${form.format === 'quotation' ? documentTitle : 'Technical Quotation'}`}</button></div>
+    <div className="client-export-layout">
       <div className="card"><div className="card-body"><div className="form-grid">
-        <div className="form-group"><label className="form-label">Document Type</label><select className="form-input" value={form.format} onChange={e => setForm(v => ({ ...v, format: e.target.value }))}>{!isEngineer && <option value="quotation">Quotation</option>}<option value="technical">Technical Quotation</option></select></div>
-        {input('Quotation Number *', 'quoteNumber')}
+        <div className="form-group"><label className="form-label">Document Type</label><select className="form-input" value={form.format} onChange={e => setForm(v => ({ ...v, format: e.target.value }))}>{!isEngineer && <option value="quotation">{documentTitle}</option>}<option value="technical">Technical Quotation</option></select></div>
+        {input(`${form.format === 'technical' ? 'Quotation' : documentTitle} Number *`, 'quoteNumber')}
         {form.format === 'technical' ? <>{input('Document Code', 'documentCode')}{input('Edition', 'edition')}</> : <>
-          {input('Quotation Date', 'quoteDate', 'date')}{input('Expiry Date', 'expiryDate', 'date')}{input('Project', 'projectName')}{input('Buyer Name', 'buyerName')}{input('Buyer Address', 'buyerAddress')}{input('Buyer Phone', 'buyerPhone')}{input('Contact Person', 'buyerContact')}{input('Buyer Email', 'buyerEmail', 'email')}{input('Buyer VAT #', 'buyerVat')}{input('Payment Terms', 'paymentTerms', 'textarea', true)}
+          {input(`${documentTitle} Date`, 'quoteDate', 'date')}{input(invoice ? 'Delivery Date *' : 'Expiry Date', invoice ? 'deliveryDate' : 'expiryDate', 'date')}{input('Project', 'projectName')}{input('Buyer Name', 'buyerName')}{input('Buyer Address', 'buyerAddress')}{input('Buyer Phone', 'buyerPhone')}{input('Contact Person', 'buyerContact')}{input('Buyer Email', 'buyerEmail', 'email')}{input('Buyer VAT #', 'buyerVat')}{input('Payment Terms', 'paymentTerms', 'textarea', true)}
           {input('Validity', 'validity')}{input('Delivery Time', 'deliveryTime')}{input('Currency Symbol', 'currency')}{input('Currency Name', 'currencyName')}{input('Incoterm Description', 'incoterm')}{input('Incoterms 2020', 'incotermCode')}
           {input('Additional Info', 'additionalInfo', 'textarea', true)}
           {input('VAT %', 'vatPctOverride', 'number')}{input('VAT Amount Override', 'vatAmountOverride', 'number')}{input('Total Override', 'totalOverride', 'number')}
@@ -77,25 +84,32 @@ export default function ClientExportPage() {
           {input('Footer Line 1', 'footerLine1', 'text', true)}{input('Footer Line 2', 'footerLine2', 'text', true)}{input('Footer Line 3', 'footerLine3', 'text', true)}
         </>}
       </div><button className="btn btn-primary" style={{ width: '100%', marginTop: 14 }} disabled={exporting} onClick={exportPdf}>{exporting ? 'Exporting...' : 'Export PDF'}</button></div></div>
-      <div style={{ position: 'sticky', top: 12, overflow: 'auto', maxHeight: 'calc(100vh - 30px)' }}>
-        {form.format === 'quotation' ? <QuotationPreview project={project} panels={panels} form={form} totals={totals} /> : <TechnicalPreview panels={panels} form={form} />}
+      <div className="client-export-preview">
+        {form.format === 'quotation' ? <QuotationPreview project={project} panels={panels} form={form} /> : <TechnicalPreview panels={panels} form={form} />}
       </div>
     </div>
   </div>;
 }
 
 const cell = { border: '1px solid #222', padding: '5px 7px' };
-function QuotationPreview({ panels, form, totals }) {
-  return <div style={{ width: 794, minHeight: 1123, background: '#fff', color: '#111', padding: 28, margin: '0 auto', fontFamily: 'Arial, sans-serif', fontSize: 11, boxShadow: '0 5px 25px rgba(0,0,0,.35)' }}>
-    <h1 style={{ textAlign: 'center', fontSize: 25, margin: '0 0 10px' }}>QUOTATION</h1>
-    <div style={{ display: 'grid', gridTemplateColumns: '58% 42%', border: '1px solid #222' }}><div style={{ padding: 10, minHeight: 110 }}><b style={{ fontSize: 14 }}>Horizon Power Solution</b><div>Verdun - Miraj Center - GF<br/>Beirut, Lebanon<br/>+961 1 741030<br/>MOF #: 3890959</div></div><div style={{ borderLeft: '1px solid #222', padding: 10, lineHeight: 2 }}><b>Quote #:</b> {form.quoteNumber}<br/><b>Date:</b> {form.quoteDate}<br/><b>Project:</b> {form.projectName}<br/><b>Expiry:</b> {form.expiryDate}</div></div>
-    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}><thead><tr style={{ background: '#0089b4', color: '#fff' }}><th style={cell} colSpan="2">BUYER</th><th style={cell} colSpan="2">PAYMENT TERMS</th></tr></thead><tbody>{[['Name',form.buyerName,'Payment',form.paymentTerms],['Address',form.buyerAddress,'Validity',form.validity],['Phone',form.buyerPhone,'Delivery',form.deliveryTime],['Contact',form.buyerContact,'Currency',form.currencyName],['Email',form.buyerEmail,'Incoterms',form.incoterm],['VAT #',form.buyerVat,'','']].map((r,i)=><tr key={i}>{r.map((v,j)=><td style={{...cell,fontWeight:j%2===0?'bold':'normal'}} key={j}>{v}</td>)}</tr>)}</tbody></table>
-    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}><thead><tr style={{ background: '#0089b4', color: '#fff' }}>{['S/N','Description','Unit Quantity','Unit Type','Price','Amount'].map(h=><th style={cell} key={h}>{h}</th>)}</tr></thead><tbody>{panels.map((p,i)=>{const qty=Math.max(1,Number(p.quantity)||1);const amount=Number(p.total_price)||0;return <tr key={p.id}><td style={cell}>{i+1}</td><td style={cell}>Panel #{p.panel_number} - {p.panel_name}</td><td style={{...cell,textAlign:'center'}}>{qty}</td><td style={cell}>Nos.</td><td style={{...cell,textAlign:'right'}}>{form.currency}{(amount/qty).toFixed(2)}</td><td style={{...cell,textAlign:'right'}}>{form.currency}{amount.toFixed(2)}</td></tr>;})}</tbody></table>
-    <div style={{ marginLeft: '58%', marginTop: 8, lineHeight: 1.8 }}><div>Consignment Total <b style={{float:'right'}}>{form.currency}{totals.subtotal.toFixed(2)}</b></div><div>VAT ({form.vatPctOverride || 0}%) <b style={{float:'right'}}>{form.currency}{totals.vat.toFixed(2)}</b></div><div style={{borderTop:'1px solid #222',fontSize:14}}>TOTAL <b style={{float:'right'}}>{form.currency}{totals.total.toFixed(2)}</b></div></div>
-    <div style={{ marginTop: 14 }}><b>Additional Info</b><div style={{ whiteSpace: 'pre-line', marginTop: 4 }}>{form.additionalInfo}</div></div>
-    <div style={{ display:'grid',gridTemplateColumns:'58% 42%',gap:18,marginTop:18 }}><div><b>Banking Details</b><div style={{whiteSpace:'pre-line',lineHeight:1.5}}>{form.signatoryCompany}{'\n'}A/C No: {form.bankAccount}{'\n'}IBAN: {form.bankIban}{'\n'}Bank Name: {form.bankName}{'\n'}Branch: {form.bankBranch}{'\n'}{form.bankAddress}{'\n'}Country: {form.bankCountry}{'\n'}Swift Code: {form.bankSwift}</div></div><div><b>Incoterms® 2020</b><div>{form.incotermCode}</div><b>Currency</b><div>{form.currencyName}</div><br/><b>Signatory</b><div>Company: {form.signatoryCompany}<br/>Name: {form.signatoryName}</div><div style={{borderBottom:'1px solid #222',height:45,paddingTop:8}}>{form.signatureText}</div></div></div>
-    <div style={{ borderTop:'1px solid #222',textAlign:'center',lineHeight:1.5,marginTop:24,paddingTop:5,fontSize:9 }}>{form.footerLine1}<br/>{form.footerLine2}<br/>{form.footerLine3}</div>
-  </div>;
+function QuotationPreview({ project, form }) {
+  const [url, setUrl] = useState('');
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl;
+    const timer = setTimeout(async () => {
+      try {
+        const { loadPng } = await import('../utils/pdfExport');
+        const logo = await loadPng('/LogoHorizonLB.png');
+        if (cancelled) return;
+        const { doc } = drawCommercialDocument(project, form, logo);
+        objectUrl = URL.createObjectURL(doc.output('blob'));
+        setUrl(objectUrl);
+      } catch (error) { if (!cancelled) toast.error(`Preview failed: ${error.message}`); }
+    }, 200);
+    return () => { cancelled = true; clearTimeout(timer); if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [project, form]);
+  return url ? <iframe title="Client PDF preview" src={url} style={{ width: '100%', height: 'calc(100vh - 60px)', minHeight: 700, border: 0, background: '#fff' }} /> : <div>Preparing PDF preview...</div>;
 }
 
 function TechnicalPreview({ panels, form }) {

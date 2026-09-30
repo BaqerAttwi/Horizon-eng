@@ -1,3 +1,4 @@
+const { generateQuotationNumber } = require('../utils/quotationNumber');
 const db = require('../db/connection');
 const { logActivity } = require('./activityController');
 const { createNotification, notifyRoles } = require('./notificationController');
@@ -67,7 +68,7 @@ async function updateProjectStage(req, res, next) {
     const [[project]] = await db.execute('SELECT * FROM projects WHERE id=? AND deleted_at IS NULL', [projectId]);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (!project.quote_number) {
-      project.quote_number = `Q-${String(projectId).padStart(6, '0')}`;
+      project.quote_number = generateQuotationNumber(project.project_name, projectId, project.created_at);
       await db.execute('UPDATE projects SET quote_number=? WHERE id=?', [project.quote_number, projectId]);
     }
     const fromIndex = STAGES.indexOf(project.project_stage || 'design');
@@ -115,10 +116,10 @@ async function createQuotationRevision(req, res, next) {
     const projectId = Number(req.params.projectId);
     if (!await assertProjectAccess(req, res, projectId)) return;
     if (!['owner','head_engineer'].includes(req.worker.role)) return res.status(403).json({ error: 'Management approval required' });
-    const [[p]] = await db.execute('SELECT quote_number,total_price,total_with_vat,project_name FROM projects WHERE id=?', [projectId]);
+    const [[p]] = await db.execute('SELECT quote_number,total_price,total_with_vat,project_name,created_at FROM projects WHERE id=?', [projectId]);
     if (!p) return res.status(404).json({ error: 'Project not found' });
     if (!p.quote_number) {
-      p.quote_number = `Q-${String(projectId).padStart(6, '0')}`;
+      p.quote_number = generateQuotationNumber(p.project_name, projectId, p.created_at);
       await db.execute('UPDATE projects SET quote_number=? WHERE id=?', [p.quote_number, projectId]);
     }
     const [[last]] = await db.execute('SELECT COALESCE(MAX(revision_number),0)+1 next_revision FROM quotation_revisions WHERE project_id=?', [projectId]);

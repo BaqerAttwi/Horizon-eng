@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import api from '../api/client';
@@ -28,7 +29,7 @@ export default function ActivityLog({ projectId }) {
     setLoading(true);
     api.get(`/projects/${projectId}/activity`)
       .then(r => setLogs(r.data.logs || []))
-      .catch(() => {})
+      .catch(e => toast.error(e.message, { id: 'api-' + e.message }))
       .finally(() => setLoading(false));
   }, [projectId]);
 

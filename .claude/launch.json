@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "notes-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "http-server", "scratch", "-p", "4322", "-c-1"],
+      "port": 4322
+    }
+  ]
+}

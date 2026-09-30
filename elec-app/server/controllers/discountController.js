@@ -3,7 +3,7 @@ const db = require('../db/connection');
 async function getDiscounts(req, res, next) {
   try {
     const { productId, brandId } = req.query;
-    let where = 'WHERE 1=1';
+    let where = 'WHERE pd.deleted_at IS NULL';
     const params = [];
 
     if (productId) {
@@ -61,7 +61,7 @@ async function createDiscount(req, res, next) {
 async function updateDiscount(req, res, next) {
   try {
     const { discount_pct, notes } = req.body;
-    await db.execute('UPDATE product_discounts SET discount_pct=?,notes=? WHERE id=?',
+    await db.execute('UPDATE product_discounts SET discount_pct=?,notes=? WHERE id=? AND deleted_at IS NULL',
       [discount_pct||0, notes||null, req.params.id]);
     const [rows] = await db.execute('SELECT * FROM product_discounts WHERE id=?', [req.params.id]);
     res.json(rows[0]);
@@ -71,7 +71,8 @@ async function updateDiscount(req, res, next) {
 async function deleteDiscount(req, res, next) {
   try {
     try {
-      await db.execute('UPDATE product_discounts SET deleted_at = NOW() WHERE id=?', [req.params.id]);
+      const [result] = await db.execute('UPDATE product_discounts SET deleted_at = NOW() WHERE id=? AND deleted_at IS NULL', [req.params.id]);
+      if (!result.affectedRows) return res.status(404).json({ error: 'Discount not found' });
     } catch (e) {
       if (e.code === 'ER_BAD_FIELD_ERROR') {
         await db.execute('DELETE FROM product_discounts WHERE id=?', [req.params.id]);
@@ -92,7 +93,7 @@ async function bulkUpdateBrandDiscounts(req, res, next) {
       if (!brandId) continue;
 
       // Upsert: check if brand discount exists
-      const [existing] = await db.execute('SELECT id FROM product_discounts WHERE brand_id=? AND product_id IS NULL', [brandId]);
+      const [existing] = await db.execute('SELECT id FROM product_discounts WHERE brand_id=? AND product_id IS NULL AND deleted_at IS NULL', [brandId]);
       if (existing.length) {
         await db.execute('UPDATE product_discounts SET discount_pct=? WHERE id=?', [pct, existing[0].id]);
       } else {

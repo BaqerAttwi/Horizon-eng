@@ -39,7 +39,7 @@ const ProcurementPage = lazy(() => import('./pages/ProcurementPage'));
 
 function UpdatesLink({ mobile = false }) {
   const [unread, setUnread] = useState(0);
-  const load = () => api.get('/updates').then(r=>setUnread(r.data.unread_count||0)).catch(()=>{});
+  const load = () => api.get('/updates').then(r=>setUnread(r.data.unread_count||0)).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
   useEffect(() => { load(); window.addEventListener('updates-read',load); const timer=setInterval(load,60000); return()=>{clearInterval(timer);window.removeEventListener('updates-read',load);}; }, []);
   return <NavLink to="/updates" className={({isActive})=>mobile?'updates-mobile-link':`nav-link updates-nav${isActive?' active':''}`}>
     <span className="nav-icon"><AppIcon name="updates" /></span>{!mobile&&<span className="nav-label">What’s New</span>}{unread>0&&<span className="updates-count">{unread>99?'99+':unread}</span>}
@@ -111,10 +111,12 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme, onOpenTutorial
   const { worker, logout, can, isRole } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    toast.success('👋 Logged out');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('👋 Logged out');
+      navigate('/login');
+    } catch (error) { toast.error(error.message); }
   };
 
   return (

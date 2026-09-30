@@ -37,7 +37,7 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
   const [form, setForm] = useState(panelForm);
 
   const handleSavePanel = async () => {
-    await onUpdatePanel(panel.id, form);
+    if (await onUpdatePanel(panel.id, form) === false) return;
     toast.success('Panel updated');
     setEditing(false);
   };

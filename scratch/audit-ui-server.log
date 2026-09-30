@@ -1,0 +1,249 @@
+[DB] ✅ MySQL connected — host: localhost
+[Auth] 🚫 Role "owner" denied on GET /technicians/my-projects
+[Auth] 🚫 Role "head_engineer" denied on GET /technicians/my-projects
+[Auth] 🚫 Role "engineer" denied on GET /reservation-history
+[Auth] 🚫 Role "engineer" denied on GET /projects/27/quotation-revisions/999999999/snapshot
+[Auth] 🚫 Role "engineer" denied on GET /engineer-workload
+[Auth] 🚫 Role "engineer" denied on GET /analytics/summary
+[Auth] 🚫 Role "engineer" denied on GET /analytics/engineers
+[Auth] 🚫 Role "engineer" denied on GET /analytics/clients
+[Auth] 🚫 Role "engineer" denied on GET /price-changes
+[Auth] 🚫 Role "engineer" denied on GET /technicians/my-projects
+[Auth] 🚫 Role "engineer" denied on GET /projects/27/payments
+[Auth] 🚫 Role "engineer" denied on GET /debt
+[Auth] 🚫 Role "engineer" denied on GET /export/analytics
+[Auth] 🚫 Role "engineer" denied on GET /procurement/projects
+[Auth] 🚫 Role "accounting" denied on GET /reservation-history
+[Auth] 🚫 Role "accounting" denied on GET /projects/27/quotation-revisions/999999999/snapshot
+[Auth] 🚫 Role "accounting" denied on GET /engineer-workload
+[Auth] 🚫 Role "accounting" denied on GET /analytics/summary
+[Auth] 🚫 Role "accounting" denied on GET /analytics/engineers
+[Auth] 🚫 Role "accounting" denied on GET /analytics/clients
+[Auth] 🚫 Role "accounting" denied on GET /price-changes
+[Auth] 🚫 Role "accounting" denied on GET /technicians/my-projects
+[Auth] 🚫 Role "accounting" denied on GET /projects/27/technicians
+[Auth] 🚫 Role "accounting" denied on GET /manual-product-requests
+[Auth] 🚫 Role "accounting" denied on GET /export/analytics
+[Auth] 🚫 Role "accounting" denied on GET /export/crm/27
+[Auth] 🚫 Role "accounting" denied on GET /procurement/projects
+[Auth] 🚫 Role "stock_manager" denied on GET /workers
+[Auth] 🚫 Role "stock_manager" denied on GET /clients
+[Auth] 🚫 Role "stock_manager" denied on GET /projects/27/quotation-revisions/999999999/snapshot
+[Auth] 🚫 Role "stock_manager" denied on GET /engineer-workload
+[Auth] 🚫 Role "stock_manager" denied on GET /analytics/summary
+[Auth] 🚫 Role "stock_manager" denied on GET /analytics/engineers
+[Auth] 🚫 Role "stock_manager" denied on GET /analytics/clients
+[Auth] 🚫 Role "stock_manager" denied on GET /dashboard
+[Auth] 🚫 Role "stock_manager" denied on GET /price-changes
+[Auth] 🚫 Role "stock_manager" denied on GET /technicians/my-projects
+[Auth] 🚫 Role "stock_manager" denied on GET /projects/27/technicians
+[Auth] 🚫 Role "stock_manager" denied on GET /manual-product-requests
+[Auth] 🚫 Role "stock_manager" denied on GET /projects/27/payments
+[Auth] 🚫 Role "stock_manager" denied on GET /debt
+[Auth] 🚫 Role "stock_manager" denied on GET /export/analytics
+[Auth] 🚫 Role "stock_manager" denied on GET /export/crm/27
+[Auth] 🚫 Role "secretary" denied on GET /reservation-history
+[Auth] 🚫 Role "secretary" denied on GET /workers
+[Auth] 🚫 Role "secretary" denied on GET /projects/27/quotation-revisions/999999999/snapshot
+[Auth] 🚫 Role "secretary" denied on GET /engineer-workload
+[Auth] 🚫 Role "secretary" denied on GET /analytics/summary
+[Auth] 🚫 Role "secretary" denied on GET /analytics/engineers
+[Auth] 🚫 Role "secretary" denied on GET /analytics/clients
+[Auth] 🚫 Role "secretary" denied on GET /price-changes
+[Auth] 🚫 Role "secretary" denied on GET /technicians/my-projects
+[Auth] 🚫 Role "secretary" denied on GET /projects/27/technicians
+[Auth] 🚫 Role "secretary" denied on GET /manual-product-requests
+[Auth] 🚫 Role "secretary" denied on GET /projects/27/payments
+[Auth] 🚫 Role "secretary" denied on GET /debt
+[Auth] 🚫 Role "secretary" denied on GET /export/analytics
+[Auth] 🚫 Role "secretary" denied on GET /export/crm/27
+[Auth] 🚫 Role "secretary" denied on GET /procurement/projects
+[Auth] 🚫 Role "technician" denied on GET /reservation-history
+[Auth] 🚫 Role "technician" denied on GET /workers
+[Auth] 🚫 Role "technician" denied on GET /clients
+[Auth] 🚫 Role "technician" denied on GET /projects/27/quotation-revisions/999999999/snapshot
+[Auth] 🚫 Role "technician" denied on GET /engineer-workload
+[Auth] 🚫 Role "technician" denied on GET /analytics/summary
+[Auth] 🚫 Role "technician" denied on GET /analytics/engineers
+[Auth] 🚫 Role "technician" denied on GET /analytics/clients
+[Auth] 🚫 Role "technician" denied on GET /dashboard
+[Auth] 🚫 Role "technician" denied on GET /price-changes
+[Auth] 🚫 Role "technician" denied on GET /projects/27/technicians
+[Auth] 🚫 Role "technician" denied on GET /manual-product-requests
+[Auth] 🚫 Role "technician" denied on GET /projects/27/payments
+[Auth] 🚫 Role "technician" denied on GET /debt
+[Auth] 🚫 Role "technician" denied on GET /export/analytics
+[Auth] 🚫 Role "technician" denied on GET /export/crm/27
+[Auth] 🚫 Role "technician" denied on GET /procurement/projects
+[Auth] ❌ No token on POST /auth/register
+[Auth] ❌ No token on POST /auth/change-password
+[Auth] ❌ No token on POST /auth/set-password
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on POST /auth/logout
+[Auth] ❌ No token on POST /upload
+[Auth] ❌ No token on GET /products
+[Auth] ❌ No token on POST /products/provision
+[Auth] ❌ No token on GET /products/4574
+[Auth] ❌ No token on PATCH /products/4574
+[Auth] ❌ No token on GET /brands
+[Auth] ❌ No token on GET /discounts
+[Auth] ❌ No token on POST /discounts
+[Auth] ❌ No token on PATCH /discounts/999999999
+[Auth] ❌ No token on DELETE /discounts/999999999
+[Auth] ❌ No token on POST /discounts/bulk-brand
+[Auth] ❌ No token on GET /reservations
+[Auth] ❌ No token on GET /reservations/product/4574
+[Auth] ❌ No token on GET /reservation-history
+[Auth] ❌ No token on PATCH /reservations/product/4574/reserved-qty
+[Auth] ❌ No token on GET /workers
+[Auth] ❌ No token on POST /workers
+[Auth] ❌ No token on PATCH /workers/1
+[Auth] ❌ No token on DELETE /workers/1
+[Auth] ❌ No token on GET /clients
+[Auth] ❌ No token on POST /clients
+[Auth] ❌ No token on PATCH /clients/1
+[Auth] ❌ No token on DELETE /clients/1
+[Auth] ❌ No token on GET /projects
+[Auth] ❌ No token on GET /projects/draft-notifications
+[Auth] ❌ No token on GET /projects/27
+[Auth] ❌ No token on POST /projects
+[Auth] ❌ No token on POST /projects/import-pdf/preview
+[Auth] ❌ No token on POST /projects/import-pdf/create
+[Auth] ❌ No token on PATCH /projects/27
+[Auth] ❌ No token on PATCH /projects/27/admin-approval
+[Auth] ❌ No token on PATCH /projects/27/ready-for-review
+[Auth] ❌ No token on PATCH /projects/27/stage
+[Auth] ❌ No token on GET /projects/27/stage-history
+[Auth] ❌ No token on POST /projects/27/quotation-revisions
+[Auth] ❌ No token on GET /projects/27/quotation-revisions
+[Auth] ❌ No token on GET /projects/27/quotation-revisions/999999999/snapshot
+[Auth] ❌ No token on POST /projects/27/quotation-revisions/999999999/restore
+[Auth] ❌ No token on GET /engineer-workload
+[Auth] ❌ No token on DELETE /projects/27
+[Auth] ❌ No token on POST /projects/27/items
+[Auth] ❌ No token on DELETE /projects/27/items/999999999
+[Auth] ❌ No token on GET /projects/27/crm
+[Auth] ❌ No token on GET /projects/27/panels
+[Auth] ❌ No token on POST /projects/27/panels
+[Auth] ❌ No token on POST /projects/27/panels/copy-from
+[Auth] ❌ No token on PATCH /projects/27/panels/162
+[Auth] ❌ No token on PATCH /projects/27/panels/162/complete
+[Auth] ❌ No token on DELETE /projects/27/panels/162
+[Auth] ❌ No token on GET /projects/27/panels/162/divisions
+[Auth] ❌ No token on POST /projects/27/panels/162/divisions
+[Auth] ❌ No token on PATCH /projects/27/panels/162/divisions/53
+[Auth] ❌ No token on DELETE /projects/27/panels/162/divisions/53
+[Auth] ❌ No token on GET /projects/27/manual-products
+[Auth] ❌ No token on POST /projects/27/manual-products
+[Auth] ❌ No token on DELETE /projects/27/manual-products/4574
+[Auth] ❌ No token on GET /projects/27/panels/162/divisions/53/items
+[Auth] ❌ No token on POST /projects/27/panels/162/divisions/53/items
+[Auth] ❌ No token on PATCH /projects/27/panels/162/divisions/53/items/999999999
+[Auth] ❌ No token on DELETE /projects/27/panels/162/divisions/53/items/999999999
+[Auth] ❌ No token on POST /projects/27/items/bulk-update
+[Auth] ❌ No token on POST /projects/27/items/bulk-replace
+[Auth] ❌ No token on POST /projects/27/items/apply-brand-discount
+[Auth] ❌ No token on GET /engineer-requests/pending
+[Auth] ❌ No token on GET /engineer-requests/sent
+[Auth] ❌ No token on POST /engineer-requests
+[Auth] ❌ No token on PATCH /engineer-requests/999999999/respond
+[Auth] ❌ No token on DELETE /engineer-requests/999999999
+[Auth] ❌ No token on GET /projects/27/engineers
+[Auth] ❌ No token on GET /analytics/summary
+[Auth] ❌ No token on GET /analytics/engineers
+[Auth] ❌ No token on GET /analytics/clients
+[Auth] ❌ No token on GET /analytics/projects/27/team
+[Auth] ❌ No token on GET /dashboard
+[Auth] ❌ No token on GET /notifications
+[Auth] ❌ No token on PATCH /notifications/999999999/read
+[Auth] ❌ No token on PATCH /notifications/read-all
+[Auth] ❌ No token on DELETE /notifications/999999999
+[Auth] ❌ No token on POST /price-changes
+[Auth] ❌ No token on GET /price-changes
+[Auth] ❌ No token on GET /price-changes/my
+[Auth] ❌ No token on GET /price-changes/project/27
+[Auth] ❌ No token on PATCH /price-changes/999999999/approve
+[Auth] ❌ No token on PATCH /price-changes/999999999/reject
+[Auth] ❌ No token on GET /item-groups
+[Auth] ❌ No token on GET /item-groups/2
+[Auth] ❌ No token on POST /item-groups
+[Auth] ❌ No token on PATCH /item-groups/2
+[Auth] ❌ No token on DELETE /item-groups/2
+[Auth] ❌ No token on GET /item-groups/2/items
+[Auth] ❌ No token on POST /item-groups/2/items
+[Auth] ❌ No token on DELETE /item-groups/2/items/999999999
+[Auth] ❌ No token on GET /projects/27/execution
+[Auth] ❌ No token on GET /projects/27/execution/view
+[Auth] ❌ No token on PATCH /projects/27/execution/panels/162
+[Auth] ❌ No token on PATCH /projects/27/execution/items/999999999
+[Auth] ❌ No token on GET /technicians/my-projects
+[Auth] ❌ No token on GET /projects/27/technicians
+[Auth] ❌ No token on POST /projects/27/technicians
+[Auth] ❌ No token on DELETE /projects/27/technicians/1
+[Auth] ❌ No token on POST /projects/27/panels/162/divisions/53/group-instances
+[Auth] ❌ No token on PATCH /group-instances/999999999
+[Auth] ❌ No token on DELETE /group-instances/999999999
+[Auth] ❌ No token on GET /projects/27/panels/162/divisions/53/group-instances
+[Auth] ❌ No token on POST /manual-product-requests
+[Auth] ❌ No token on GET /manual-product-requests
+[Auth] ❌ No token on PATCH /manual-product-requests/999999999/approve
+[Auth] ❌ No token on PATCH /manual-product-requests/999999999/reject
+[Auth] ❌ No token on GET /projects/27/activity
+[Auth] ❌ No token on GET /projects/27/attachments
+[Auth] ❌ No token on POST /projects/27/attachments
+[Auth] ❌ No token on GET /attachments/999999999/download
+[Auth] ❌ No token on DELETE /projects/27/attachments/999999999
+[Auth] ❌ No token on GET /onedrive/connect
+[Auth] ❌ No token on GET /onedrive/callback
+[Auth] ❌ No token on GET /onedrive/status
+[Auth] ❌ No token on POST /onedrive/disconnect
+[Auth] ❌ No token on GET /projects/27/payments
+[Auth] ❌ No token on POST /projects/27/payments
+[Auth] ❌ No token on DELETE /projects/27/payments/999999999
+[Auth] ❌ No token on GET /debt
+[Auth] ❌ No token on GET /export/products
+[Auth] ❌ No token on GET /export/projects
+[Auth] ❌ No token on GET /export/analytics
+[Auth] ❌ No token on GET /export/reservations
+[Auth] ❌ No token on GET /export/crm/27
+[Auth] ❌ No token on GET /messages
+[Auth] ❌ No token on POST /messages
+[Auth] ❌ No token on DELETE /messages/999999999
+[Auth] ❌ No token on GET /updates
+[Auth] ❌ No token on POST /updates
+[Auth] ❌ No token on PATCH /updates/read-all
+[Auth] ❌ No token on PATCH /updates/999999999/read
+[Auth] ❌ No token on GET /division-types
+[Auth] ❌ No token on POST /division-types
+[Auth] ❌ No token on PATCH /division-types/999999999
+[Auth] ❌ No token on DELETE /division-types/999999999
+[Auth] ❌ No token on GET /procurement/projects
+[Auth] ❌ No token on PATCH /procurement/projects/27/review
+[Auth] ❌ No token on PATCH /procurement/projects/27/products/4574/receive
+{
+  "total": 666,
+  "serverFailures": []
+}
+UI audit ready at http://127.0.0.1:58369
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me
+[Auth] ❌ No token on GET /auth/me

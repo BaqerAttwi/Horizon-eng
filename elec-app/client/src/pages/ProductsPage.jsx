@@ -237,7 +237,7 @@ export default function ProductsPage() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    api.get('/brands').then(r => setBrands(r.data)).catch(()=>{});
+    api.get('/brands').then(r => setBrands(r.data)).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
   }, []);
   useEffect(() => { setPage(1); }, [debouncedSearch, brandFilter]);
 

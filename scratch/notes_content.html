@@ -1,0 +1,543 @@
+<title>Horizon LB — System Reference</title>
+<style>
+:root {
+  --paper: #F2F4F7;
+  --paper-raised: #FFFFFF;
+  --ink: #1B222B;
+  --ink-soft: #4A5568;
+  --ink-faint: #7C8798;
+  --rule: #4C6E8C;
+  --rule-faint: #D6DDE5;
+  --accent: #B96A2E;
+  --accent-soft: #F3E3D2;
+  --good: #2F8558;
+  --good-soft: #E1F0E7;
+  --warn: #B33B22;
+  --warn-soft: #F8E2DA;
+  --code-bg: #E9EDF1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #12161C;
+    --paper-raised: #1A2029;
+    --ink: #E7ECF2;
+    --ink-soft: #A7B2C0;
+    --ink-faint: #6C7684;
+    --rule: #5C81A0;
+    --rule-faint: #2A323C;
+    --accent: #D98A4E;
+    --accent-soft: #3A2A1C;
+    --good: #5FBE8C;
+    --good-soft: #17281F;
+    --warn: #E17A5A;
+    --warn-soft: #2E1D18;
+    --code-bg: #1F2630;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #12161C;
+  --paper-raised: #1A2029;
+  --ink: #E7ECF2;
+  --ink-soft: #A7B2C0;
+  --ink-faint: #6C7684;
+  --rule: #5C81A0;
+  --rule-faint: #2A323C;
+  --accent: #D98A4E;
+  --accent-soft: #3A2A1C;
+  --good: #5FBE8C;
+  --good-soft: #17281F;
+  --warn: #E17A5A;
+  --warn-soft: #2E1D18;
+  --code-bg: #1F2630;
+}
+
+@font-face { font-family: 'Plex Sans'; font-weight: 400; src: url(data:font/ttf;base64,__PLEXSANS_REGULAR__) format('truetype'); font-display: swap; }
+@font-face { font-family: 'Plex Sans'; font-weight: 600; src: url(data:font/ttf;base64,__PLEXSANS_SEMIBOLD__) format('truetype'); font-display: swap; }
+@font-face { font-family: 'Plex Sans'; font-weight: 700; src: url(data:font/ttf;base64,__PLEXSANS_BOLD__) format('truetype'); font-display: swap; }
+@font-face { font-family: 'Plex Serif'; font-weight: 400; font-style: normal; src: url(data:font/ttf;base64,__PLEXSERIF_REGULAR__) format('truetype'); font-display: swap; }
+@font-face { font-family: 'Plex Serif'; font-weight: 400; font-style: italic; src: url(data:font/ttf;base64,__PLEXSERIF_ITALIC__) format('truetype'); font-display: swap; }
+@font-face { font-family: 'Plex Mono'; font-weight: 400; src: url(data:font/ttf;base64,__PLEXMONO_REGULAR__) format('truetype'); font-display: swap; }
+@font-face { font-family: 'Plex Mono'; font-weight: 500; src: url(data:font/ttf;base64,__PLEXMONO_MEDIUM__) format('truetype'); font-display: swap; }
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Plex Serif', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+a { color: var(--accent); }
+::selection { background: var(--accent-soft); }
+
+.shell {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 48px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 56px 32px 120px;
+}
+@media (max-width: 880px) {
+  .shell { grid-template-columns: 1fr; }
+  .toc { position: static !important; order: 2; }
+}
+
+.masthead {
+  grid-column: 1 / -1;
+  border-bottom: 1px solid var(--rule-faint);
+  padding-bottom: 28px;
+  margin-bottom: 8px;
+}
+.masthead .eyebrow {
+  font-family: 'Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rule);
+  margin-bottom: 10px;
+}
+.masthead h1 {
+  font-family: 'Plex Sans', sans-serif;
+  font-weight: 700;
+  font-size: clamp(28px, 4vw, 40px);
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+.masthead .sub {
+  font-family: 'Plex Serif', serif;
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 17px;
+  max-width: 60ch;
+}
+.masthead .meta {
+  margin-top: 18px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-family: 'Plex Mono', monospace;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+}
+.masthead .meta strong { color: var(--ink-soft); font-weight: 500; }
+
+.toc {
+  position: sticky;
+  top: 32px;
+  align-self: start;
+  font-family: 'Plex Mono', monospace;
+  font-size: 12.5px;
+}
+.toc-title {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 14px;
+}
+.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.toc a {
+  display: flex;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  line-height: 1.4;
+}
+.toc a:hover, .toc a:focus-visible { background: var(--paper-raised); color: var(--ink); outline: none; }
+.toc a:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.toc .num { color: var(--rule); flex-shrink: 0; }
+
+main { min-width: 0; }
+
+section { padding-top: 44px; scroll-margin-top: 24px; }
+section:first-of-type { padding-top: 0; }
+section + section { border-top: 1px solid var(--rule-faint); }
+
+.sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; }
+.sec-num {
+  font-family: 'Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--rule);
+  letter-spacing: 0.04em;
+}
+h2 {
+  font-family: 'Plex Sans', sans-serif;
+  font-weight: 600;
+  font-size: 23px;
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+.sec-dek {
+  color: var(--ink-soft);
+  font-size: 15px;
+  max-width: 68ch;
+  margin: 6px 0 26px;
+}
+
+h3 {
+  font-family: 'Plex Sans', sans-serif;
+  font-weight: 600;
+  font-size: 15.5px;
+  margin: 28px 0 10px;
+  color: var(--ink);
+}
+p { max-width: 68ch; margin: 0 0 14px; color: var(--ink); }
+ul, ol.plain { max-width: 68ch; margin: 0 0 16px; padding-left: 22px; }
+ul li, ol.plain li { margin-bottom: 7px; }
+ul li::marker { color: var(--rule); }
+strong { font-weight: 600; }
+
+.tag {
+  display: inline-block;
+  font-family: 'Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 1px 7px;
+  border-radius: 3px;
+  background: var(--code-bg);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.tag.owner { background: var(--accent-soft); color: var(--accent); }
+.tag.good { background: var(--good-soft); color: var(--good); }
+.tag.warn { background: var(--warn-soft); color: var(--warn); }
+
+.note {
+  border-left: 3px solid var(--accent);
+  background: var(--paper-raised);
+  padding: 14px 18px;
+  margin: 18px 0 20px;
+  border-radius: 0 4px 4px 0;
+  max-width: 68ch;
+}
+.note .note-label {
+  font-family: 'Plex Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.note p:last-child { margin-bottom: 0; }
+.note.warn { border-left-color: var(--warn); }
+.note.warn .note-label { color: var(--warn); }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13.5px;
+  margin: 4px 0 22px;
+}
+.table-wrap { overflow-x: auto; margin: 4px 0 22px; }
+.table-wrap table { margin: 0; min-width: 480px; }
+th {
+  text-align: left;
+  font-family: 'Plex Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  border-bottom: 1px solid var(--rule-faint);
+  padding: 0 14px 8px 0;
+  font-weight: 500;
+}
+td {
+  padding: 9px 14px 9px 0;
+  border-bottom: 1px solid var(--rule-faint);
+  vertical-align: top;
+  color: var(--ink);
+}
+td.mono, th.mono { font-family: 'Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+tr:last-child td { border-bottom: none; }
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 4px 0 22px;
+}
+.role-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule-faint);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+.role-card .role-name {
+  font-family: 'Plex Sans', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.role-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.role-card ul { padding-left: 16px; margin: 0; font-size: 12.5px; color: var(--ink-soft); }
+.role-card ul li { margin-bottom: 4px; }
+
+.formula {
+  font-family: 'Plex Mono', monospace;
+  font-size: 12.5px;
+  background: var(--code-bg);
+  padding: 12px 16px;
+  border-radius: 5px;
+  overflow-x: auto;
+  margin: 8px 0 18px;
+  color: var(--ink-soft);
+  max-width: 68ch;
+  line-height: 1.8;
+}
+.formula .step { color: var(--ink); }
+.formula .op { color: var(--rule); }
+
+footer {
+  grid-column: 1 / -1;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule-faint);
+  font-family: 'Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-faint);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+</style>
+
+<div class="shell">
+  <div class="masthead">
+    <div class="eyebrow">Internal Reference — Not for distribution</div>
+    <h1>Horizon LB System Reference</h1>
+    <div class="sub">What the platform does, who can see what, and the behaviors that aren't obvious from clicking around — panel pricing, approvals, payments, and the automatic checks running behind them.</div>
+    <div class="meta">
+      <span><strong>Scope</strong> Full application</span>
+      <span><strong>Audience</strong> Owner, Accounting, Engineering, Secretary, Technician</span>
+      <span><strong>Updated</strong> Aug 2026</span>
+    </div>
+  </div>
+
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <ol>
+      <li><a href="#roles"><span class="num">§01</span>Roles &amp; access</a></li>
+      <li><a href="#projects"><span class="num">§02</span>Projects &amp; CRM</a></li>
+      <li><a href="#pricing"><span class="num">§03</span>Pricing formula</a></li>
+      <li><a href="#approvals"><span class="num">§04</span>Approvals</a></li>
+      <li><a href="#execution"><span class="num">§05</span>Execution &amp; technicians</a></li>
+      <li><a href="#payments"><span class="num">§06</span>Payments &amp; debt</a></li>
+      <li><a href="#analytics"><span class="num">§07</span>Analytics</a></li>
+      <li><a href="#notifications"><span class="num">§08</span>Notifications</a></li>
+      <li><a href="#files"><span class="num">§09</span>Files &amp; links</a></li>
+      <li><a href="#data"><span class="num">§10</span>Import / export</a></li>
+      <li><a href="#groups"><span class="num">§11</span>Item groups</a></li>
+      <li><a href="#security"><span class="num">§12</span>Sessions &amp; security</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <section id="roles">
+      <div class="sec-head"><span class="sec-num">§01</span><h2>Roles &amp; access</h2></div>
+      <p class="sec-dek">Five roles, each seeing a different slice of the same data. Permissions are baked into the login token, so a role change only takes effect after the person logs in again.</p>
+
+      <div class="role-grid">
+        <div class="role-card">
+          <div class="role-name"><span class="role-dot" style="background:var(--accent)"></span>Owner</div>
+          <ul>
+            <li>Sees everything, including cost &amp; profit</li>
+            <li>Only role that can approve projects (admin approval)</li>
+            <li>Only role that sets a project's payment deadline</li>
+            <li>Assigns technicians to projects</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="role-name"><span class="role-dot" style="background:var(--good)"></span>Accounting</div>
+          <ul>
+            <li>Records payments, views Debt page</li>
+            <li>Sees pricing, not restricted like Engineer</li>
+            <li>Cannot approve projects</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="role-name"><span class="role-dot" style="background:#6E8FB0"></span>Engineer</div>
+          <ul>
+            <li>Only sees projects they own or collaborate on</li>
+            <li>Cost column hidden everywhere</li>
+            <li>Price edits on their own projects need owner approval first</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="role-name"><span class="role-dot" style="background:#8B7EC8"></span>Secretary</div>
+          <ul>
+            <li>Products, clients, reservations, announcements</li>
+            <li>No project pricing access</li>
+          </ul>
+        </div>
+        <div class="role-card">
+          <div class="role-name"><span class="role-dot" style="background:var(--warn)"></span>Technician</div>
+          <ul>
+            <li>Only the projects an owner assigned them to</li>
+            <li>Execution checklist only — no price, no cost, ever</li>
+            <li>Marks panels/items complete in the field</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note">
+        <div class="note-label">Worth knowing</div>
+        <p>A technician can never see a dollar figure anywhere in the app — not the item price, not the panel total, not the project value. Their entire view is quantities and completion checkboxes.</p>
+      </div>
+    </section>
+
+    <section id="projects">
+      <div class="sec-head"><span class="sec-num">§02</span><h2>Projects &amp; CRM</h2></div>
+      <p class="sec-dek">A project is a tree: <strong>Panels</strong> → <strong>Divisions</strong> → <strong>Items</strong>. Divisions are fixed categories — Incoming, Outgoing, Enclosure, Accessories, Measurement — so every panel is built the same way.</p>
+
+      <h3>Building a project</h3>
+      <ul>
+        <li>Create manually, or <strong>import a PDF quote</strong> — the parser reads panel/division/item structure straight from the document and creates the whole tree in one step</li>
+        <li>Panel count set at creation auto-generates that many blank panels on first open</li>
+        <li>Adding or removing panels afterward keeps the panel count and progress percentage in sync automatically</li>
+        <li><strong>Copy Panel</strong> pulls a fully-priced panel from any other project you have access to — useful for repeat layouts</li>
+      </ul>
+
+      <h3>Item Groups vs manual items</h3>
+      <p>An item can come from the product catalog, be typed in manually, or be dropped in as a pre-built <strong>Item Group</strong> — a reusable bundle of parts (see §11) that expands into real priced items the moment it's added to a division.</p>
+    </section>
+
+    <section id="pricing">
+      <div class="sec-head"><span class="sec-num">§03</span><h2>Pricing formula</h2></div>
+      <p class="sec-dek">Every item runs through the same five-step calculation, in this order. Discount comes before markup, manpower is calculated on the post-discount base, not the final price.</p>
+
+      <div class="formula">
+        <span class="step">1. after_discount</span> <span class="op">=</span> base_price × qty × (1 − discount%)<br>
+        <span class="step">2. markup_amt</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="op">=</span> after_discount × markupP%<br>
+        <span class="step">3. manpower_amt</span>&nbsp;&nbsp;<span class="op">=</span> after_discount × manpower%<br>
+        <span class="step">4. markupM_amt</span>&nbsp;&nbsp;&nbsp;<span class="op">=</span> manpower_amt × markupM%<br>
+        <span class="step">5. final_price</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="op">=</span> after_discount + markup_amt + manpower_amt + markupM_amt
+      </div>
+
+      <p>Panel-level markup/manpower percentages cascade down to every division and item under it — unless an item's price has been edited by hand, which flags it as <span class="tag">override</span> and exempts it from future panel-level cascades.</p>
+
+      <h3>Currency</h3>
+      <p>Every price is stored in both EUR and USD. The conversion rate defaults to <strong>1 EUR = 1.18 USD</strong> on a new project, and is editable per project at any time — changing it recalculates every item's USD figure using its stored EUR base price.</p>
+
+      <div class="note">
+        <div class="note-label">Live preview</div>
+        <p>While editing an item, every figure on that row — after-discount, markup, final price, profit — recalculates as you type, before you hit Save. Nothing is confirmed until Save is clicked; Cancel discards the whole edit.</p>
+      </div>
+    </section>
+
+    <section id="approvals">
+      <div class="sec-head"><span class="sec-num">§04</span><h2>Approvals</h2></div>
+      <p class="sec-dek">Two independent approval flags gate a project: <strong>admin approval</strong> (owner only) and <strong>client approval</strong>. Both must be <span class="tag good">approved</span> before a project counts in revenue, profit, or debt tracking anywhere in the app.</p>
+
+      <h3>Price change requests</h3>
+      <p>An engineer editing the base price on their own project doesn't change it directly — it files a <strong>price change request</strong> instead, sitting as <span class="tag warn">pending</span> until an owner approves or rejects it. Everyone else's price edits (markup, discount, manpower, cost) apply immediately without approval.</p>
+    </section>
+
+    <section id="execution">
+      <div class="sec-head"><span class="sec-num">§05</span><h2>Execution &amp; technicians</h2></div>
+      <p class="sec-dek">Once a project is client-approved, an <strong>Execution</strong> tab appears — a price-free checklist of every panel and item, for tracking physical installation progress.</p>
+      <ul>
+        <li>Owners assign technicians to specific projects; a technician only ever sees their assigned work under <strong>My Projects</strong></li>
+        <li>Marking a <strong>panel</strong> complete cascades to every item inside it automatically — and reverses cleanly if unchecked</li>
+        <li>Items can be partially completed by quantity (e.g. 6 of 10 installed), not just all-or-nothing</li>
+      </ul>
+    </section>
+
+    <section id="payments">
+      <div class="sec-head"><span class="sec-num">§06</span><h2>Payments &amp; debt</h2></div>
+      <p class="sec-dek">A project's total is rarely paid in one transfer. Every payment is logged individually, and each one can set the deadline for the <em>next</em> one.</p>
+
+      <h3>How the deadline works</h3>
+      <ol class="plain">
+        <li>First payment — no deadline needed yet</li>
+        <li>Recording the second payment, you're prompted for when the remaining balance is expected</li>
+        <li>That date becomes the project's payment deadline until the next payment updates it — or the balance clears, which removes it automatically</li>
+      </ol>
+
+      <h3>The Debt page</h3>
+      <p><span class="tag owner">Owner</span> <span class="tag good">Accounting</span> — a dedicated page (and a tab inside Analytics) listing every approved project still owing money, sorted by whichever deadline is most overdue. Click a project to see its full payment history inline, no page change.</p>
+
+      <div class="note warn">
+        <div class="note-label">Automatic reminders</div>
+        <p>A background check flags any approved project past its payment deadline — or, if none was ever set, 30 days of inactivity — and notifies the owner and the project's engineer without anyone having to remember to check.</p>
+      </div>
+    </section>
+
+    <section id="analytics">
+      <div class="sec-head"><span class="sec-num">§07</span><h2>Analytics</h2></div>
+      <p class="sec-dek">Revenue and profit are counted on a <strong>cash basis</strong> — money actually received — not the full contract value the moment a project is approved.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Figure</th><th>How it's calculated</th></tr></thead>
+          <tbody>
+            <tr><td>Revenue</td><td class="mono">SUM of payments actually recorded</td></tr>
+            <tr><td>Recognized cost</td><td class="mono">total_cost × (paid ÷ total_due)</td></tr>
+            <tr><td>Profit</td><td class="mono">revenue − recognized cost</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Cost is recognized proportionally as payments come in, so a project that's 40% paid shows 40% of its eventual profit — and lands on the exact full figure once fully paid. The monthly revenue chart is grouped by payment date, with a breakdown of which project each month's money came from.</p>
+    </section>
+
+    <section id="notifications">
+      <div class="sec-head"><span class="sec-num">§08</span><h2>Notifications</h2></div>
+      <p class="sec-dek">A background check runs periodically and covers four things, each notifying the relevant people without manual triggering:</p>
+      <ul>
+        <li><strong>Deadlines</strong> — project due within 3 days</li>
+        <li><strong>Approvals</strong> — stuck pending for 24h+ (admin) or 48h+ (client)</li>
+        <li><strong>Stock</strong> — product at or below reserved quantity</li>
+        <li><strong>Payments</strong> — see §06</li>
+      </ul>
+    </section>
+
+    <section id="files">
+      <div class="sec-head"><span class="sec-num">§09</span><h2>Files &amp; links</h2></div>
+      <p class="sec-dek">Rather than uploading files to the server, the Files tab stores <strong>links</strong> — paste a share link from wherever the file actually lives, give it a name, optionally attach it to a specific panel. One link field also lives at the project level for a general "all files" folder.</p>
+    </section>
+
+    <section id="data">
+      <div class="sec-head"><span class="sec-num">§10</span><h2>Import / export</h2></div>
+      <ul>
+        <li><strong>PDF import</strong> — parses a quote PDF into a full project structure, previewed before creation</li>
+        <li><strong>Excel import</strong> — bulk product catalog updates, up to ~11,000 rows</li>
+        <li><strong>CSV/Excel export</strong> — products, projects, reservations, per-project CRM detail, and full analytics</li>
+      </ul>
+    </section>
+
+    <section id="groups">
+      <div class="sec-head"><span class="sec-num">§11</span><h2>Item groups</h2></div>
+      <p class="sec-dek">A named, reusable bundle of parts with default quantities and pricing — build it once, drop it into any division on any project. Dropping one in expands it into real, individually-editable items; the group template itself is untouched.</p>
+    </section>
+
+    <section id="security">
+      <div class="sec-head"><span class="sec-num">§12</span><h2>Sessions &amp; security</h2></div>
+      <ul>
+        <li>Login sessions last ~12 hours; expiry shows a clear "please log in again" message, not a silent failure</li>
+        <li>A deleted worker's session stops working on their very next request, even mid-session</li>
+        <li>Repeated failed logins are rate-limited</li>
+        <li>Every project-scoped page checks that the logged-in engineer actually owns or collaborates on that project — a stray link can't be used to peek at someone else's work</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>Horizon LB — Internal Reference</span>
+    <span>Generated for the team, not for external sharing</span>
+  </footer>
+</div>

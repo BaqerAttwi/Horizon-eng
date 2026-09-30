@@ -69,7 +69,10 @@ CREATE TABLE IF NOT EXISTS clients (
   phone        VARCHAR(50),
   email        VARCHAR(150),
   address      TEXT,
-  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at   TIMESTAMP NULL DEFAULT NULL,
+  INDEX idx_clients_deleted_at (deleted_at)
 );
 
 -- ── Orders / Quotes ──────────────────────────────────────────
@@ -160,8 +163,11 @@ CREATE TABLE IF NOT EXISTS product_discounts (
   discount_pct  DECIMAL(5,2) NOT NULL DEFAULT 0,
   notes         TEXT,
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at    TIMESTAMP NULL DEFAULT NULL,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
   FOREIGN KEY (brand_id)    REFERENCES brands(id) ON DELETE CASCADE,
+  INDEX idx_product_discounts_deleted_at (deleted_at),
   CHECK (product_id IS NOT NULL OR brand_id IS NOT NULL)
 );
 
@@ -559,10 +565,29 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 -- UPDATE workers SET password_hash = '$2b$10$...' WHERE id=1;
 -- Or use the /api/auth/register endpoint to create workers with proper hashed passwords.
 
--- ── Soft-delete migrations (run once) ─────────────────────────
--- ALTER TABLE workers ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER created_at;
--- ALTER TABLE clients ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER updated_at;
--- ALTER TABLE product_discounts ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER updated_at;
+-- ── Client and discount audit/soft-delete columns ──────────────
+-- Keep existing databases aligned with the complete definitions above.
+SET @db = DATABASE();
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='clients' AND COLUMN_NAME='updated_at');
+SET @sql = IF(@exists=0, 'ALTER TABLE clients ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='clients' AND COLUMN_NAME='deleted_at');
+SET @sql = IF(@exists=0, 'ALTER TABLE clients ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER updated_at', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @exists = (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='clients' AND INDEX_NAME='idx_clients_deleted_at');
+SET @sql = IF(@exists=0, 'ALTER TABLE clients ADD INDEX idx_clients_deleted_at (deleted_at)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='product_discounts' AND COLUMN_NAME='updated_at');
+SET @sql = IF(@exists=0, 'ALTER TABLE product_discounts ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='product_discounts' AND COLUMN_NAME='deleted_at');
+SET @sql = IF(@exists=0, 'ALTER TABLE product_discounts ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL AFTER updated_at', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @exists = (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='product_discounts' AND INDEX_NAME='idx_product_discounts_deleted_at');
+SET @sql = IF(@exists=0, 'ALTER TABLE product_discounts ADD INDEX idx_product_discounts_deleted_at (deleted_at)', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- Add 'info' to notifications type enum
 ALTER TABLE notifications MODIFY COLUMN type ENUM('deadline','approval','status','request','stock','general','info','manual_product','manual_product_approved','manual_product_rejected') NOT NULL DEFAULT 'general';

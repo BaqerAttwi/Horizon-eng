@@ -38,6 +38,7 @@ async function requireAuth(req, res, next) {
     next();
   } catch (err) {
     console.log('[Auth] ❌ Token error:', err.message);
+    if (err.name !== 'JsonWebTokenError' && err.name !== 'TokenExpiredError' && err.name !== 'NotBeforeError') return next(err);
     return res.status(401).json({ error: 'Session expired — please log in again' });
   }
 }

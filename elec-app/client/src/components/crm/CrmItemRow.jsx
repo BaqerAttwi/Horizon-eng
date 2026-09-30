@@ -45,7 +45,7 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
   };
 
   const handleSave = async () => {
-    await onUpdate(item.id, form);
+    if (await onUpdate(item.id, form) === false) return;
     setEditing(false);
   };
   const handleKeyDown = (e) => {

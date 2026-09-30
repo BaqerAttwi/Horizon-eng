@@ -111,8 +111,16 @@ function ProjectMarkupPage({ projectId, panels, onChanged }) {
     const afterDiscount = base * (1 - (Number(item.discount_pct) || 0) / 100);
     const productMarkup = afterDiscount * markupValues.markupP_pct / 100;
     const manpower = afterDiscount * markupValues.manpower_pct / 100;
-    return afterDiscount + productMarkup + manpower + manpower * markupValues.markupM_pct / 100;
+    const manpowerMarkup = manpower * markupValues.markupM_pct / 100;
+    return { markupP_pct: productMarkup, manpower_pct: manpower, markupM_pct: manpowerMarkup,
+      total: afterDiscount + productMarkup + manpower + manpowerMarkup };
   };
+  const previewAmounts = (items, markupValues) => items.reduce((sum, item) => {
+    const amounts = previewItem(item, markupValues);
+    for (const key of Object.keys(sum)) sum[key] += amounts[key];
+    return sum;
+  }, { markupP_pct: 0, manpower_pct: 0, markupM_pct: 0, total: 0 });
+  const projectAmounts = previewAmounts(flattenProjectItems(panels), values);
   const rows = panels.map(panel => {
     const items = (panel.divisions || []).flatMap(d => d.items || []);
     const edit = panelEdits[panel.id] || {};
@@ -120,8 +128,9 @@ function ProjectMarkupPage({ projectId, panels, onChanged }) {
       edit[key] !== undefined && edit[key] !== '' ? Number(edit[key]) || 0 : values[key]]));
     const panelHasValues = ['markupP_pct','manpower_pct','markupM_pct'].every(key =>
       (edit[key] !== undefined && edit[key] !== '') || form[key] !== '');
+    const amounts = previewAmounts(items, panelValues);
     return { panel, items, current: Number(panel.total_price) || 0, panelHasValues, panelValues,
-      preview: items.reduce((sum, item) => sum + previewItem(item, panelValues), 0) };
+      amounts, preview: amounts.total };
   });
   const hasValues = Object.values(form).every(value => value !== '');
   const apply = async () => {
@@ -147,18 +156,18 @@ function ProjectMarkupPage({ projectId, panels, onChanged }) {
   };
   return <div className="card"><div className="card-body">
     <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Enter the new project markup values to preview every panel and the full project before applying.</div>
-    <div className="form-row">{[['markupP_pct','Product Markup %'],['manpower_pct','Manpower %'],['markupM_pct','Manpower Markup %']].map(([key,label]) => <div className="form-group" key={key}><label className="form-label">{label}</label><input type="number" min="0" step="0.1" className="form-input" value={form[key]} onChange={e => setForm(v => ({ ...v, [key]: e.target.value }))} /></div>)}</div>
+    <div className="form-row">{[['markupP_pct','Product Markup %'],['manpower_pct','Manpower %'],['markupM_pct','Manpower Markup %']].map(([key,label]) => <div className="form-group" key={key}><label className="form-label">{label}</label><input type="number" min="0" step="0.1" className="form-input" value={form[key]} onChange={e => setForm(v => ({ ...v, [key]: e.target.value }))} /><div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>${projectAmounts[key].toFixed(2)}</div></div>)}</div>
     <button className="btn btn-primary" style={{ marginTop: 10 }} disabled={!hasValues || saving} onClick={apply}>{saving ? 'Applying...' : 'Apply Markup to Entire Project'}</button>
     <div style={{ fontSize: 12, fontWeight: 700, marginTop: 20, marginBottom: 6 }}>Try and apply markup one panel at a time</div>
-    <div style={{ overflowX: 'auto', marginTop: 8 }}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}><thead><tr style={{ borderBottom: '2px solid var(--border)' }}><th style={{ textAlign: 'left', padding: 8 }}>Panel</th><th>Items</th><th>Current Price</th><th>Product Mk%</th><th>Manpower%</th><th>Manpower Mk%</th><th>New Price</th><th>Change</th><th></th></tr></thead><tbody>
+    <div style={{ overflowX: 'auto', marginTop: 8 }}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}><thead><tr style={{ borderBottom: '2px solid var(--border)' }}><th style={{ textAlign: 'left', padding: 8 }}>Panel</th><th>Current Price</th><th>Product Mk%</th><th>Manpower%</th><th>Manpower Mk%</th><th>New Price</th><th>Change</th><th></th></tr></thead><tbody>
       {rows.map(row => <tr key={row.panel.id} style={{ borderBottom: '1px solid var(--border)' }}>
-        <td style={{ padding: 8 }}>#{row.panel.panel_number} {row.panel.panel_name}</td><td style={{ textAlign: 'center' }}>{row.items.length}</td><td style={{ textAlign: 'right' }}>${row.current.toFixed(2)}</td>
-        {['markupP_pct','manpower_pct','markupM_pct'].map(key => <td key={key} style={{ padding: 4 }}><input type="number" min="0" step="0.1" className="form-input" style={{ width: 72, padding: '4px 6px' }} value={panelEdits[row.panel.id]?.[key] ?? ''} placeholder={form[key] !== '' ? form[key] : '%'} onChange={e => setPanelEdits(v => ({ ...v, [row.panel.id]: { ...(v[row.panel.id] || {}), [key]: e.target.value } }))} /></td>)}
+        <td style={{ padding: 8 }}>#{row.panel.panel_number} {row.panel.panel_name}</td><td style={{ textAlign: 'right' }}>${row.current.toFixed(2)}</td>
+        {['markupP_pct','manpower_pct','markupM_pct'].map(key => <td key={key} style={{ padding: 4 }}><input type="number" min="0" step="0.1" className="form-input" style={{ width: 72, padding: '4px 6px' }} value={panelEdits[row.panel.id]?.[key] ?? ''} placeholder={form[key] !== '' ? form[key] : '%'} onChange={e => setPanelEdits(v => ({ ...v, [row.panel.id]: { ...(v[row.panel.id] || {}), [key]: e.target.value } }))} /><div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>${row.amounts[key].toFixed(2)}</div></td>)}
         <td style={{ textAlign: 'right', color: 'var(--accent2)' }}>{row.panelHasValues ? `$${row.preview.toFixed(2)}` : '—'}</td><td style={{ textAlign: 'right', color: row.preview >= row.current ? 'var(--success)' : 'var(--danger)' }}>{row.panelHasValues ? `${row.preview >= row.current ? '+' : '-'}$${Math.abs(row.preview-row.current).toFixed(2)}` : '—'}</td>
         <td style={{ padding: 4 }}><button className="btn btn-sm btn-primary" disabled={!row.panelHasValues || savingPanel === row.panel.id} onClick={() => applyPanel(row)}>{savingPanel === row.panel.id ? 'Applying...' : 'Apply Panel'}</button></td>
       </tr>)}
     </tbody><tfoot><tr style={{ borderTop: '2px solid var(--border)', fontWeight: 800 }}>
-      <td colSpan={2} style={{ padding: 8 }}>Project Total</td><td style={{ textAlign: 'right' }}>${rows.reduce((s,r)=>s+r.current,0).toFixed(2)}</td><td colSpan={3}></td>
+      <td style={{ padding: 8 }}>Project Total</td><td style={{ textAlign: 'right' }}>${rows.reduce((s,r)=>s+r.current,0).toFixed(2)}</td><td colSpan={3}></td>
       <td style={{ textAlign: 'right', color: 'var(--accent2)' }}>${rows.reduce((s,r)=>s+(r.panelHasValues?r.preview:r.current),0).toFixed(2)}</td><td></td><td></td>
     </tr></tfoot></table></div>
   </div></div>;
@@ -697,7 +706,7 @@ export default function CrmProjectPage() {
 
       {activeTab === 'testing' && isRole('owner','head_engineer') && (
         <SummaryTesting panels={panels} project={project} id={project.id}
-          onItemUpdate={updateItem} onItemDelete={deleteItem}
+          onItemUpdate={updateItem} onItemDelete={deleteItem} onReload={load}
           hideCost={hideCost} exchangeRate={exchangeRate} />
       )}
 

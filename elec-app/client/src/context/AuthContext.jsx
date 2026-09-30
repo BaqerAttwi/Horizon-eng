@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/client';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
 
@@ -15,18 +16,23 @@ export function AuthProvider({ children }) {
         const w = r.data;
         setWorker(w);
       })
-      .catch(() => {
+      .catch(async error => {
         // Fallback: try localStorage token
         const token = localStorage.getItem('token');
-        const saved = localStorage.getItem('worker');
-        if (token && saved) {
+        if (error.response?.status !== 401) {
+          toast.error(error.message, { id: 'session-check' });
+          return;
+        }
+        if (token) {
           try {
-            const w = JSON.parse(saved);
-            setWorker(w);
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          } catch {
+            const r = await api.get('/auth/me');
+            setWorker(r.data);
+          } catch (fallbackError) {
+            if (fallbackError.response?.status !== 401) toast.error(fallbackError.message, { id: 'session-check' });
             localStorage.removeItem('token');
             localStorage.removeItem('worker');
+            delete api.defaults.headers.common['Authorization'];
           }
         }
       })
@@ -46,7 +52,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    try { await api.post('/auth/logout'); } catch {}
+    await api.post('/auth/logout');
     localStorage.removeItem('token');
     localStorage.removeItem('worker');
     delete api.defaults.headers.common['Authorization'];

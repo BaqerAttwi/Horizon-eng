@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -19,7 +20,7 @@ export default function CalendarPage() {
         const withDeadlines = (r.data || []).filter(p => p.deadline && p.status !== 'completed' && p.status !== 'cancelled');
         setProjects(withDeadlines);
       })
-      .catch(() => {})
+      .catch(e => toast.error(e.message, { id: 'api-' + e.message }))
       .finally(() => setLoading(false));
   }, []);
 

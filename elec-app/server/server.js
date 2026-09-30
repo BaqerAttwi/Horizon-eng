@@ -35,15 +35,8 @@ app.get('*', (req, res, next) => {
   res.sendFile(path.join(clientBuild, 'index.html'), err => { if (err) next(); });
 });
 
-app.use((err, req, res, _next) => {
-  console.error('[Server] 💥', err.message, err.stack);
-  const isUploadLimit = err.code === 'LIMIT_FILE_SIZE';
-  const status = isUploadLimit ? 413 : (err.status || 500);
-  const message = isUploadLimit
-    ? 'PDF is too large. Maximum upload size is 20 MB.'
-    : (status >= 500 ? 'Internal server error' : err.message);
-  res.status(status).json({ error: message });
-});
+app.use('/api', (req, res) => res.status(404).json({ error: 'This API feature could not be found. Refresh the page or contact your administrator.' }));
+app.use(require('./middleware/errorHandler').errorHandler);
 
 const bcrypt = require('bcryptjs');
 const db     = require('./db/connection');

@@ -92,7 +92,7 @@ function AddProductModal({ groupId, onClose, onAdded }) {
     if (!dq.trim()) { setRes([]); return; }
     api.get('/products', { params: { search: dq, limit: 10 } })
       .then(r => setRes(r.data.products || []))
-      .catch(() => {});
+      .catch(e => toast.error(e.message, { id: 'api-' + e.message }));
   }, [dq]);
 
   const add = async () => {

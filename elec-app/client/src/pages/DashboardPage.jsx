@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -148,7 +149,7 @@ export default function DashboardPage() {
   useEffect(() => {
     api.get('/dashboard')
       .then(r => { setData(r.data); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(e => { toast.error(e.message, { id: 'api-' + e.message }); setLoading(false); });
   }, []);
 
   if (loading) return <div className="page"><div className="empty"><span className="spinner" style={{ width: 32, height: 32 }} /></div></div>;
@@ -197,7 +198,7 @@ export default function DashboardPage() {
 
       {/* ── Overview Tab ───────────────────────────────── ─*/}
       {tab === 'overview' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 16 }}>
           <FadeIn>
             <div className="card">
               <div className="card-body">
@@ -232,7 +233,7 @@ export default function DashboardPage() {
 
       {/* ── Performance Tab (owner only) ────────────────── */}
       {tab === 'performance' && isRole('owner','head_engineer') && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 16 }}>
           <FadeIn>
             <div className="card">
               <div className="card-body">
@@ -249,7 +250,7 @@ export default function DashboardPage() {
 
       {/* ── Stock Tab (owner/accounting) ────────────────── */}
       {tab === 'stock' && !isRole('engineer') && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 16 }}>
           <FadeIn>
             <div className="card">
               <div className="card-body">

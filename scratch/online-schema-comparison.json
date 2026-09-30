@@ -1,0 +1,75 @@
+{
+  "exportedTables": 36,
+  "releaseTables": 36,
+  "missing": [
+    {
+      "TABLE_NAME": "clients",
+      "COLUMN_NAME": "updated_at",
+      "COLUMN_TYPE": "timestamp",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "current_timestamp()",
+      "EXTRA": "on update current_timestamp()",
+      "CHARACTER_SET_NAME": null,
+      "COLLATION_NAME": null
+    },
+    {
+      "TABLE_NAME": "clients",
+      "COLUMN_NAME": "deleted_at",
+      "COLUMN_TYPE": "timestamp",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL",
+      "EXTRA": "",
+      "CHARACTER_SET_NAME": null,
+      "COLLATION_NAME": null
+    },
+    {
+      "TABLE_NAME": "product_discounts",
+      "COLUMN_NAME": "updated_at",
+      "COLUMN_TYPE": "timestamp",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "current_timestamp()",
+      "EXTRA": "on update current_timestamp()",
+      "CHARACTER_SET_NAME": null,
+      "COLLATION_NAME": null
+    },
+    {
+      "TABLE_NAME": "product_discounts",
+      "COLUMN_NAME": "deleted_at",
+      "COLUMN_TYPE": "timestamp",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL",
+      "EXTRA": "",
+      "CHARACTER_SET_NAME": null,
+      "COLLATION_NAME": null
+    }
+  ],
+  "extra": [],
+  "changed": [],
+  "missingIndexes": [
+    {
+      "table": "clients",
+      "unique": false,
+      "primary": false,
+      "columns": [
+        [
+          "deleted_at",
+          null
+        ]
+      ]
+    },
+    {
+      "table": "product_discounts",
+      "unique": false,
+      "primary": false,
+      "columns": [
+        [
+          "deleted_at",
+          null
+        ]
+      ]
+    }
+  ],
+  "extraIndexes": [],
+  "missingForeignKeys": [],
+  "extraForeignKeys": []
+}

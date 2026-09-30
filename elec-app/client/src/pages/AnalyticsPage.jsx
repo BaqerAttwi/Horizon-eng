@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import api from '../api/client';
@@ -191,7 +192,7 @@ export default function AnalyticsPage() {
       setEngineers(e.data.engineers || []);
       setClients(c.data.clients || []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(e => { toast.error(e.message, { id: 'api-' + e.message }); setLoading(false); });
   };
 
   useEffect(() => { fetchData(); }, [datePreset]);
@@ -258,7 +259,7 @@ export default function AnalyticsPage() {
       {/* Charts Row */}
       {tab === 'summary' && monthlyData.length > 0 && (
         <FadeIn>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 16, marginBottom: 24 }}>
             <div className="card">
               <div className="card-body">
                 <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--white)', marginBottom: 8 }}>📈 Monthly Revenue</h3>

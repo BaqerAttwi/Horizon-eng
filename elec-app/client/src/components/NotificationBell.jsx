@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -92,7 +93,7 @@ export default function NotificationBell() {
         setUnreadCount(r.data.unread_count || 0);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(e => { toast.error(e.message, { id: 'api-' + e.message }); setLoading(false); });
   };
 
   useEffect(() => { loadNotifications(); }, []);
@@ -116,20 +117,20 @@ export default function NotificationBell() {
     api.patch(`/notifications/${id}/read`).then(() => {
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    }).catch(() => {});
+    }).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
   };
 
   const handleReadAll = () => {
     api.patch('/notifications/read-all').then(() => {
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
-    }).catch(() => {});
+    }).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
   };
 
   const handleDelete = (id) => {
     api.delete(`/notifications/${id}`).then(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
-    }).catch(() => {});
+    }).catch(e => toast.error(e.message, { id: 'api-' + e.message }));
   };
 
   return (

@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import api from '../api/client';
@@ -30,7 +31,7 @@ export default function NotificationsPage() {
         setUnreadCount(r.data.unread_count || 0);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(e => { toast.error(e.message, { id: 'api-' + e.message }); setLoading(false); });
   };
 
   useEffect(() => { load(); }, [filter]);
