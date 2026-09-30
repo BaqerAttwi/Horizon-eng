@@ -10,7 +10,12 @@ async function getDemand(projectId) {
     FROM panel_crm_items pci JOIN panel_divisions pd ON pd.id=pci.division_id
     JOIN project_crm_panels pcp ON pcp.id=pd.panel_id LEFT JOIN products pr ON pr.id=pci.product_id
     LEFT JOIN project_procurement_allocations ppa ON ppa.project_id=pcp.project_id AND ppa.product_id=pci.product_id
-    WHERE pcp.project_id=? GROUP BY pci.product_id,item_name,description,pr.stock_qty,pr.reserved_qty,ppa.allocated_qty ORDER BY item_name`,[projectId]);
+    WHERE pcp.project_id=?
+    GROUP BY pci.product_id,
+      COALESCE(pr.reference,pci.custom_name,'Manual item'),
+      COALESCE(pr.description,pci.custom_desc,''),
+      pr.stock_qty,pr.reserved_qty,ppa.allocated_qty
+    ORDER BY item_name`,[projectId]);
   return rows.map(row=>({...row,required_qty:Number(row.required_qty)||0,stock_qty:Number(row.stock_qty)||0,reserved_qty:Number(row.reserved_qty)||0,
     allocated_qty:Number(row.allocated_qty)||0,available_for_project:Number(row.available_for_project)||0,shortage_qty:Math.max(0,(Number(row.required_qty)||0)-(Number(row.available_for_project)||0))}));
 }
