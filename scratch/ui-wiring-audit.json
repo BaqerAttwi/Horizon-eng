@@ -1,27 +1,22 @@
 {
-  "timestamp": "2026-09-29T18:19:37.562Z",
-  "files": 104,
-  "buttons": 219,
+  "timestamp": "2026-10-08T08:53:32.765Z",
+  "files": 122,
+  "buttons": 233,
   "unhandled": [],
   "inventory": [
     {
       "file": "elec-app\\client\\src\\App.jsx",
-      "line": 155,
+      "line": 163,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\App.jsx",
-      "line": 166,
+      "line": 174,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\App.jsx",
-      "line": 184,
-      "handled": true
-    },
-    {
-      "file": "elec-app\\client\\src\\App.jsx",
-      "line": 251,
+      "line": 192,
       "handled": true
     },
     {
@@ -265,6 +260,41 @@
       "handled": true
     },
     {
+      "file": "elec-app\\client\\src\\components\\ReviewHistory.jsx",
+      "line": 33,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\RoleAssistant.jsx",
+      "line": 37,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\RoleAssistant.jsx",
+      "line": 40,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\RoleAssistant.jsx",
+      "line": 43,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\RoleAssistant.jsx",
+      "line": 45,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\RoleAssistant.jsx",
+      "line": 46,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\RoleAssistant.jsx",
+      "line": 48,
+      "handled": true
+    },
+    {
       "file": "elec-app\\client\\src\\components\\RoleTutorial.jsx",
       "line": 56,
       "handled": true
@@ -315,6 +345,21 @@
       "handled": true
     },
     {
+      "file": "elec-app\\client\\src\\components\\WorkspaceLauncher.jsx",
+      "line": 25,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\WorkspaceLauncher.jsx",
+      "line": 27,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\WorkspaceLauncher.jsx",
+      "line": 32,
+      "handled": true
+    },
+    {
       "file": "elec-app\\client\\src\\pages\\AnalyticsPage.jsx",
       "line": 226,
       "handled": true
@@ -341,17 +386,17 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\ClientExportPage.jsx",
-      "line": 72,
+      "line": 71,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ClientExportPage.jsx",
-      "line": 72,
+      "line": 71,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ClientExportPage.jsx",
-      "line": 86,
+      "line": 85,
       "handled": true
     },
     {
@@ -386,12 +431,7 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 24,
-      "handled": true
-    },
-    {
-      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 38,
+      "line": 25,
       "handled": true
     },
     {
@@ -401,22 +441,37 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 92,
+      "line": 40,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 160,
+      "line": 93,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 167,
+      "line": 169,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 222,
+      "line": 176,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 244,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 245,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 246,
       "handled": true
     },
     {
@@ -426,47 +481,22 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 249,
+      "line": 254,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 250,
+      "line": 279,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 262,
+      "line": 281,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 267,
-      "handled": true
-    },
-    {
-      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 272,
-      "handled": true
-    },
-    {
-      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 276,
-      "handled": true
-    },
-    {
-      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 280,
-      "handled": true
-    },
-    {
-      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 284,
-      "handled": true
-    },
-    {
-      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 288,
+      "line": 282,
       "handled": true
     },
     {
@@ -476,17 +506,27 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 300,
+      "line": 299,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 305,
+      "line": 304,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 309,
+      "line": 308,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 312,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 316,
       "handled": true
     },
     {
@@ -496,67 +536,92 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 330,
+      "line": 326,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 331,
+      "line": 332,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 345,
+      "line": 337,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 376,
+      "line": 341,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 395,
+      "line": 352,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 397,
+      "line": 362,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 448,
+      "line": 363,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 449,
+      "line": 377,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 567,
+      "line": 408,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 604,
+      "line": 427,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 648,
+      "line": 429,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 649,
+      "line": 480,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 481,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 599,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 636,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 680,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 681,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\DashboardPage.jsx",
-      "line": 175,
+      "line": 176,
       "handled": true
     },
     {
@@ -731,22 +796,22 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProcurementPage.jsx",
-      "line": 12,
+      "line": 18,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProcurementPage.jsx",
-      "line": 17,
+      "line": 23,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProcurementPage.jsx",
-      "line": 20,
+      "line": 26,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProcurementPage.jsx",
-      "line": 20,
+      "line": 26,
       "handled": true
     },
     {
@@ -826,17 +891,12 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 39,
+      "line": 40,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 145,
-      "handled": true
-    },
-    {
-      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 219,
+      "line": 146,
       "handled": true
     },
     {
@@ -846,112 +906,122 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 384,
+      "line": 221,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 406,
+      "line": 388,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 415,
+      "line": 410,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 491,
+      "line": 419,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 513,
+      "line": 495,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 557,
+      "line": 514,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 566,
+      "line": 521,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 570,
+      "line": 565,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 575,
+      "line": 574,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 580,
+      "line": 578,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 581,
+      "line": 583,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 603,
+      "line": 588,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 688,
+      "line": 589,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 689,
+      "line": 611,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 690,
+      "line": 696,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 709,
+      "line": 697,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 766,
+      "line": 698,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 767,
+      "line": 717,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 768,
+      "line": 774,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 891,
+      "line": 775,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 996,
+      "line": 776,
       "handled": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 997,
+      "line": 899,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 1004,
+      "handled": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 1005,
       "handled": true
     },
     {

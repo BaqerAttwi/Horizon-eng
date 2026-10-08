@@ -48,7 +48,7 @@ async function checkProjectAccess(req, res, projectId) {
 // Check access via panel ID (looks up project from panel)
 async function checkPanelAccess(req, res, panelId) {
   const [[panel]] = await db.execute('SELECT project_id FROM project_crm_panels WHERE id=?', [panelId]);
-  if (!panel) { res.status(404).json({ error: 'Panel not found' }); return false; }
+  if (!panel || (req.params.projectId && String(panel.project_id) !== String(req.params.projectId))) { res.status(404).json({ error: 'Panel not found in this project' }); return false; }
   return checkProjectAccess(req, res, panel.project_id);
 }
 
@@ -112,31 +112,28 @@ async function updatePanel(req, res, next) {
     if (!hasAccess) return;
 
     const [[panel]] = await db.execute(
-      'SELECT id, quantity FROM project_crm_panels WHERE id=? AND project_id=?',
+      'SELECT * FROM project_crm_panels WHERE id=? AND project_id=?',
       [req.params.panelId, req.params.projectId]
     );
     if (!panel) return res.status(404).json({ error: 'Panel not found in this project' });
 
-    const { panel_name, markupP, markupM, manpower_pct, note, show_note_in_client_pdf, onedrive_link } = req.body;
-    const quantity = Number(req.body.quantity ?? 1);
+    const { panel_name, markupP, markupM, manpower_pct, note, show_note_in_client_pdf, onedrive_link } = { ...panel, ...req.body };
+    const quantity = Number(req.body.quantity ?? panel.quantity ?? 1);
     if (!Number.isInteger(quantity) || quantity < 1) return res.status(400).json({ error: 'Panel quantity must be a positive whole number' });
     await db.execute(
       'UPDATE project_crm_panels SET panel_name=?, quantity=?, markupP=?, markupM=?, manpower_pct=?, note=?, show_note_in_client_pdf=?, onedrive_link=?, updated_by=? WHERE id=? AND project_id=?',
       [panel_name||null, quantity, markupP||0, markupM||0, manpower_pct||0, note||null, show_note_in_client_pdf ? 1 : 0, onedrive_link||null, req.worker.id, req.params.panelId, req.params.projectId]
     );
 
-    // Cascade panel markups to items and divisions
-    const [divisions] = await db.execute('SELECT id FROM panel_divisions WHERE panel_id=?', [req.params.panelId]);
-    for (const div of divisions) {
-      await db.execute(
-        'UPDATE panel_divisions SET markupP=?, markupM=?, manpower_pct=? WHERE id=?',
-        [markupP||0, markupM||0, manpower_pct||0, div.id]
-      );
-      await db.execute(
-        'UPDATE panel_crm_items SET markupP_pct=?, manpower_pct=?, markupM_pct=?, override_markup=0 WHERE division_id=?',
-        [markupP||0, manpower_pct||0, markupM||0, div.id]
-      );
-      await recalcDivisionTotals(div.id);
+    // Only explicit markup changes may replace item-level overrides.
+    const changedMarkups = ['markupP','markupM','manpower_pct'].filter(key => req.body[key] !== undefined && Number(req.body[key]) !== Number(panel[key] || 0));
+    if (changedMarkups.length) {
+      const [divisions] = await db.execute('SELECT id FROM panel_divisions WHERE panel_id=?', [req.params.panelId]);
+      const itemKey = { markupP: 'markupP_pct', markupM: 'markupM_pct', manpower_pct: 'manpower_pct' };
+      for (const div of divisions) {
+        await db.execute(`UPDATE panel_divisions SET ${changedMarkups.map(key => key+'=?').join(',')} WHERE id=?`, [...changedMarkups.map(key => req.body[key]), div.id]);
+        await db.execute(`UPDATE panel_crm_items SET ${changedMarkups.map(key => itemKey[key]+'=?').join(',')},override_markup=0 WHERE division_id=?`, [...changedMarkups.map(key => req.body[key]), div.id]);
+      }
     }
     await recalcPanelTotals(req.params.panelId);
     await recalcReservedQty();
@@ -414,6 +411,11 @@ async function createCrmItem(req, res, next) {
     const hasAccess = await checkDivisionAccess(req, res, req.params.divisionId, req.params.projectId, req.params.panelId);
     if (!hasAccess) return;
 
+    if (req.worker.role === 'engineer') {
+      const money = ['base_price_usd','base_price_euro','custom_price_usd','custom_price_euro','cost','cr_amount'];
+      if (money.some(key => req.body[key] !== undefined && req.body[key] !== null && req.body[key] !== '' && Number(req.body[key]) !== 0)) return res.status(403).json({ error: 'Engineers cannot change monetary prices' });
+      for (const key of money) delete req.body[key];
+    }
     const {
       product_id, manual_product_id, is_manual, custom_name, custom_desc,
       custom_brand, custom_price_euro, custom_price_usd, qty, base_price_usd, base_price_euro,
@@ -451,6 +453,11 @@ async function createCrmItem(req, res, next) {
       usd = custom_price_usd;
     }
 
+    if (manual_product_id) {
+      const [[manual]] = await db.execute('SELECT price_usd,price_euro FROM panel_manual_products WHERE id=? AND project_id=?', [manual_product_id, req.params.projectId]);
+      if (!manual) return res.status(404).json({ error: 'Manual product not found in this project' });
+      if (!usd && !eur) { usd = manual.price_usd; eur = manual.price_euro; }
+    }
     // If manual, create a manual product first if not provided
     let mpId = manual_product_id;
     if (is_manual && !mpId) {

@@ -61,7 +61,7 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
         <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>{name}</td>
         <td><input type="number" min="1" className="form-input" style={{ width: 64 }} defaultValue={item.qty || 1}
           onBlur={e => { const next = Math.max(1, parseInt(e.target.value, 10) || 1); if (next !== Number(item.qty)) onUpdate(item.id, { qty: next }); }} /></td>
-        <td>{desc}</td><td>{brand || '—'}</td>
+        <td className="crm-description">{desc}</td><td>{brand || '—'}</td>
         {['discount_pct','markupP_pct','manpower_pct','markupM_pct'].map(field => <td key={field}>
           <input type="number" min="0" step="0.1" className="form-input crm-percent-input" defaultValue={item[field] || 0}
             onBlur={e => { if (Number(e.target.value) !== Number(item[field] || 0)) updatePercent(field, e.target.value); }} />
@@ -97,7 +97,7 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
         <td className="mono" style={{ verticalAlign: 'middle', color: 'var(--muted)', fontWeight: 600 }}>
           ${baseTotal.toFixed(2)}
         </td>
-        <td style={{ fontSize: 11, color: 'var(--muted)', verticalAlign: 'middle' }}>{desc}</td>
+        <td className="crm-description">{desc}</td>
         <td style={{ fontSize: 11, verticalAlign: 'middle' }}>{brand || '—'}</td>
         <td style={{ verticalAlign: 'middle' }}>
           <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.discount_pct}
@@ -166,7 +166,7 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
       <td className="mono" style={{ color: 'var(--text)', fontWeight: 600 }}>{item.qty}</td>
       <td className="mono" style={{ color: 'var(--text)' }}>${base.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{baseEur.toFixed(2)}</div></td>
       <td className="mono" style={{ color: 'var(--text)', fontWeight: 700 }}>${baseTotal.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>€{(baseEur * qty).toFixed(2)}</div></td>
-      <td style={{ fontSize: 11, color: 'var(--muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{desc}</td>
+      <td className="crm-description">{desc}</td>
       <td style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600 }}>{brand || '—'}</td>
       <td className="mono" style={{ color: item.discount_pct > 0 ? 'var(--danger)' : 'var(--muted)' }}>{item.discount_pct}%<div style={{ fontSize: 10, color: 'var(--muted)' }}>-${disc.toFixed(2)}</div></td>
       <td className="mono" style={{ color: 'var(--primary-light)', fontWeight: 600 }}>${afterDisc.toFixed(2)}<div style={{ fontSize: 10, color: 'var(--muted)' }}>after disc</div></td>

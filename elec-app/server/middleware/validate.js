@@ -3,13 +3,13 @@ const { z } = require('zod');
 const schemas = {
   login: z.object({
     email: z.string().email('Invalid email'),
-    password: z.string().min(1, 'Password required'),
+    password: z.string().min(1, 'Password required').refine(v => Buffer.byteLength(v, 'utf8') <= 72, 'Password is too long'),
   }),
   register: z.object({
     name: z.string().min(1, 'Name required'),
     email: z.string().email('Invalid email'),
     role: z.enum(['owner', 'head_engineer', 'stock_manager', 'accounting', 'engineer', 'secretary', 'technician']),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    password: z.string().min(6, 'Password must be at least 6 characters').refine(v => Buffer.byteLength(v, 'utf8') <= 72, 'Password must be at most 72 UTF-8 bytes'),
     phone: z.string().optional().nullable(),
   }),
   createClient: z.object({
@@ -26,7 +26,7 @@ const schemas = {
     email: z.string().email().optional().nullable().or(z.literal('')),
     phone: z.string().optional().nullable(),
     role: z.enum(['owner', 'head_engineer', 'stock_manager', 'accounting', 'engineer', 'secretary', 'technician']),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    password: z.string().min(6, 'Password must be at least 6 characters').refine(v => Buffer.byteLength(v, 'utf8') <= 72, 'Password must be at most 72 UTF-8 bytes'),
   }),
   createDiscount: z.object({
     product_id: z.union([z.number(), z.string()]).pipe(z.coerce.number()).optional().nullable(),

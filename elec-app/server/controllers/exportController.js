@@ -3,8 +3,9 @@ const { canViewPrices, canExportProjectFinancials } = require('../utils/rolePoli
 
 function escapeCsv(val) {
   if (val === null || val === undefined) return '';
-  const s = String(val);
-  if (s.includes(',') || s.includes('"') || s.includes('\n') || /^[=+\-@]/.test(s)) {
+  let s = String(val);
+  if (typeof val === 'string' && /^[\s\u0000-\u001f]*[=+\-@]/.test(s)) s = "'" + s;
+  if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r') || /^[=+\-@]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }
   return s;
@@ -228,11 +229,11 @@ async function exportCrm(req, res, next) {
     `, [projectId]);
 
     // Build summary: group by reference, sum qty
-    const summaryMap = {};
+    const summaryMap = Object.create(null);
     for (const row of rows) {
       const ref = row.reference || 'Unknown';
       if (!summaryMap[ref]) summaryMap[ref] = { reference: ref, total_qty: 0 };
-      summaryMap[ref].total_qty += row.qty ?? 1;
+      summaryMap[ref].total_qty += Number(row.qty ?? 1);
     }
     const summary = Object.values(summaryMap).sort((a, b) => b.total_qty - a.total_qty);
 
@@ -266,4 +267,4 @@ async function exportCrm(req, res, next) {
   }
 }
 
-module.exports = { exportProducts, exportProjects, exportAnalytics, exportReservations, exportCrm };
+module.exports = { escapeCsv, toCsv, exportProducts, exportProjects, exportAnalytics, exportReservations, exportCrm };

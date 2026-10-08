@@ -71,7 +71,7 @@ function activePanels(project) {
     .sort((a, b) => Number(a.panel_number) - Number(b.panel_number));
 }
 
-function drawTechnicalQuotation(project, fields, logoPng) {
+export function drawTechnicalQuotation(project, fields, logoPng) {
   // Technical BOMs contain several wide text columns. Landscape prevents
   // autoTable from squeezing/overflowing the requested column widths.
   const doc = new jsPDF('l', 'mm', 'letter');
@@ -79,6 +79,7 @@ function drawTechnicalQuotation(project, fields, logoPng) {
   const quoteNo = clean(fields.quoteNumber, `Q-${project.id}`);
   const panels = activePanels(project);
   const drawHeader = () => {
+    doc.setTextColor(10);
     doc.setDrawColor(...BORDER); doc.setLineWidth(0.25); doc.rect(7, 7, pw - 14, 22);
     doc.line(52, 7, 52, 29); doc.line(pw - 50, 7, pw - 50, 29);
     if (logoPng) doc.addImage(logoPng, 'PNG', 10, 9, 38, 17);
@@ -88,14 +89,15 @@ function drawTechnicalQuotation(project, fields, logoPng) {
     doc.text(`Edition ${clean(fields.edition, '1')}`, pw - 47, 18);
     doc.text(`Quote # ${quoteNo}`, pw - 47, 24);
   };
-  drawHeader();
-  const body = [];
-  panels.forEach(panel => {
-    body.push([{ content: `Panel #${panel.panel_number} - ${clean(panel.panel_name, 'Panel')}`, colSpan: 6, styles: { fillColor: BLUE, textColor: 255, fontStyle: 'bold' } }]);
+  const sections = panels.length ? panels : [{ panel_number: '', panel_name: 'No technical items', divisions: [] }];
+  let nextY = 32;
+  sections.forEach(panel => {
+    const panelTitle = panels.length
+      ? `Panel #${panel.panel_number} - ${clean(panel.panel_name, 'Panel')}`
+      : 'No technical items';
+    const body = [];
     let number = 1;
     (panel.divisions || []).forEach(div => {
-      // Keep the same database/CRM order and include group-instance items too:
-      // the technical offer is the complete bill of materials for each panel.
       (div.items || []).filter(item => item.visible_in_client_pdf !== 0).forEach(item => {
         body.push([
           number++, clean(panel.panel_name, `Panel ${panel.panel_number}`), clean(div.division_type, '-'),
@@ -104,16 +106,30 @@ function drawTechnicalQuotation(project, fields, logoPng) {
         ]);
       });
     });
+    if (number === 1) body.push(['', '', '', '', 'No technical items', '']);
+    if (panels.length) body.push([{ content: `End of Panel #${panel.panel_number} - ${clean(panel.panel_name, 'Panel')}`, colSpan: 6,
+      styles: { fillColor: [232, 245, 249], textColor: BLUE, fontStyle: 'bold', cellPadding: 1.2, lineColor: BLUE, lineWidth: { bottom: 0.6 } } }]);
+    if (nextY > doc.internal.pageSize.getHeight() - 30) { doc.addPage(); nextY = 32; }
+    autoTable(doc, {
+      startY: nextY, margin: { left: 7, right: 7, top: 32, bottom: 12 }, theme: 'grid',
+      head: [
+        [{ content: panelTitle, colSpan: 6, styles: { fillColor: BLUE, textColor: 255, fontStyle: 'bold', fontSize: 8, cellPadding: 1.6, halign: 'left' } }],
+        ['#', 'Panel name', 'Division', 'Part number', 'Description', 'QTY'],
+      ],
+      body,
+      styles: { fontSize: 5.8, cellPadding: 0.8, lineColor: BORDER, lineWidth: 0.15, textColor: 10, overflow: 'linebreak' },
+      headStyles: { fillColor: BLUE, textColor: 255, fontStyle: 'bold', halign: 'center' },
+      columnStyles: { 0: { cellWidth: 8, halign: 'center' }, 1: { cellWidth: 42 }, 2: { cellWidth: 31 }, 3: { cellWidth: 42 }, 4: { cellWidth: pw - 147 }, 5: { cellWidth: 10, halign: 'center' } },
+      rowPageBreak: 'avoid', pageBreak: 'auto',
+      didDrawPage: () => drawHeader(),
+    });
+    nextY = doc.lastAutoTable.finalY + 4;
   });
-  autoTable(doc, {
-    startY: 32, margin: { left: 7, right: 7, top: 32, bottom: 10 }, theme: 'grid',
-    head: [['#', 'Panel name', 'Division', 'Part number', 'Description', 'QTY']],
-    body: body.length ? body : [['', '', '', '', 'No technical items', '']],
-    styles: { fontSize: 5.8, cellPadding: 0.8, lineColor: BORDER, lineWidth: 0.15, textColor: 10, overflow: 'linebreak' },
-    headStyles: { fillColor: BLUE, textColor: 255, fontStyle: 'bold', halign: 'center' },
-    columnStyles: { 0: { cellWidth: 8, halign: 'center' }, 1: { cellWidth: 42 }, 2: { cellWidth: 31 }, 3: { cellWidth: 42 }, 4: { cellWidth: 120 }, 5: { cellWidth: 10, halign: 'center' } },
-    didDrawPage: ({ pageNumber }) => { if (pageNumber > 1) drawHeader(); },
-  });
+  const pages = doc.internal.getNumberOfPages();
+  for (let page = 1; page <= pages; page++) {
+    doc.setPage(page); doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(100);
+    doc.text(`Page ${page} of ${pages}`, pw - 7, doc.internal.pageSize.getHeight() - 5, { align: 'right' });
+  }
   return { doc, filename: `${quoteNo.replace(/[^a-z0-9_-]/gi, '_')}_technical_quotation.pdf` };
 }
 
@@ -596,7 +612,7 @@ export async function exportProjectPdf(projectId, type = 'owner', fields = {}) {
 
   // ── Brand Summary (owner) ──
   if (y > 260) { doc.addPage(); y = 30; }
-  const brandMap = {};
+  const brandMap = Object.create(null);
   for (const panel of panels) {
     for (const div of panel.divisions || []) {
       for (const item of div.items || []) {

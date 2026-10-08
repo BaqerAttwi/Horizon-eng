@@ -73,11 +73,16 @@ async function getProduct(req, res, next) {
 // PATCH /api/products/:id
 async function updateProduct(req, res, next) {
   try {
+    let valid = false;
+    require('../middleware/numericValidation').numericValidation(req, res, () => { valid = true; });
+    if (!valid) return;
     const { stock_qty, min_stock_level, price_cost, price_euro, price_usd, description, smart_code } = req.body;
     if (req.worker.role === 'stock_manager' && [price_cost, price_euro, price_usd].some(v => v !== undefined)) {
       return res.status(403).json({ error: 'Stock Manager cannot view or change pricing' });
     }
     const [[before]] = await db.execute('SELECT stock_qty,reserved_qty,min_stock_level FROM products WHERE id=?', [req.params.id]);
+    if (!before) return res.status(404).json({ error: 'Product not found' });
+    if ([stock_qty, min_stock_level].some(value => value !== undefined && !Number.isSafeInteger(Number(value)))) return res.status(400).json({ error: 'Stock quantities must be whole numbers' });
     const fields = [], params = [];
 
     if (stock_qty  !== undefined) { fields.push('stock_qty=?');   params.push(parseInt(stock_qty)); }
@@ -128,7 +133,8 @@ async function provisionProduct(req, res, next) {
   try {
     const { smart_code, qty } = req.body;
     if (!smart_code || !smart_code.trim()) return res.status(400).json({ error: 'Smart code is required' });
-    const quantity = parseInt(qty) || 0;
+    const quantity = Number(qty ?? 0);
+    if (!Number.isSafeInteger(quantity) || quantity < 0) return res.status(400).json({ error: 'Quantity must be a nonnegative whole number' });
     const cleanCode = smart_code.trim().toUpperCase();
     const ref = `PROV-${cleanCode}-${Date.now() % 10000}`;
     const [result] = await db.execute(

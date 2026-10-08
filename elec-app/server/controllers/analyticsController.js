@@ -143,7 +143,7 @@ async function getSummary(req, res, next) {
 
     const [[topEngineer]] = await pool.query(`
       SELECT w.name, SUM(${RECOGNIZED_REVENUE_EXPR} - ${RECOGNIZED_COST_EXPR}) AS profit
-      FROM projects p JOIN workers w ON w.id = p.engineer_id
+      FROM projects p LEFT JOIN workers w ON w.id = p.engineer_id
       ${PAYMENTS_JOIN}
       WHERE p.deleted_at IS NULL ${df}${APPROVED_FILTER}
       GROUP BY w.id, w.name ORDER BY profit DESC LIMIT 1
@@ -234,9 +234,10 @@ async function getSummary(req, res, next) {
 async function getProjectTeam(req, res, next) {
   try {
     const { projectId } = req.params;
+    if (!await require('./crmController').checkProjectAccess(req, res, projectId)) return;
     const [[project]] = await pool.query(`
       SELECT p.id, p.project_name, w.id AS lead_engineer_id, w.name AS lead_engineer_name
-      FROM projects p JOIN workers w ON w.id = p.engineer_id
+      FROM projects p LEFT JOIN workers w ON w.id = p.engineer_id
       WHERE p.id = ? AND p.deleted_at IS NULL
     `, [projectId]);
 

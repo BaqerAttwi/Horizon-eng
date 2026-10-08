@@ -94,9 +94,10 @@ async function createNotification(userId, type, title, message, link, skipEmail 
       [userId, type, link]
     );
     if (existing.length) {
+      await pool.query('UPDATE notifications SET title=?, message=?, created_at=NOW() WHERE id=?', [title, message, existing[0].id]);
       if (!skipEmail && type !== 'stock') {
         const [[wk]] = await pool.query('SELECT id, name, email FROM workers WHERE id = ?', [userId]);
-        if (wk && wk.email) notifyByEmail(wk, type, title, message, link).catch(() => {});
+        if (wk) await notifyByEmail(wk, type, title, message, link);
       }
       return;
     }
@@ -108,8 +109,8 @@ async function createNotification(userId, type, title, message, link, skipEmail 
 
     if (!skipEmail && type !== 'stock') {
       const [[worker]] = await pool.query('SELECT id, name, email FROM workers WHERE id = ?', [userId]);
-      if (worker && worker.email) {
-        notifyByEmail(worker, type, title, message, link).catch(e => console.error('[Email] async error:', e.message));
+      if (worker) {
+        await notifyByEmail(worker, type, title, message, link);
       } else {
       }
     }

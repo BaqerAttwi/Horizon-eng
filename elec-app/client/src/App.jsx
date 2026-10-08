@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -8,7 +8,9 @@ import NotificationBell from './components/NotificationBell';
 import Logo            from './components/Logo';
 import AppIcon         from './components/AppIcon';
 import RoleTutorial    from './components/RoleTutorial';
+import RoleAssistant from './components/RoleAssistant';
 import api             from './api/client';
+import WorkspaceLauncher, { WORKSPACES } from './components/WorkspaceLauncher';
 
 // Route-level code splitting — each page ships as its own chunk and is only
 // fetched when the user actually navigates there, instead of all pages
@@ -107,7 +109,13 @@ function ProtectedRoute({ children, perm, roles }) {
   return children;
 }
 
-function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme, onOpenTutorial }) {
+// Older activity and notification records link to the project without /crm.
+function ProjectRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/projects/${id}/crm`} replace />;
+}
+
+function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme, onOpenTutorial, visibleNav, activeWorkspace }) {
   const { worker, logout, can, isRole } = useAuth();
   const navigate = useNavigate();
 
@@ -124,15 +132,15 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme, onOpenTutorial
       <div className="sidebar-logo">
         <div className="sidebar-brand-glow" />
         <h1><Logo size={160} /></h1>
-        <span><i /> Control center · 2026</span>
+        <span><i /> {activeWorkspace.label} workspace</span>
       </div>
 
       <nav className="sidebar-nav">
         {(() => {
-          const visible = isRole('technician') ? TECHNICIAN_NAV : isRole('stock_manager') ? STOCK_MANAGER_NAV : NAV.filter(n => (!n.roles||n.roles.includes(worker.role))&&(!n.perm || can(n.perm)));
+          const visible = visibleNav;
           const groups = [...new Set(visible.map(n => n.group))];
           return groups.flatMap((g, gi) => [
-            <div key={`h-${g}`} className="nav-group-label">{GROUP_LABELS[g]}</div>,
+            <div key={`h-${g}`} className="nav-group-label">{g === 'main' ? 'Workspace' : activeWorkspace.label}</div>,
             ...visible.filter(n => n.group === g).map(n => (
               <NavLink
                 key={n.to} to={n.to}
@@ -196,10 +204,24 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme, onOpenTutorial
 
 function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('horizon-theme') || 'dark');
-  const { worker } = useAuth();
+  const [theme, setTheme] = useState(() => localStorage.getItem('horizon-theme') || 'light');
+  const { worker, can, isRole } = useAuth();
   const location = useLocation();
   const [tutorialRequest, setTutorialRequest] = useState(0);
+  const [selectedWorkspace, setSelectedWorkspace] = useState('crm');
+  const allowedNav = worker ? (isRole('technician') ? TECHNICIAN_NAV : isRole('stock_manager') ? STOCK_MANAGER_NAV : NAV.filter(n => (!n.roles || n.roles.includes(worker.role)) && (!n.perm || can(n.perm)) && (n.to !== '/analytics' || ['owner', 'head_engineer'].includes(worker.role)))) : [];
+  const workspaces = WORKSPACES.filter(app => allowedNav.some(n => app.routes.includes(n.to)));
+  const routeWorkspace = workspaces.find(app => app.routes.some(route => location.pathname === route || location.pathname.startsWith(route + '/')));
+  const activeWorkspace = routeWorkspace || workspaces.find(app => app.id === selectedWorkspace) || workspaces[0] || WORKSPACES[0];
+  useEffect(() => { if (routeWorkspace) setSelectedWorkspace(routeWorkspace.id); }, [routeWorkspace?.id]);
+  const visibleNav = allowedNav.filter(n => n.to === '/dashboard' || activeWorkspace.routes.includes(n.to));
+  const selectWorkspace = app => {
+    setSelectedWorkspace(app.id);
+    setMobileOpen(false);
+    const first = allowedNav.find(n => app.routes.includes(n.to));
+    if (first) navigate(first.to);
+  };
+  const navigate = useNavigate();
 
   // Mirror the theme onto <html> too — the Toaster portal renders as a sibling
   // of this component, outside the `.light-mode` div below, so it otherwise
@@ -230,8 +252,9 @@ function AppLayout() {
 
   return (
     <div className={`layout${theme === 'light' ? ' light-mode' : ''}`}>
-      {worker && <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} theme={theme} toggleTheme={toggleTheme} onOpenTutorial={() => { setMobileOpen(false); setTutorialRequest(v => v + 1); }} />}
+      {worker && <Sidebar visibleNav={visibleNav} activeWorkspace={activeWorkspace} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} theme={theme} toggleTheme={toggleTheme} onOpenTutorial={() => { setMobileOpen(false); setTutorialRequest(v => v + 1); }} />}
       {worker && <RoleTutorial worker={worker} openRequest={tutorialRequest} onCloseRequest={() => {}} />}
+      {worker && <RoleAssistant key={`${worker.id}-${worker.role}`} worker={worker} />}
 
       {/* Mobile overlay backdrop */}
       {mobileOpen && (
@@ -246,16 +269,7 @@ function AppLayout() {
       )}
 
       <main className="main">
-        {worker && (
-          <div className="mobile-header">
-            <button className="btn-icon" onClick={() => setMobileOpen(true)} aria-label="Open menu">☰</button>
-            <Logo size={80} />
-            <div style={{ flex: 1 }} />
-            <UpdatesLink mobile />
-        <NotificationBell />
-          </div>
-        )}
-
+        {worker && <WorkspaceLauncher workspaces={workspaces} active={activeWorkspace} onSelect={selectWorkspace} worker={worker} onMenu={() => setMobileOpen(true)} />}
         <AnimatePresence mode="wait">
           <Suspense fallback={<div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'60vh' }}><span className="spinner"/></div>}>
             <Routes location={location} key={location.pathname}>
@@ -268,6 +282,7 @@ function AppLayout() {
               <Route path="/reservations" element={<AnimatedPage><ProtectedRoute perm="reservations"><ReservationsPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/upload"    element={<AnimatedPage><ProtectedRoute perm="upload"><UploadPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/projects"  element={<AnimatedPage><ProtectedRoute perm="projects"><ProjectsPage /></ProtectedRoute></AnimatedPage>} />
+              <Route path="/projects/:id" element={<ProtectedRoute perm="projects"><ProjectRedirect /></ProtectedRoute>} />
               <Route path="/projects/:id/crm" element={<AnimatedPage><ProtectedRoute perm="projects"><CrmProjectPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/projects/:id/client-export" element={<AnimatedPage><ProtectedRoute perm="projects"><ClientExportPage /></ProtectedRoute></AnimatedPage>} />
               <Route path="/requests"  element={<AnimatedPage><ProtectedRoute perm="requests"><RequestsPage /></ProtectedRoute></AnimatedPage>} />

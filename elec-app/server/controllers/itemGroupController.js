@@ -40,7 +40,8 @@ async function getGroup(req, res, next) {
 async function createGroup(req, res, next) {
   try {
     const { name, description, is_public } = req.body;
-    if (!name || !name.trim()) return res.status(400).json({ error: 'Group name required' });
+    if (typeof name !== 'string' || !name.trim()) return res.status(400).json({ error: 'Group name required' });
+    if (description != null && typeof description !== 'string') return res.status(400).json({ error: 'Group description must be text' });
 
     const [result] = await db.execute(
       'INSERT INTO item_groups (name, description, created_by, is_public) VALUES (?, ?, ?, ?)',
@@ -63,6 +64,9 @@ async function updateGroup(req, res, next) {
   try {
     const { id } = req.params;
     const { name, description, is_public } = req.body;
+
+    if (name !== undefined && (typeof name !== 'string' || !name.trim())) return res.status(400).json({ error: 'Group name cannot be empty' });
+    if (description != null && typeof description !== 'string') return res.status(400).json({ error: 'Group description must be text' });
 
     const [existing] = await db.execute(
       'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role IN (\'owner\',\'head_engineer\')))',
@@ -113,6 +117,8 @@ async function deleteGroup(req, res, next) {
 async function getGroupItems(req, res, next) {
   try {
     const { id } = req.params;
+    const [[group]] = await db.execute("SELECT id FROM item_groups WHERE id=? AND (? IN ('owner','head_engineer') OR is_public=TRUE OR created_by=?)", [id, req.worker.role, req.worker.id]);
+    if (!group) return res.status(404).json({ error: 'Group not found or access denied' });
     const [items] = await db.execute(
       `SELECT gi.*, p.reference, p.description,
               COALESCE(gi.price_usd, p.price_usd) AS price_usd,
@@ -138,7 +144,7 @@ async function addGroupItem(req, res, next) {
     const { product_id, is_manual, custom_name, description, price_usd, price_euro, qty } = req.body;
 
     const [existing] = await db.execute(
-      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role=\'owner\'))',
+      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role IN (\'owner\',\'head_engineer\')))',
       [id, req.worker.id, req.worker.id]
     );
     if (!existing.length) return res.status(404).json({ error: 'Group not found or access denied' });
@@ -175,7 +181,7 @@ async function removeGroupItem(req, res, next) {
     const { id, itemId } = req.params;
 
     const [existing] = await db.execute(
-      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role=\'owner\'))',
+      'SELECT * FROM item_groups WHERE id=? AND (created_by=? OR ? IN (SELECT id FROM workers WHERE role IN (\'owner\',\'head_engineer\')))',
       [id, req.worker.id, req.worker.id]
     );
     if (!existing.length) return res.status(404).json({ error: 'Group not found or access denied' });

@@ -51,7 +51,7 @@ async function addPayment(req, res, next) {
 
     const { amount, payment_date, method, notes, next_payment_deadline } = req.body;
     const amt = parseFloat(amount);
-    if (!amt || amt <= 0) return res.status(400).json({ error: 'amount must be greater than 0' });
+    if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ error: 'amount must be greater than 0' });
     if (!payment_date) return res.status(400).json({ error: 'payment_date is required' });
 
     const [result] = await db.execute(

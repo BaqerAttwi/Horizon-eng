@@ -1,3 +1,4 @@
+import ReviewHistory from '../components/ReviewHistory';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -95,7 +96,7 @@ function CrItemsPage({ projectId, panels, onChanged }) {
   </div></div>;
 }
 
-function ProjectMarkupPage({ projectId, panels, onChanged }) {
+function ProjectMarkupPage({ projectId, panels, exchangeRate, onChanged }) {
   const [form, setForm] = useState({ markupP_pct: '', manpower_pct: '', markupM_pct: '' });
   const [panelEdits, setPanelEdits] = useState({});
   const [saving, setSaving] = useState(false);
@@ -106,8 +107,9 @@ function ProjectMarkupPage({ projectId, panels, onChanged }) {
     markupM_pct: Number(form.markupM_pct) || 0,
   };
   const previewItem = (item, markupValues) => {
+    markupValues = { ...item, ...markupValues };
     const qty = Number(item.qty) || 1;
-    const base = (Number(item.base_price_usd) || 0) * qty;
+    const base = (Number(item.base_price_usd) || (Number(item.base_price_euro) || 0) * (Number(exchangeRate) || 1.18)) * qty;
     const afterDiscount = base * (1 - (Number(item.discount_pct) || 0) / 100);
     const productMarkup = afterDiscount * markupValues.markupP_pct / 100;
     const manpower = afterDiscount * markupValues.manpower_pct / 100;
@@ -120,17 +122,24 @@ function ProjectMarkupPage({ projectId, panels, onChanged }) {
     for (const key of Object.keys(sum)) sum[key] += amounts[key];
     return sum;
   }, { markupP_pct: 0, manpower_pct: 0, markupM_pct: 0, total: 0 });
-  const projectAmounts = previewAmounts(flattenProjectItems(panels), values);
+  const currentRates = items => Object.fromEntries(['markupP_pct','manpower_pct','markupM_pct'].map(key => {
+    const rates = [...new Set(items.map(item => Number(item[key]) || 0))].sort((a,b) => a-b);
+    return [key, rates.length > 1 ? `${rates[0]}–${rates[rates.length-1]}% (mixed)` : `${rates[0] || 0}%`];
+  }));
+  const projectAmounts = previewAmounts(panels.flatMap(panel => flattenProjectItems([panel]).map(item => ({ ...item, qty: (Number(item.qty) || 1) * (Number(panel.quantity) || 1) }))), values);
   const rows = panels.map(panel => {
-    const items = (panel.divisions || []).flatMap(d => d.items || []);
+    const items = (panel.divisions || []).flatMap(d => d.items || []).map(item => ({ ...item, qty: (Number(item.qty) || 1) * (Number(panel.quantity) || 1) }));
     const edit = panelEdits[panel.id] || {};
-    const panelValues = Object.fromEntries(['markupP_pct','manpower_pct','markupM_pct'].map(key => [key,
-      edit[key] !== undefined && edit[key] !== '' ? Number(edit[key]) || 0 : values[key]]));
-    const panelHasValues = ['markupP_pct','manpower_pct','markupM_pct'].every(key =>
-      (edit[key] !== undefined && edit[key] !== '') || form[key] !== '');
+    const panelValues = Object.fromEntries(['markupP_pct','manpower_pct','markupM_pct'].flatMap(key => {
+      const value = edit[key] !== undefined && edit[key] !== '' ? edit[key] : form[key];
+      return value !== '' ? [[key, Number(value) || 0]] : [];
+    }));
+    const panelHasValues = Object.keys(panelValues).length > 0;
+    const currentAmounts = previewAmounts(items, {});
+    const rates = currentRates(items);
     const amounts = previewAmounts(items, panelValues);
     return { panel, items, current: Number(panel.total_price) || 0, panelHasValues, panelValues,
-      amounts, preview: amounts.total };
+      amounts, currentAmounts, rates, preview: amounts.total };
   });
   const hasValues = Object.values(form).every(value => value !== '');
   const apply = async () => {
@@ -155,14 +164,14 @@ function ProjectMarkupPage({ projectId, panels, onChanged }) {
     finally { setSavingPanel(null); }
   };
   return <div className="card"><div className="card-body">
-    <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Enter the new project markup values to preview every panel and the full project before applying.</div>
+    <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>Review current markup and prices for each panel below. Enter new percentages to preview an increase or decrease; blank fields keep the current values when applying to a panel.</div>
     <div className="form-row">{[['markupP_pct','Product Markup %'],['manpower_pct','Manpower %'],['markupM_pct','Manpower Markup %']].map(([key,label]) => <div className="form-group" key={key}><label className="form-label">{label}</label><input type="number" min="0" step="0.1" className="form-input" value={form[key]} onChange={e => setForm(v => ({ ...v, [key]: e.target.value }))} /><div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>${projectAmounts[key].toFixed(2)}</div></div>)}</div>
     <button className="btn btn-primary" style={{ marginTop: 10 }} disabled={!hasValues || saving} onClick={apply}>{saving ? 'Applying...' : 'Apply Markup to Entire Project'}</button>
     <div style={{ fontSize: 12, fontWeight: 700, marginTop: 20, marginBottom: 6 }}>Try and apply markup one panel at a time</div>
-    <div style={{ overflowX: 'auto', marginTop: 8 }}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}><thead><tr style={{ borderBottom: '2px solid var(--border)' }}><th style={{ textAlign: 'left', padding: 8 }}>Panel</th><th>Current Price</th><th>Product Mk%</th><th>Manpower%</th><th>Manpower Mk%</th><th>New Price</th><th>Change</th><th></th></tr></thead><tbody>
+    <div style={{ overflowX: 'auto', marginTop: 8 }}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}><thead><tr style={{ borderBottom: '2px solid var(--border)' }}><th style={{ textAlign: 'left', padding: 8 }}>Panel</th><th>Current Price</th><th>Product Markup</th><th>Manpower</th><th>Manpower Markup</th><th>New Price</th><th>Change</th><th></th></tr></thead><tbody>
       {rows.map(row => <tr key={row.panel.id} style={{ borderBottom: '1px solid var(--border)' }}>
-        <td style={{ padding: 8 }}>#{row.panel.panel_number} {row.panel.panel_name}</td><td style={{ textAlign: 'right' }}>${row.current.toFixed(2)}</td>
-        {['markupP_pct','manpower_pct','markupM_pct'].map(key => <td key={key} style={{ padding: 4 }}><input type="number" min="0" step="0.1" className="form-input" style={{ width: 72, padding: '4px 6px' }} value={panelEdits[row.panel.id]?.[key] ?? ''} placeholder={form[key] !== '' ? form[key] : '%'} onChange={e => setPanelEdits(v => ({ ...v, [row.panel.id]: { ...(v[row.panel.id] || {}), [key]: e.target.value } }))} /><div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>${row.amounts[key].toFixed(2)}</div></td>)}
+        <td style={{ padding: 8 }}>#{row.panel.panel_number} {row.panel.panel_name}<div style={{ fontSize: 12 }}>Quantity: {row.panel.quantity || 1}</div></td><td style={{ textAlign: 'right' }}>${row.current.toFixed(2)}</td>
+        {['markupP_pct','manpower_pct','markupM_pct'].map(key => <td key={key} style={{ padding: 10 }}><div style={{ color: 'var(--text)', marginBottom: 8 }}>Current: <b>{row.rates[key]}</b><div style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>${row.currentAmounts[key].toFixed(2)}</div></div><input type="number" min="0" step="0.1" className="form-input" style={{ width: 110, padding: '6px 8px' }} value={panelEdits[row.panel.id]?.[key] ?? ''} placeholder={form[key] !== '' ? form[key] : 'New %'} onChange={e => setPanelEdits(v => ({ ...v, [row.panel.id]: { ...(v[row.panel.id] || {}), [key]: e.target.value } }))} /><div style={{ fontSize: 13, color: 'var(--text)', marginTop: 6, fontFamily: 'var(--font-mono)' }}>Preview: ${row.amounts[key].toFixed(2)}</div></td>)}
         <td style={{ textAlign: 'right', color: 'var(--accent2)' }}>{row.panelHasValues ? `$${row.preview.toFixed(2)}` : '—'}</td><td style={{ textAlign: 'right', color: row.preview >= row.current ? 'var(--success)' : 'var(--danger)' }}>{row.panelHasValues ? `${row.preview >= row.current ? '+' : '-'}$${Math.abs(row.preview-row.current).toFixed(2)}` : '—'}</td>
         <td style={{ padding: 4 }}><button className="btn btn-sm btn-primary" disabled={!row.panelHasValues || savingPanel === row.panel.id} onClick={() => applyPanel(row)}>{savingPanel === row.panel.id ? 'Applying...' : 'Apply Panel'}</button></td>
       </tr>)}
@@ -175,6 +184,8 @@ function ProjectMarkupPage({ projectId, panels, onChanged }) {
 
 export default function CrmProjectPage() {
   const navigate = useNavigate();
+  const [reviewNote, setReviewNote] = useState('');
+  const [reviewSaving, setReviewSaving] = useState(false);
   const { isRole } = useAuth();
   const {
     project, setProject, panels, loading,divisionTypes,
@@ -212,10 +223,31 @@ export default function CrmProjectPage() {
 
   if (loading) return <div className="page"><div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /> Loading CRM...</div></div>;
   if (!project) return <div className="page"><div className="empty"><p>Project not found</p></div></div>;
-  const commercialLocked = project.client_approval === 'approved' && !isRole('owner','head_engineer');
+  const commercialLocked = project.status === 'cancelled' || (!isRole('owner','head_engineer') && (project.client_approval === 'approved' || (project.ready_for_review && project.admin_approval === 'pending')));
 
+  const decideReview = async status => {
+    if (['recheck','cancelled'].includes(status) && !reviewNote.trim()) return toast.error('Enter notes for the engineer first');
+    setReviewSaving(true);
+    try { await api.patch(`/projects/${project.id}/admin-approval`, { admin_approval: status, rejection_note: reviewNote.trim() || null }); setReviewNote(''); await load(); toast.success('Engineer notified of review decision'); }
+    catch (e) { toast.error(e.response?.data?.error || e.message); }
+    finally { setReviewSaving(false); }
+  };
   return (
     <div className="page">
+      <ReviewHistory projectId={project.id} reviewStatus={project.admin_approval} submitted={project.ready_for_review} />
+      <section className="workflow-card" aria-label="Management review">
+        <strong>Management review: {project.admin_approval || 'pending'}{project.ready_for_review && project.admin_approval === 'pending' ? ' — awaiting approval' : ''}</strong>
+        {project.rejection_note && <p style={{ whiteSpace: 'pre-wrap' }}>{project.rejection_note}</p>}
+        {isRole('owner','head_engineer') && <>
+          <textarea className="form-input" value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="Notes for the engineer (required for recheck or cancellation)" aria-label="Management review notes" />
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button className="btn btn-success" disabled={reviewSaving || !project.ready_for_review || project.status === 'cancelled'} onClick={() => decideReview('approved')}>Approve</button>
+            <button className="btn btn-secondary" disabled={reviewSaving} onClick={() => decideReview('recheck')}>Request recheck</button>
+            <button className="btn btn-danger" disabled={reviewSaving} onClick={() => decideReview('cancelled')}>Cancel project</button>
+            {project.status === 'cancelled' && <button className="btn btn-secondary" disabled={reviewSaving} onClick={() => decideReview('pending')}>Reopen for review</button>}
+          </div>
+        </>}
+      </section>
       <div className="page-header">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -247,15 +279,15 @@ export default function CrmProjectPage() {
           {!commercialLocked && <button className="btn btn-primary" onClick={() => setShowAddPanel(true)}>+ Add Panel</button>}
           <a href={`/api/export/crm/${project.id}`} className="btn btn-secondary" style={{ textDecoration: 'none' }}>📥 CSV</a>
           {!commercialLocked && <button className="btn btn-secondary" onClick={openCopyPanel}>📋 Copy from existing</button>}
-          <button className="btn btn-success" onClick={handleReadyForReview}
+          <button className="btn btn-success" onClick={handleReadyForReview} disabled={project.ready_for_review || project.status === 'cancelled'}
             style={{ background: 'var(--success)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-            ✅ Ready for Review
+            ✅ Submit for approval
           </button>
         </div>
       </div>
 
       {commercialLocked && <div className="tint-box" style={{ marginBottom: 12, borderColor:'var(--accent2)', color:'var(--accent2)' }}>
-        🔒 Client-approved quotation: panels, quantities, items, and prices are read-only. Only Owner can make commercial changes. Progress and execution tracking remain available.
+        🔒 {project.status === 'cancelled' ? 'Canceled project is read-only until management reopens it.' : project.ready_for_review && project.admin_approval === 'pending' ? 'Submitted project is read-only while awaiting management review. A recheck unlocks editing.' : 'Client-approved quotation is read-only.'}
       </div>}
 
       <div style={{ display: 'flex', gap: 0, marginBottom: 4, borderBottom: '1px solid var(--border)', flexWrap: 'wrap', overflowX: 'auto' }}>
@@ -433,7 +465,7 @@ export default function CrmProjectPage() {
       )}
 
       {activeTab === 'cr-items' && isRole('owner','head_engineer') && <CrItemsPage projectId={project.id} panels={panels} onChanged={load} />}
-      {activeTab === 'markup' && isRole('owner','head_engineer') && <ProjectMarkupPage projectId={project.id} panels={panels} onChanged={load} />}
+      {activeTab === 'markup' && isRole('owner','head_engineer') && <ProjectMarkupPage exchangeRate={project.exchange_rate_eur_usd} projectId={project.id} panels={panels} onChanged={load} />}
 
       {isRole('owner','head_engineer') && selectedItems.size > 0 && (
         <div style={{

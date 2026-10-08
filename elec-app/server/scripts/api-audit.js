@@ -38,6 +38,7 @@ async function main() {
   pool = require('../db/connection');
   const app = express();
   app.use(express.json());
+  app.use(require('cookie-parser')());
   app.use('/api', routes);
   app.use(express.static(path.join(__dirname, '../../client/dist')));
   app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../../client/dist/index.html')));
@@ -45,15 +46,20 @@ async function main() {
   server = app.listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
   const root = 'http://127.0.0.1:' + server.address().port + '/api';
-  const [[owner]] = await pool.query("SELECT id FROM workers WHERE role='owner' LIMIT 1");
+  const [[owner]] = await pool.query("SELECT id,password_hash FROM workers WHERE role='owner' LIMIT 1");
   if (!owner) throw Error('Audit requires an existing local owner account');
-  const token = jwt.sign({ id: owner.id }, require('../controllers/authController').JWT_SECRET, { expiresIn: '15m' });
+  const token = jwt.sign({ id: owner.id, credential: require('../utils/accountSecurity').passwordFingerprint(owner.password_hash) }, require('../controllers/authController').JWT_SECRET, { expiresIn: '15m' });
   async function request(method, url, body, label = url, authToken = token) {
     const response = await fetch(root + url, { method, headers: { ...(authToken ? { Authorization: 'Bearer ' + authToken } : {}), 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }), redirect: 'manual', signal: AbortSignal.timeout(20000) });
     const raw = await response.text();
     let data; try { data = JSON.parse(raw); } catch { data = {}; }
     results.push({ method, route: label, status: response.status, ...(response.status >= 400 ? { error: data.error || 'Non-JSON error', code: data.code } : {}) });
     return data;
+  }
+  const dashboard = await request('GET', '/dashboard');
+  if (!dashboard.kpis || !Array.isArray(dashboard.activity)) throw Error('Dashboard response is incomplete');
+  for (const activity of dashboard.activity) {
+    if (!/^\/projects\/\d+\/crm$/.test(activity.link)) throw Error('Dashboard activity links to an unsupported project page');
   }
   const [[project]] = await pool.query('SELECT id FROM projects WHERE deleted_at IS NULL ORDER BY id DESC LIMIT 1');
   const [[panel]] = await pool.query('SELECT id FROM project_crm_panels WHERE project_id=? LIMIT 1', [project.id]);
@@ -75,7 +81,7 @@ async function main() {
   }
   for (const role of ['head_engineer', 'engineer', 'accounting', 'stock_manager', 'secretary', 'technician']) {
     const [inserted] = await pool.execute('INSERT INTO workers(name,role,email,password_hash) SELECT ?,?,?,password_hash FROM workers WHERE id=?', ['Audit ' + role, role, role + '@audit.example.invalid', owner.id]);
-    const roleToken = jwt.sign({ id: inserted.insertId }, require('../controllers/authController').JWT_SECRET, { expiresIn: '15m' });
+    const roleToken = jwt.sign({ id: inserted.insertId, credential: require('../utils/accountSecurity').passwordFingerprint(owner.password_hash) }, require('../controllers/authController').JWT_SECRET, { expiresIn: '15m' });
     for (const layer of routes.stack.filter(l => l.route?.methods.get)) {
       const route = layer.route.path;
       if (route.startsWith('/onedrive/') && route !== '/onedrive/status' || route.includes('/download')) continue;
@@ -185,7 +191,7 @@ async function main() {
 main().catch(error => { console.error('API audit failed:', error.message || error.code || error.name); process.exitCode = 1; }).finally(async () => {
   fs.writeFileSync(path.join(__dirname, '../../../scratch/api-audit-results.json'), JSON.stringify({ timestamp: new Date().toISOString(), migratedCopy: process.argv.includes('--migrate-copy'), completed: !process.exitCode, total: results.length, serverFailures: results.filter(r => r.status >= 500), results }, null, 2));
   if (server) await new Promise(resolve => server.close(resolve));
-  if (pool) await pool.end();
+  if (pool) { await require('../middleware/projectReview').closeReviewLocks(); await pool.end(); }
   if (connection) {
     if (/^elec_app_audit_\d+$/.test(target) && target !== source) await connection.query('DROP DATABASE IF EXISTS ' + quote(target));
     await connection.end();

@@ -1,11 +1,13 @@
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const db     = require('../db/connection');
+const { canManageAccount, validPassword, passwordFingerprint, secureCookie } = require('../utils/accountSecurity');
 const { ROLE_PERMISSIONS } = require('../utils/rolePolicy');
 
-const JWT_SECRET  = process.env.JWT_SECRET || (() => {
-  console.warn('\x1b[33m[SECURITY] ⚠️ JWT_SECRET not set in .env — using insecure fallback. Set JWT_SECRET in .env for production.\x1b[0m');
-  return 'elec-app-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
+  if (process.env.NODE_ENV === 'production') throw new Error('JWT_SECRET is required in production');
+  console.warn('[SECURITY] JWT_SECRET is missing; sessions will expire on server restart.');
+  return require('crypto').randomBytes(48).toString('hex');
 })();
 const JWT_EXPIRES = '12h'; // session lasts 12 hours
 
@@ -44,6 +46,7 @@ async function login(req, res, next) {
 
     // Build JWT payload
     const payload = {
+      credential: passwordFingerprint(worker.password_hash),
       id:   worker.id,
       name: worker.name,
       role: worker.role,
@@ -55,7 +58,7 @@ async function login(req, res, next) {
     // Set HttpOnly cookie (secure in production)
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.COOKIE_SECURE === 'true',
+      secure: secureCookie(),
       sameSite: 'lax',
       maxAge: 12 * 60 * 60 * 1000, // 12 hours
     });
@@ -87,9 +90,10 @@ async function register(req, res, next) {
     if (!name || !email || !role || !password) {
       return res.status(400).json({ error: 'name, email, role, password are required' });
     }
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    if (!validPassword(password)) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters and at most 72 UTF-8 bytes' });
     }
+    if (!canManageAccount(req.worker.role, role)) return res.status(403).json({ error: 'Only an owner can manage owner accounts' });
     const validRoles = ['owner','head_engineer','stock_manager','accounting','engineer','secretary','technician'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
@@ -134,8 +138,8 @@ async function changePassword(req, res, next) {
     if (!current_password || !new_password) {
       return res.status(400).json({ error: 'current_password and new_password required' });
     }
-    if (new_password.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    if (!validPassword(new_password)) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters and at most 72 UTF-8 bytes' });
     }
 
     const [rows] = await db.execute('SELECT * FROM workers WHERE id=?', [workerId]);
@@ -147,7 +151,8 @@ async function changePassword(req, res, next) {
     const hash = await bcrypt.hash(new_password, 10);
     await db.execute('UPDATE workers SET password_hash=? WHERE id=?', [hash, workerId]);
 
-    res.json({ message: 'Password changed successfully' });
+    res.clearCookie('token', { httpOnly: true, secure: secureCookie(), sameSite: 'lax' });
+    res.json({ message: 'Password changed successfully. Please log in again.' });
   } catch (err) {
     console.error('[Auth] ❌ changePassword:', err.message);
     next(err);
@@ -164,9 +169,12 @@ async function setPassword(req, res, next) {
     if (!worker_id || !new_password) {
       return res.status(400).json({ error: 'worker_id and new_password required' });
     }
-    if (new_password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    if (!validPassword(new_password)) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters and at most 72 UTF-8 bytes' });
     }
+    const [[target]] = await db.execute('SELECT role FROM workers WHERE id=?', [worker_id]);
+    if (!target) return res.status(404).json({ error: 'Worker not found' });
+    if (!canManageAccount(req.worker.role, target.role)) return res.status(403).json({ error: 'Only an owner can reset an owner password' });
     const hash = await bcrypt.hash(new_password, 10);
     await db.execute('UPDATE workers SET password_hash=? WHERE id=?', [hash, worker_id]);
     res.json({ message: 'Password reset successfully' });
@@ -181,7 +189,7 @@ async function setPassword(req, res, next) {
  */
 async function logout(req, res, next) {
   try {
-    res.clearCookie('token', { httpOnly: true, secure: process.env.COOKIE_SECURE === 'true', sameSite: 'lax' });
+    res.clearCookie('token', { httpOnly: true, secure: secureCookie(), sameSite: 'lax' });
     res.json({ message: 'Logged out' });
   } catch (err) { next(err); }
 }

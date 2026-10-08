@@ -16,6 +16,7 @@ function engineerProjectFilter(userId) {
  * Adjust reserved_qty for a product (reserve or release).
  */
 async function updateReservedQty(req, res, next) {
+  let connection;
   try {
     const { productId } = req.params;
     const { action, qty } = req.body;
@@ -23,22 +24,28 @@ async function updateReservedQty(req, res, next) {
     if (!['reserve', 'release'].includes(action)) {
       return res.status(400).json({ error: 'Action must be "reserve" or "release"' });
     }
-    if (!Number.isInteger(qty) || qty < 1) {
+    if (!Number.isSafeInteger(qty) || qty < 1) {
       return res.status(400).json({ error: 'Qty must be a positive integer' });
     }
 
-    const [products] = await db.execute(
-      'SELECT id, stock_qty, reserved_qty FROM products WHERE id = ?',
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+    const [products] = await connection.execute(
+      'SELECT id, stock_qty, reserved_qty FROM products WHERE id = ? FOR UPDATE',
       [productId]
     );
-    if (!products.length) return res.status(404).json({ error: 'Product not found' });
+    if (!products.length) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Product not found' });
+    }
 
     const product = products[0];
-    let newReserved = product.reserved_qty;
+    let newReserved = Number(product.reserved_qty);
 
     if (action === 'reserve') {
       newReserved += qty;
       if (newReserved > product.stock_qty) {
+        await connection.rollback();
         return res.status(400).json({
           error: `Cannot reserve ${qty} more — only ${Math.max(0, product.stock_qty - product.reserved_qty)} available`
         });
@@ -47,9 +54,10 @@ async function updateReservedQty(req, res, next) {
       newReserved = Math.max(0, newReserved - qty);
     }
 
-    await db.execute('UPDATE products SET reserved_qty = ? WHERE id = ?', [newReserved, productId]);
-    await db.execute(`INSERT INTO reservation_history(product_id,old_qty,new_qty,change_qty,reason,changed_by)
+    await connection.execute('UPDATE products SET reserved_qty = ? WHERE id = ?', [newReserved, productId]);
+    await connection.execute(`INSERT INTO reservation_history(product_id,old_qty,new_qty,change_qty,reason,changed_by)
       VALUES(?,?,?,?,?,?)`, [productId, product.reserved_qty, newReserved, newReserved-product.reserved_qty, action === 'reserve' ? 'manual_reserve' : 'manual_release', req.worker.id]);
+    await connection.commit();
 
     res.json({
       product_id: parseInt(productId),
@@ -57,8 +65,11 @@ async function updateReservedQty(req, res, next) {
       available_qty: product.stock_qty - newReserved,
     });
   } catch (err) {
+    if (connection) await connection.rollback();
     console.error('[Reservations] ❌ updateReservedQty:', err.message);
     next(err);
+  } finally {
+    if (connection) connection.release();
   }
 }
 

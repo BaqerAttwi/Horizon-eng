@@ -4,6 +4,7 @@ import { getErrorMessage } from './errorMessage';
 
 const api = axios.create({
   baseURL: '/api',
+  withCredentials: true,
   timeout: 300000, // 5 minutes — large Excel imports (11k+ rows) need this
 });
 

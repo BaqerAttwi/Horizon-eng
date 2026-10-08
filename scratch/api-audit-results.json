@@ -1,8 +1,15 @@
 {
-  "timestamp": "2026-09-29T18:15:51.160Z",
-  "total": 670,
+  "timestamp": "2026-10-08T20:21:08.120Z",
+  "migratedCopy": true,
+  "completed": true,
+  "total": 691,
   "serverFailures": [],
   "results": [
+    {
+      "method": "GET",
+      "route": "/dashboard",
+      "status": 200
+    },
     {
       "method": "GET",
       "route": "/health",
@@ -71,6 +78,16 @@
     {
       "method": "GET",
       "route": "/projects/:id",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/email-deliveries",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/review-history",
       "status": 200
     },
     {
@@ -363,6 +380,16 @@
     {
       "method": "GET",
       "route": "/projects/:id [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/email-deliveries [role: head_engineer]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/review-history [role: head_engineer]",
       "status": 200
     },
     {
@@ -661,6 +688,18 @@
     },
     {
       "method": "GET",
+      "route": "/projects/:projectId/email-deliveries [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/review-history [role: engineer]",
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
+    },
+    {
+      "method": "GET",
       "route": "/projects/:projectId/stage-history [role: engineer]",
       "status": 403,
       "error": "Access denied — you are not assigned to this project"
@@ -750,7 +789,8 @@
     {
       "method": "GET",
       "route": "/analytics/projects/:projectId/team [role: engineer]",
-      "status": 200
+      "status": 403,
+      "error": "Access denied — you are not assigned to this project"
     },
     {
       "method": "GET",
@@ -793,7 +833,8 @@
     {
       "method": "GET",
       "route": "/item-groups/:id/items [role: engineer]",
-      "status": 200
+      "status": 404,
+      "error": "Group not found or access denied"
     },
     {
       "method": "GET",
@@ -981,6 +1022,16 @@
     },
     {
       "method": "GET",
+      "route": "/projects/:projectId/email-deliveries [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/review-history [role: accounting]",
+      "status": 200
+    },
+    {
+      "method": "GET",
       "route": "/projects/:projectId/stage-history [role: accounting]",
       "status": 200
     },
@@ -1104,7 +1155,8 @@
     {
       "method": "GET",
       "route": "/item-groups/:id/items [role: accounting]",
-      "status": 200
+      "status": 404,
+      "error": "Group not found or access denied"
     },
     {
       "method": "GET",
@@ -1288,6 +1340,18 @@
     },
     {
       "method": "GET",
+      "route": "/projects/:projectId/email-deliveries [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/review-history [role: stock_manager]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
       "route": "/projects/:projectId/stage-history [role: stock_manager]",
       "status": 403,
       "error": "Access denied - your role cannot access projects"
@@ -1377,7 +1441,8 @@
     {
       "method": "GET",
       "route": "/analytics/projects/:projectId/team [role: stock_manager]",
-      "status": 200
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
     },
     {
       "method": "GET",
@@ -1421,7 +1486,8 @@
     {
       "method": "GET",
       "route": "/item-groups/:id/items [role: stock_manager]",
-      "status": 200
+      "status": 404,
+      "error": "Group not found or access denied"
     },
     {
       "method": "GET",
@@ -1610,6 +1676,18 @@
     },
     {
       "method": "GET",
+      "route": "/projects/:projectId/email-deliveries [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/review-history [role: secretary]",
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
+    },
+    {
+      "method": "GET",
       "route": "/projects/:projectId/stage-history [role: secretary]",
       "status": 403,
       "error": "Access denied - your role cannot access projects"
@@ -1699,7 +1777,8 @@
     {
       "method": "GET",
       "route": "/analytics/projects/:projectId/team [role: secretary]",
-      "status": 200
+      "status": 403,
+      "error": "Access denied - your role cannot access projects"
     },
     {
       "method": "GET",
@@ -1742,7 +1821,8 @@
     {
       "method": "GET",
       "route": "/item-groups/:id/items [role: secretary]",
-      "status": 200
+      "status": 404,
+      "error": "Group not found or access denied"
     },
     {
       "method": "GET",
@@ -1935,6 +2015,18 @@
     },
     {
       "method": "GET",
+      "route": "/projects/:projectId/email-deliveries [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/review-history [role: technician]",
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
+    },
+    {
+      "method": "GET",
       "route": "/projects/:projectId/stage-history [role: technician]",
       "status": 403,
       "error": "Access denied — technicians can only use the Execution tab"
@@ -2024,7 +2116,8 @@
     {
       "method": "GET",
       "route": "/analytics/projects/:projectId/team [role: technician]",
-      "status": 200
+      "status": 403,
+      "error": "Access denied — technicians can only use the Execution tab"
     },
     {
       "method": "GET",
@@ -2068,7 +2161,8 @@
     {
       "method": "GET",
       "route": "/item-groups/:id/items [role: technician]",
-      "status": 200
+      "status": 404,
+      "error": "Group not found or access denied"
     },
     {
       "method": "GET",
@@ -2182,6 +2276,12 @@
       "route": "/procurement/projects [role: technician]",
       "status": 403,
       "error": "Access denied — requires: owner or head_engineer or stock_manager"
+    },
+    {
+      "method": "POST",
+      "route": "/assistant/chat [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
     },
     {
       "method": "POST",
@@ -2408,6 +2508,24 @@
     {
       "method": "PATCH",
       "route": "/projects/:projectId/stage [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/email-deliveries [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "POST",
+      "route": "/email-deliveries/:deliveryId/retry [unauthenticated]",
+      "status": 401,
+      "error": "Authentication required — please log in"
+    },
+    {
+      "method": "GET",
+      "route": "/projects/:projectId/review-history [unauthenticated]",
       "status": 401,
       "error": "Authentication required — please log in"
     },
@@ -3055,6 +3173,12 @@
     },
     {
       "method": "POST",
+      "route": "/assistant/chat [invalid request]",
+      "status": 400,
+      "error": "Enter a message between 1 and 1000 characters."
+    },
+    {
+      "method": "POST",
       "route": "/upload [invalid request]",
       "status": 400,
       "error": "No file uploaded"
@@ -3068,8 +3192,8 @@
     {
       "method": "PATCH",
       "route": "/products/:id [invalid request]",
-      "status": 400,
-      "error": "Nothing to update"
+      "status": 404,
+      "error": "Product not found"
     },
     {
       "method": "POST",
@@ -3109,8 +3233,8 @@
     {
       "method": "PATCH",
       "route": "/workers/:id [invalid request]",
-      "status": 400,
-      "error": "Nothing to update"
+      "status": 404,
+      "error": "Worker not found"
     },
     {
       "method": "DELETE",
@@ -3158,13 +3282,13 @@
       "method": "PATCH",
       "route": "/projects/:id [invalid request]",
       "status": 404,
-      "error": "Project not found. Refresh the project list and try again."
+      "error": "Project not found"
     },
     {
       "method": "PATCH",
       "route": "/projects/:id/admin-approval [invalid request]",
       "status": 400,
-      "error": "admin_approval must be pending, approved, or rejected"
+      "error": "Invalid admin approval status"
     },
     {
       "method": "PATCH",
@@ -3180,6 +3304,12 @@
     },
     {
       "method": "POST",
+      "route": "/email-deliveries/:deliveryId/retry [invalid request]",
+      "status": 409,
+      "error": "Only failed emails can be retried"
+    },
+    {
+      "method": "POST",
       "route": "/projects/:projectId/quotation-revisions [invalid request]",
       "status": 404,
       "error": "Project not found"
@@ -3188,7 +3318,7 @@
       "method": "POST",
       "route": "/projects/:projectId/quotation-revisions/:revisionId/restore [invalid request]",
       "status": 404,
-      "error": "Quotation revision not found"
+      "error": "Project not found"
     },
     {
       "method": "DELETE",
@@ -3199,108 +3329,110 @@
     {
       "method": "POST",
       "route": "/projects/:id/items [invalid request]",
-      "status": 400,
-      "error": "product_id required"
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "DELETE",
       "route": "/projects/:id/items/:itemId [invalid request]",
-      "status": 200
+      "status": 404,
+      "error": "Resource not found in this project"
     },
     {
       "method": "POST",
       "route": "/projects/:projectId/panels [invalid request]",
-      "status": 400,
-      "error": "panel_number required"
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "POST",
       "route": "/projects/:projectId/panels/copy-from [invalid request]",
-      "status": 400,
-      "error": "sourceProjectId and sourcePanelId required"
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "PATCH",
       "route": "/projects/:projectId/panels/:panelId [invalid request]",
       "status": 404,
-      "error": "Panel not found in this project"
+      "error": "Resource not found in this project"
     },
     {
       "method": "PATCH",
       "route": "/projects/:projectId/panels/:panelId/complete [invalid request]",
       "status": 404,
-      "error": "Panel not found"
+      "error": "Resource not found in this project"
     },
     {
       "method": "DELETE",
       "route": "/projects/:projectId/panels/:panelId [invalid request]",
       "status": 404,
-      "error": "Panel not found"
+      "error": "Resource not found in this project"
     },
     {
       "method": "POST",
       "route": "/projects/:projectId/panels/:panelId/divisions [invalid request]",
       "status": 404,
-      "error": "Panel not found"
+      "error": "Resource not found in this project"
     },
     {
       "method": "PATCH",
       "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId [invalid request]",
       "status": 404,
-      "error": "Panel not found"
+      "error": "Resource not found in this project"
     },
     {
       "method": "DELETE",
       "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId [invalid request]",
       "status": 404,
-      "error": "Panel not found"
+      "error": "Resource not found in this project"
     },
     {
       "method": "POST",
       "route": "/projects/:projectId/manual-products [invalid request]",
-      "status": 400,
-      "error": "name required"
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "DELETE",
       "route": "/projects/:projectId/manual-products/:productId [invalid request]",
-      "status": 200
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "POST",
       "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items [invalid request]",
       "status": 404,
-      "error": "Division not found"
+      "error": "Resource not found in this project"
     },
     {
       "method": "PATCH",
       "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId [invalid request]",
       "status": 404,
-      "error": "Division not found"
+      "error": "Resource not found in this project"
     },
     {
       "method": "DELETE",
       "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items/:itemId [invalid request]",
       "status": 404,
-      "error": "Division not found"
+      "error": "Resource not found in this project"
     },
     {
       "method": "POST",
       "route": "/projects/:projectId/items/bulk-update [invalid request]",
-      "status": 400,
-      "error": "item_ids array and changes object required"
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "POST",
       "route": "/projects/:projectId/items/bulk-replace [invalid request]",
-      "status": 400,
-      "error": "item_ids array and product_id required"
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "POST",
       "route": "/projects/:projectId/items/apply-brand-discount [invalid request]",
-      "status": 400,
-      "error": "brand and discount_pct required"
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "POST",
@@ -3338,13 +3470,13 @@
       "method": "POST",
       "route": "/price-changes [invalid request]",
       "status": 400,
-      "error": "item_id required"
+      "error": "Project is required"
     },
     {
       "method": "PATCH",
       "route": "/price-changes/:requestId/approve [invalid request]",
       "status": 404,
-      "error": "Request not found or already processed"
+      "error": "Resource not found in this project"
     },
     {
       "method": "PATCH",
@@ -3386,42 +3518,43 @@
       "method": "PATCH",
       "route": "/projects/:projectId/execution/panels/:panelId [invalid request]",
       "status": 404,
-      "error": "Panel not found in this project"
+      "error": "Resource not found in this project"
     },
     {
       "method": "PATCH",
       "route": "/projects/:projectId/execution/items/:itemId [invalid request]",
       "status": 404,
-      "error": "Item not found in this project"
+      "error": "Resource not found in this project"
     },
     {
       "method": "POST",
       "route": "/projects/:projectId/technicians [invalid request]",
-      "status": 400,
-      "error": "worker_id required"
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "DELETE",
       "route": "/projects/:projectId/technicians/:workerId [invalid request]",
-      "status": 200
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "POST",
       "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances [invalid request]",
-      "status": 400,
-      "error": "item_group_id required"
+      "status": 404,
+      "error": "Resource not found in this project"
     },
     {
       "method": "PATCH",
       "route": "/group-instances/:instanceId [invalid request]",
       "status": 404,
-      "error": "Group instance not found"
+      "error": "Resource not found in this project"
     },
     {
       "method": "DELETE",
       "route": "/group-instances/:instanceId [invalid request]",
       "status": 404,
-      "error": "Group instance not found"
+      "error": "Resource not found in this project"
     },
     {
       "method": "POST",
@@ -3444,14 +3577,14 @@
     {
       "method": "POST",
       "route": "/projects/:projectId/payments [invalid request]",
-      "status": 400,
-      "error": "amount must be greater than 0"
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "DELETE",
       "route": "/projects/:projectId/payments/:paymentId [invalid request]",
       "status": 404,
-      "error": "Payment not found"
+      "error": "Resource not found in this project"
     },
     {
       "method": "POST",
@@ -3502,14 +3635,14 @@
     {
       "method": "PATCH",
       "route": "/procurement/projects/:projectId/review [invalid request]",
-      "status": 400,
-      "error": "action must be approve or reject"
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "PATCH",
       "route": "/procurement/projects/:projectId/products/:productId/receive [invalid request]",
-      "status": 400,
-      "error": "quantity must be a positive whole number"
+      "status": 404,
+      "error": "Project not found"
     },
     {
       "method": "POST",
@@ -3524,7 +3657,8 @@
     {
       "method": "PATCH",
       "route": "/projects/28/admin-approval",
-      "status": 200
+      "status": 400,
+      "error": "Submit the project for review first"
     },
     {
       "method": "PATCH",
@@ -3534,7 +3668,8 @@
     {
       "method": "PATCH",
       "route": "/projects/28/stage",
-      "status": 200
+      "status": 400,
+      "error": "Owner or Head of Engineering approval is required before quotation"
     },
     {
       "method": "POST",
@@ -3548,12 +3683,12 @@
     },
     {
       "method": "GET",
-      "route": "/projects/28/quotation-revisions/13/snapshot",
+      "route": "/projects/28/quotation-revisions/12/snapshot",
       "status": 200
     },
     {
       "method": "POST",
-      "route": "/projects/28/quotation-revisions/13/restore",
+      "route": "/projects/28/quotation-revisions/12/restore",
       "status": 200
     },
     {

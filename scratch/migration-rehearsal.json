@@ -1,0 +1,11 @@
+{
+  "mode": "rehearsed",
+  "timestamp": "2026-10-03T22:59:44.445Z",
+  "tables": 36,
+  "rows": 39492,
+  "existingDataUnchanged": true,
+  "migrationAppliedTwice": true,
+  "integrityFailures": [],
+  "foreignKeysChecked": 67,
+  "orphans": []
+}

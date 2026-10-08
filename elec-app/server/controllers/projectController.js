@@ -1,10 +1,11 @@
+const { persistReview } = require('../middleware/projectReview');
 const { generateQuotationNumber } = require('../utils/quotationNumber');
 const db = require('../db/connection');
 const { logActivity } = require('./activityController');
 const { createNotification, notifyOwners, notifyRoles } = require('./notificationController');
 const { recalcPanelTotals } = require('../utils/pricing');
 
-const PRICE_FIELDS = ['total_cost','total_price','project_discount_amount','total_vat','total_with_vat','vat_pct','project_discount_pct','exchange_rate_eur_usd','total_paid','outstanding_balance'];
+const PRICE_FIELDS = ['total_cost','total_price','project_discount_amount','total_vat','total_with_vat','vat_pct','project_discount_pct','exchange_rate_eur_usd','total_paid','outstanding_balance','margin_warning_pct'];
 function hideProjectPricing(project) {
   const safe = { ...project };
   for (const field of PRICE_FIELDS) safe[field] = null;
@@ -228,8 +229,10 @@ async function updateProject(req, res, next) {
 
     const { project_name, quote_number, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, client_pdf_note, status, client_approval, client_rejection_note, admin_approval, rejection_note, total_panels, completed_panels, vat_pct, project_discount_pct, margin_warning_pct, payment_terms, onedrive_folder_link, payment_deadline } = req.body;
 
+    if (admin_approval !== undefined || rejection_note !== undefined) return res.status(400).json({ error: 'Use the admin approval action to record the decision and notify the engineer' });
     const ownerOnlyFields = {
       engineer_id,
+      client_approval,
       admin_approval,
       rejection_note,
       payment_deadline,
@@ -243,6 +246,7 @@ async function updateProject(req, res, next) {
 
     const [[existingProject]] = await db.execute('SELECT project_name, created_at FROM projects WHERE id=?', [req.params.id]);
     if (!existingProject) return res.status(404).json({ error: 'Project not found. Refresh the project list and try again.' });
+    if (status === 'cancelled') return res.status(400).json({ error: 'Use Cancel project with required notes' });
     const fields = [], params = [];
     if (project_name       !== undefined) { fields.push('project_name=?');    params.push(project_name); }
     if (quote_number       !== undefined) { fields.push('quote_number=?');    params.push(quote_number?.trim() || generateQuotationNumber(project_name || existingProject.project_name, req.params.id, existingProject.created_at)); }
@@ -259,7 +263,7 @@ async function updateProject(req, res, next) {
     if (rejection_note     !== undefined) { fields.push('rejection_note=?');  params.push(rejection_note); }
     if (total_panels       !== undefined) { fields.push('total_panels=?');    params.push(total_panels||0); }
     if (completed_panels   !== undefined) { fields.push('completed_panels=?'); params.push(completed_panels||0); }
-    if (req.body.ready_for_review !== undefined) { fields.push('ready_for_review=?'); params.push(req.body.ready_for_review ? 1 : 0); }
+    if (req.body.ready_for_review !== undefined) return res.status(400).json({ error: 'Use Submit for approval to change review status' });
     if (req.body.execution_deadline !== undefined) { fields.push('execution_deadline=?'); params.push(req.body.execution_deadline || null); }
     if (payment_deadline !== undefined) { fields.push('payment_deadline=?'); params.push(payment_deadline || null); }
     if (vat_pct !== undefined) { fields.push('vat_pct=?'); params.push(parseFloat(vat_pct) || 0); }
@@ -295,7 +299,7 @@ async function updateProject(req, res, next) {
     }
 
     const [rows] = await db.execute('SELECT * FROM projects WHERE id=?', [req.params.id]);
-    res.json(rows[0]);
+    res.json(req.worker.role === 'engineer' ? hideProjectPricing(rows[0]) : rows[0]);
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Quotation number already belongs to another project' });
     console.error('[Projects] ❌ update:', err.message); next(err);
@@ -334,6 +338,7 @@ async function addProjectItem(req, res, next) {
        JOIN products pr ON pi.product_id=pr.id WHERE pi.id=?`,
       [result.insertId]
     );
+    if (req.worker.role === 'engineer') { item[0].unit_cost = null; item[0].unit_price = null; }
     res.status(201).json(item[0]);
   } catch (err) { console.error('[Projects] ❌ addItem:', err.message); next(err); }
 }
@@ -369,9 +374,11 @@ async function markReadyForReview(req, res, next) {
     const { checkProjectAccess } = require('./crmController');
     const hasAccess = await checkProjectAccess(req, res, id);
     if (!hasAccess) return;
-    const [[project]] = await db.execute('SELECT id FROM projects WHERE id=? AND deleted_at IS NULL', [id]);
+    const [[project]] = await db.execute('SELECT id, admin_approval, status, ready_for_review FROM projects WHERE id=? AND deleted_at IS NULL', [id]);
     if (!project) return res.status(404).json({ error: 'Project not found' });
-    await db.execute('UPDATE projects SET ready_for_review=TRUE WHERE id=?', [id]);
+    if (project.status === 'cancelled' || project.admin_approval === 'cancelled') return res.status(400).json({ error: 'Management must reopen this canceled project first' });
+    if (project.ready_for_review) return res.status(409).json({ error: 'Project is already submitted or approved' });
+    await persistReview("UPDATE projects SET ready_for_review=TRUE, admin_approval='pending' WHERE id=?", [id], { projectId: id, action: 'submitted', status: 'pending', note: 'Submitted for management review', workerId: req.worker.id });
     await logActivity({ project_id: id, action: 'ready_for_review', field_name: 'ready_for_review', new_value: 'true', performed_by: req.worker.id });
     await notifyRoles(['owner','head_engineer'], 'status', `Ready for Review: Project #${id}`, `${req.worker.name} marked project as ready for review`, `/projects/${id}`);
     res.json({ message: 'Project marked as ready for review' });
@@ -381,17 +388,25 @@ async function markReadyForReview(req, res, next) {
 async function adminApproval(req, res, next) {
   try {
     const { admin_approval, rejection_note } = req.body;
-    if (!admin_approval || !['pending','approved','rejected'].includes(admin_approval)) {
-      return res.status(400).json({ error: 'admin_approval must be pending, approved, or rejected' });
+    if (!admin_approval || !['pending','approved','rejected','recheck','cancelled'].includes(admin_approval)) {
+      return res.status(400).json({ error: 'Invalid admin approval status' });
     }
-    const [[project]] = await db.execute('SELECT id FROM projects WHERE id=? AND deleted_at IS NULL', [req.params.id]);
+    const note = typeof rejection_note === 'string' ? rejection_note.trim() : '';
+    if (['recheck','cancelled','rejected'].includes(admin_approval) && !note) return res.status(400).json({ error: 'Notes are required for recheck or cancellation' });
+    const [[project]] = await db.execute('SELECT * FROM projects WHERE id=? AND deleted_at IS NULL', [req.params.id]);
     if (!project) return res.status(404).json({ error: 'Project not found' });
-    await db.execute('UPDATE projects SET admin_approval=?, rejection_note=? WHERE id=?',
-      [admin_approval, rejection_note||null, req.params.id]);
+    if (project.status === 'cancelled' && admin_approval !== 'pending') return res.status(400).json({ error: 'Reopen the canceled project before recording another decision' });
+    if (admin_approval === 'approved' && !project.ready_for_review) return res.status(400).json({ error: 'Submit the project for review first' });
+    await persistReview(`UPDATE projects SET admin_approval=?, rejection_note=?,
+      ready_for_review=IF(? IN ('pending','recheck','cancelled','rejected'),FALSE,ready_for_review),
+      client_approval=IF(? IN ('pending','recheck','cancelled','rejected'),'pending',client_approval),
+      project_stage=IF(? IN ('recheck','rejected') AND project_stage IN ('quotation','approval'),'design',project_stage),
+      status=CASE WHEN ?='cancelled' THEN 'cancelled' WHEN status='cancelled' THEN 'draft' ELSE status END WHERE id=?`,
+      [admin_approval, note || null, admin_approval, admin_approval, admin_approval, admin_approval, req.params.id], { projectId: req.params.id, action: project.status === 'cancelled' && admin_approval === 'pending' ? 'reopened' : 'decision', status: admin_approval, note, workerId: req.worker.id });
     await recalcReservedQty();
-    logActivity({ project_id: req.params.id, action: 'admin_approval', field_name: 'admin_approval', old_value: 'pending', new_value: admin_approval, performed_by: req.worker.id });
+    logActivity({ project_id: req.params.id, action: 'admin_approval', field_name: 'admin_approval', old_value: project.admin_approval, new_value: admin_approval + (note ? ': ' + note : ''), performed_by: req.worker.id });
     const [rows] = await db.execute('SELECT * FROM projects WHERE id=?', [req.params.id]);
-    if (rows[0]?.engineer_id) await createNotification(rows[0].engineer_id, 'approval', `Project ${admin_approval}`, rows[0].project_name, `/projects/${req.params.id}`);
+    if (rows[0]?.engineer_id) await createNotification(rows[0].engineer_id, 'approval', `Project ${admin_approval}`, `${rows[0].project_name} — ${req.worker.name}: ${admin_approval}. ${note || (admin_approval === 'approved' ? 'You can now move the project to quotation.' : 'Awaiting management review.')}`,  `/projects/${req.params.id}`);
     if (admin_approval === 'approved') await notifyRoles(['stock_manager'], 'stock', `Approved project: ${rows[0].project_name}`, 'Review upcoming material demand', '/reservations');
     res.json(rows[0]);
   } catch (err) { console.error('[Projects] ❌ adminApproval:', err.message); next(err); }

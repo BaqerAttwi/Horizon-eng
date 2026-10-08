@@ -14,7 +14,7 @@ async function addGroupToDivision(req, res, next) {
 
     // Verify group exists
     const [[group]] = await db.execute('SELECT * FROM item_groups WHERE id = ?', [item_group_id]);
-    if (!group) return res.status(404).json({ error: 'Item group not found' });
+    if (!group || (!['owner','head_engineer'].includes(req.worker.role) && !group.is_public && Number(group.created_by) !== Number(req.worker.id))) return res.status(404).json({ error: 'Item group not found or access denied' });
 
     // Verify division exists and get panel/project info + markup defaults
     const [[div]] = await db.execute(
@@ -283,11 +283,11 @@ async function getDivisionGroupInstances(req, res, next) {
     const { divisionId } = req.params;
 
     const [[div]] = await db.execute(
-      `SELECT pcp.project_id FROM panel_divisions pd
+      `SELECT pd.panel_id,pcp.project_id FROM panel_divisions pd
        JOIN project_crm_panels pcp ON pd.panel_id = pcp.id
        WHERE pd.id = ?`, [divisionId]
     );
-    if (!div) return res.status(404).json({ error: 'Division not found' });
+    if (!div || String(div.project_id) !== String(req.params.projectId) || String(div.panel_id) !== String(req.params.panelId)) return res.status(404).json({ error: 'Division not found in this project panel' });
     const hasAccess = await checkProjectAccess(req, res, div.project_id);
     if (!hasAccess) return;
 

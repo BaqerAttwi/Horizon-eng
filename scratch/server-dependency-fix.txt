@@ -1,0 +1,53 @@
+
+removed 4 packages, changed 10 packages, and audited 169 packages in 5s
+
+# npm audit report
+
+braces  *
+Severity: high
+braces vulnerable to stack-exhaustion denial of service through deeply nested patterns - https://github.com/advisories/GHSA-vfj7-8cjw-p6xm
+fix available via `npm audit fix --force`
+Will install nodemon@1.14.10, which is a breaking change
+node_modules/braces
+  chokidar  2.0.0 - 3.6.0
+  Depends on vulnerable versions of braces
+  node_modules/chokidar
+    nodemon  0.0.0-development || >=1.14.11
+    Depends on vulnerable versions of chokidar
+    node_modules/nodemon
+
+nodemailer  <=10.0.8
+Severity: high
+Nodemailer: Process-global DNS cache reuses TLS `servername` across transports, enabling cross-tenant SMTP credential disclosure - https://github.com/advisories/GHSA-6vj9-mwq6-2f5v
+Nodemailer: Nested structured recipient arrays bypass the parser depth limit and cause stack exhaustion DoS - https://github.com/advisories/GHSA-8vvx-rff5-p5rq
+Nodemailer: Quoted local-part can produce malformed envelope recipient through RFC 5322 comment parsing - https://github.com/advisories/GHSA-g57g-f23g-4646
+Nodemailer: Quadratic backtracking in the addressparser free-text fallback allows remote denial of service - https://github.com/advisories/GHSA-v53p-9fqp-m79j
+Nodemailer addressparser: O(n^2) on comment-joined addresses enables a remote DoS (reachable via mailparser) - https://github.com/advisories/GHSA-prgh-xp8r-p3m5
+fix available via `npm audit fix`
+node_modules/nodemailer
+
+qs  2.2.5 - 6.15.3
+Severity: moderate
+qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set - https://github.com/advisories/GHSA-q8mj-m7cp-5q26
+qs array-limit bypass via bracket-key comma parsing - https://github.com/advisories/GHSA-x5fp-wj9c-mxmx
+qs: Denial of Service via Attacker Controlled isBuffer - https://github.com/advisories/GHSA-4mjr-xmp4-gh2g
+fix available via `npm audit fix`
+node_modules/qs
+
+xlsx  *
+Severity: high
+Prototype Pollution in sheetJS - https://github.com/advisories/GHSA-4r6h-8v6p-xvw6
+SheetJS Regular Expression Denial of Service (ReDoS) - https://github.com/advisories/GHSA-5pgg-2g8v-p4x9
+No fix available
+node_modules/xlsx
+
+6 vulnerabilities (1 moderate, 5 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.

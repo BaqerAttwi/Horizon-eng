@@ -5,10 +5,15 @@ const cors    = require('cors');
 const cookieParser = require('cookie-parser');
 const routes  = require('./routes');
 const { runNotificationChecks } = require('./controllers/notificationController');
-const { initMailer } = require('./utils/emailService');
+const { initMailer, processEmailQueue } = require('./utils/emailService');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
+if (process.env.TRUST_PROXY) {
+  const hops = Number(process.env.TRUST_PROXY);
+  if (!Number.isSafeInteger(hops) || hops < 1) throw new Error('TRUST_PROXY must be a positive proxy hop count');
+  app.set('trust proxy', hops);
+}
 
 if (process.env.NODE_ENV === 'production') {
   const required = ['JWT_SECRET', 'OWNER_PASSWORD', 'DB_PASSWORD'];
@@ -45,20 +50,16 @@ async function ensureOwner() {
   try {
     const [rows] = await db.execute("SELECT id, password_hash FROM workers WHERE role='owner' LIMIT 1");
     if (!rows.length) {
-      const defaultPw = process.env.OWNER_PASSWORD || 'admin123';
+      const defaultPw = process.env.OWNER_PASSWORD;
+      if (!require('./utils/accountSecurity').validPassword(defaultPw)) throw new Error('Set OWNER_PASSWORD to a password of 6 characters or more (at most 72 UTF-8 bytes) before creating the initial owner');
       const hash = await bcrypt.hash(defaultPw, 10);
       await db.execute(
-        "INSERT INTO workers (id, name, email, phone, role, password_hash) VALUES (1, 'Admin', 'admin@company.com', '', 'owner', ?)",
+        "INSERT INTO workers (name, email, phone, role, password_hash) VALUES ('Admin', 'admin@company.com', '', 'owner', ?)",
         [hash]
       );
-      console.log(`[Auth] ✅ Owner created. Email: admin@company.com / Password: ${defaultPw}`);
-    } else if (process.env.OWNER_PASSWORD) {
-      // Only sync if OWNER_PASSWORD is explicitly set in .env
-      const hash = await bcrypt.hash(process.env.OWNER_PASSWORD, 10);
-      await db.execute("UPDATE workers SET name='Admin', email='admin@company.com', password_hash=? WHERE id=?", [hash, rows[0].id]);
-      console.log(`[Auth] ✅ Owner password synced. Email: admin@company.com`);
+      console.log('[Auth] ✅ Owner created. Email: admin@company.com');
     } else {
-      console.log(`[Auth] ✅ Owner exists. Use OWNER_PASSWORD in .env to sync password on startup.`);
+      console.log(`[Auth] ✅ Owner exists. Password resets are available in account management.`);
     }
   } catch (err) {
     console.error('[Auth] ❌ Failed to ensure owner account:', err.message);
@@ -72,6 +73,8 @@ const server = app.listen(PORT, () => {
 
   // Initialize email service
   initMailer();
+  processEmailQueue();
+  setInterval(processEmailQueue, 30000).unref();
 
   // Run notification checks on startup
   runNotificationChecks();

@@ -63,7 +63,7 @@ async function getDashboard(req, res, next) {
         p.project_name as title,
         p.created_at as ts,
         w.name as actor,
-        CONCAT('/projects/', p.id) as link
+        CONCAT('/projects/', p.id, '/crm') as link
       FROM projects p
       LEFT JOIN workers w ON w.id = p.engineer_id
       WHERE p.deleted_at IS NULL ${engWhere}

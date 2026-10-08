@@ -6,6 +6,7 @@ import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { FadeIn } from '../components/AnimatedPage';
 import AppIcon from '../components/AppIcon';
+import DashboardCharts from '../components/DashboardCharts';
 
 const STATUS_COLORS = {
   completed: 'var(--success)',
@@ -161,7 +162,7 @@ export default function DashboardPage() {
   const visibleTabs = TABS.filter(t => t.roles.some(r => isRole(r)));
 
   return (
-    <div className="page">
+    <div className="page dashboard-page">
       <div className="page-header">
         <div>
           <div className="page-title dashboard-page-title"><AppIcon name="dashboard" size={23} /> Dashboard</div>
@@ -195,6 +196,8 @@ export default function DashboardPage() {
           sub={kpis.pending_approvals > 0 ? 'Needs attention' : 'All clear'}
           color={kpis.pending_approvals > 0 ? 'var(--danger)' : 'var(--success)'} delay={4} />
       </div>
+
+      {tab === 'overview' && <DashboardCharts kpis={kpis} showFinancials={!isRole('engineer', 'secretary')} />}
 
       {/* ── Overview Tab ───────────────────────────────── ─*/}
       {tab === 'overview' && (

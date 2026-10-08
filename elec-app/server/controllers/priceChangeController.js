@@ -6,6 +6,7 @@ async function createPriceChangeRequest(req, res, next) {
     const { item_id, new_base_price_usd, new_base_price_euro, new_markupP_pct, new_discount_pct, new_manpower_pct, new_markupM_pct, new_qty } = req.body;
 
     if (!item_id) return res.status(400).json({ error: 'item_id required' });
+    if (req.worker.role === 'engineer' && [new_base_price_usd, new_base_price_euro].some(value => value !== undefined && value !== null && value !== '')) return res.status(403).json({ error: 'Engineers cannot change monetary prices' });
 
     const numericChanges = {
       new_base_price_usd, new_base_price_euro, new_markupP_pct,
@@ -99,7 +100,7 @@ async function createPriceChangeRequest(req, res, next) {
         `INSERT INTO notifications(user_id, type, title, message, link) VALUES(?,?,?,?,?)`,
         [owner.id, 'approval', 'Price Change Request',
          `Engineer ${req.worker.name}: ${priceMsg}`,
-         `/crm/${projectId}`]
+         `/projects/${projectId}/crm`]
       );
     }
 
@@ -198,8 +199,8 @@ async function approveRequest(req, res, next) {
     await db.execute(
       `INSERT INTO notifications(user_id, type, title, message, link) VALUES(?,?,?,?,?)`,
       [request.requested_by, 'approval', 'Price Change Approved',
-       `Item #${request.item_id} price changed to ${approvedMsg}`,
-       `/crm/${request.project_id}`]
+       `Changes to item #${request.item_id} were approved`,
+       `/projects/${request.project_id}/crm`]
     );
 
     res.json({ message: 'Price change approved and applied' });
@@ -230,8 +231,8 @@ async function rejectRequest(req, res, next) {
     await db.execute(
       `INSERT INTO notifications(user_id, type, title, message, link) VALUES(?,?,?,?,?)`,
       [request.requested_by, 'approval', 'Price Change Rejected',
-       `Item #${request.item_id} price ${rejectedMsg} was rejected${rejection_reason ? ': ' + rejection_reason : ''}`,
-       `/crm/${request.project_id}`]
+       `Changes to item #${request.item_id} were rejected${rejection_reason ? ': ' + rejection_reason : ''}`,
+       `/projects/${request.project_id}/crm`]
     );
 
     res.json({ message: 'Price change rejected' });

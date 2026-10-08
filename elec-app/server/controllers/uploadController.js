@@ -70,7 +70,9 @@ async function handleUpload(req, res, next) {
     }
 
     const ws      = workbook.Sheets[sheetName];
+    if (!ws['!ref']) return res.status(400).json({ error: 'Sheet PL is empty' });
     const range   = XLSX.utils.decode_range(ws['!ref']);
+    if (range.e.r > 100000 || range.e.c > 1000) return res.status(400).json({ error: 'Spreadsheet is too large. Limit the PL sheet to 100,000 rows and 1,000 columns.' });
     const lastRow = range.e.r;
 
     // ── 2. Parse ALL rows into memory ────────────────────────────────────────
@@ -121,7 +123,7 @@ async function handleUpload(req, res, next) {
 
     // Load all brands into a map: { 'SCHNEIDER NW': 1, 'EATON': 3, ... }
     const [allBrands] = await db.execute('SELECT id, name FROM brands');
-    const brandMap = {};
+    const brandMap = Object.create(null);
     allBrands.forEach(b => { brandMap[b.name] = b.id; });
 
     // ── 4. Batch upsert products in chunks of 500 ────────────────────────────

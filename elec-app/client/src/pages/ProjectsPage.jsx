@@ -1,3 +1,4 @@
+import ReviewHistory from '../components/ReviewHistory';
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +8,7 @@ import { useDebounce } from '../hooks/useDebounce';
 
 const STATUS_BADGE = { draft:'badge-gray', active:'badge-blue', completed:'badge-green', cancelled:'badge-red' };
 const APPROVAL_BADGE = { pending:'badge-yellow', approved:'badge-green', rejected:'badge-red' };
-const ADMIN_APPROVAL_BADGE = { pending:'badge-yellow', approved:'badge-green', rejected:'badge-red' };
+const ADMIN_APPROVAL_BADGE = { pending:'badge-yellow', approved:'badge-green', rejected:'badge-red', recheck:'badge-yellow', cancelled:'badge-red' };
 const PROJECT_STAGES = ['design','quotation','approval','procurement','assembly','testing','delivered'];
 
 function ProjectStageBar({ project, onChanged, canManage }) {
@@ -23,7 +24,7 @@ function ProjectStageBar({ project, onChanged, canManage }) {
   const nextStage = PROJECT_STAGES[current + 1];
   const engineerCanAdvance = current < PROJECT_STAGES.indexOf('quotation');
   const awaitingStock = project.project_stage === 'procurement' && project.procurement_status !== 'approved';
-  const canAdvance = nextStage && (canManage || engineerCanAdvance) && !awaitingStock;
+  const canAdvance = nextStage && (canManage || engineerCanAdvance) && !awaitingStock && project.status !== 'cancelled' && (nextStage !== 'quotation' || project.admin_approval === 'approved');
   return <section className="workflow-card" aria-label="Project workflow">
     <div className="workflow-heading">
       <div><span className="workflow-eyebrow">Project workflow</span><strong>{PROJECT_STAGES[current]}</strong></div>
@@ -244,6 +245,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
     additionalInfo: '', signatoryName: '', documentCode: 'HPS-COM-PR02-L02', edition: '1',
   });
   const [clientRejectNote, setClientRejectNote] = useState('');
+  const [adminReviewNote, setAdminReviewNote] = useState('');
   const [collaborators, setCollaborators] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [inviteEngId, setInviteEngId] = useState('');
@@ -314,9 +316,11 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
   };
 
   const changeAdminApproval = async (admin_approval) => {
+    if (['recheck','cancelled'].includes(admin_approval) && !adminReviewNote.trim()) return toast.error('Enter notes for the engineer first');
     setUpdating(true);
     try {
-      const r = await api.patch(`/projects/${projectId}/admin-approval`, { admin_approval });
+      const r = await api.patch(`/projects/${projectId}/admin-approval`, { admin_approval, rejection_note: adminReviewNote.trim() || null });
+      setAdminReviewNote('');
       setProject(p => ({ ...p, ...r.data }));
       onUpdated && onUpdated(r.data);
       toast.success(`✅ Admin Approval → ${admin_approval}`);
@@ -487,15 +491,16 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--white)', marginBottom: 8 }}>👑 Owner Controls</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                   <span style={{ fontSize: 11, color: 'var(--muted)', marginRight: 4 }}>Admin Approval:</span>
-                  {['pending', 'approved', 'rejected'].map(a => (
+                  {['pending', 'approved', 'recheck', 'cancelled'].map(a => (
                     <button key={a} className={`btn btn-sm ${project.admin_approval === a ? 'btn-primary' : 'btn-secondary'}`}
                       disabled={project.admin_approval === a || updating}
                       onClick={() => changeAdminApproval(a)}
                       style={a === 'approved' ? { background: 'rgba(34,197,94,0.2)', color: 'var(--success)', border: '1px solid rgba(34,197,94,0.3)' } : a === 'rejected' ? { background: 'rgba(239,68,68,0.2)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.3)' } : {}}>
-                      {a === 'approved' ? '✓' : a === 'rejected' ? '✕' : '—'} {a}
+                      {a === 'approved' ? '✓' : a === 'cancelled' ? '✕' : '—'} {a === 'recheck' ? 'Request recheck' : a === 'cancelled' ? 'Cancel' : a}
                     </button>
                   ))}
                 </div>
+                <textarea className="form-input" style={{ marginTop: 8 }} value={adminReviewNote} onChange={e => setAdminReviewNote(e.target.value)} placeholder="Notes for the engineer (required for recheck or cancellation)" aria-label="Admin review notes" />
                 {project.rejection_note && (
                   <div style={{ marginTop: 8, fontSize: 11, color: 'var(--danger)', padding: '6px 10px', background: 'rgba(239,68,68,0.1)', borderRadius: 6 }}>
                     ⚠ Rejection note: {project.rejection_note}
@@ -504,6 +509,9 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
               </div>
             )}
 
+            <ReviewHistory projectId={projectId} reviewStatus={project.admin_approval} submitted={project.ready_for_review} />
+            {project.rejection_note && !isRole('owner','head_engineer') && <div className="workflow-card"><strong>Management review: {project.admin_approval}</strong><p style={{ whiteSpace: 'pre-wrap' }}>{project.rejection_note}</p></div>}
+            {isRole('engineer','owner','head_engineer') && !project.ready_for_review && project.status !== 'cancelled' && <button className="btn btn-primary" disabled={updating} onClick={async () => { setUpdating(true); try { await api.patch(`/projects/${projectId}/ready-for-review`); const r = await api.get(`/projects/${projectId}`); setProject(r.data); onUpdated && onUpdated(r.data); toast.success('Submitted for management review'); } catch (e) { toast.error(e.message); } finally { setUpdating(false); } }}>Submit for approval</button>}
             {/* ── Client Approval (only after admin approved) ── */}
             {project.admin_approval === 'approved' && (
               <div style={{ background: 'rgba(34,197,94,0.04)', borderRadius: 8, padding: 14, border: '1px solid rgba(34,197,94,0.15)' }}>

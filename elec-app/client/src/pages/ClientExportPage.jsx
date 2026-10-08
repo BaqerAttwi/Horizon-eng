@@ -65,7 +65,6 @@ export default function ClientExportPage() {
 
   if (loadError) return <div className="page"><div className="empty" role="alert"><p>{loadError}</p><button className="btn btn-primary" onClick={() => setLoadAttempt(value => value + 1)}>Retry</button> <button className="btn btn-secondary" onClick={() => navigate('/projects')}>Back to projects</button></div></div>;
   if (!project) return <div className="page"><div style={{ padding: 40, textAlign: 'center' }}><span className="spinner" /> Loading export editor...</div></div>;
-  const panels = (project.panels || []).filter(p => p.panel_name || Number(p.total_price));
   const input = (label, name, type = 'text', wide = false) => <Field key={name} label={label} name={name} form={form} setForm={setForm} type={type} wide={wide} />;
 
   return <div className="page">
@@ -85,24 +84,24 @@ export default function ClientExportPage() {
         </>}
       </div><button className="btn btn-primary" style={{ width: '100%', marginTop: 14 }} disabled={exporting} onClick={exportPdf}>{exporting ? 'Exporting...' : 'Export PDF'}</button></div></div>
       <div className="client-export-preview">
-        {form.format === 'quotation' ? <QuotationPreview project={project} panels={panels} form={form} /> : <TechnicalPreview panels={panels} form={form} />}
+        <PdfPreview project={project} form={form} />
       </div>
     </div>
   </div>;
 }
 
-const cell = { border: '1px solid #222', padding: '5px 7px' };
-function QuotationPreview({ project, form }) {
+function PdfPreview({ project, form }) {
   const [url, setUrl] = useState('');
   useEffect(() => {
     let cancelled = false;
     let objectUrl;
     const timer = setTimeout(async () => {
       try {
-        const { loadPng } = await import('../utils/pdfExport');
+        const { loadPng, drawTechnicalQuotation } = await import('../utils/pdfExport');
         const logo = await loadPng('/LogoHorizonLB.png');
         if (cancelled) return;
-        const { doc } = drawCommercialDocument(project, form, logo);
+        const drawDocument = form.format === 'technical' ? drawTechnicalQuotation : drawCommercialDocument;
+        const { doc } = drawDocument(project, form, logo);
         objectUrl = URL.createObjectURL(doc.output('blob'));
         setUrl(objectUrl);
       } catch (error) { if (!cancelled) toast.error(`Preview failed: ${error.message}`); }
@@ -112,7 +111,3 @@ function QuotationPreview({ project, form }) {
   return url ? <iframe title="Client PDF preview" src={url} style={{ width: '100%', height: 'calc(100vh - 60px)', minHeight: 700, border: 0, background: '#fff' }} /> : <div>Preparing PDF preview...</div>;
 }
 
-function TechnicalPreview({ panels, form }) {
-  const items = panels.flatMap(p => (p.divisions || []).flatMap(d => (d.items || []).filter(i => i.visible_in_client_pdf !== 0).map(i => ({ p, d, i }))));
-  return <div style={{ width: 816, minHeight: 1056, background:'#fff',color:'#111',padding:26,margin:'0 auto',fontFamily:'Arial',fontSize:10,boxShadow:'0 5px 25px rgba(0,0,0,.35)' }}><div style={{display:'grid',gridTemplateColumns:'22% 56% 22%',border:'1px solid #222',textAlign:'center',alignItems:'center'}}><b>HORIZON</b><div style={{borderLeft:'1px solid #222',borderRight:'1px solid #222',padding:8}}><b>HORIZON POWER SOLUTION</b><div style={{fontSize:20,fontWeight:800}}>TECHNICAL OFFER</div></div><div>{form.documentCode}<br/>Edition {form.edition}<br/>Quote # {form.quoteNumber}</div></div><table style={{width:'100%',borderCollapse:'collapse',marginTop:8}}><thead><tr style={{background:'#0089b4',color:'#fff'}}>{['#','Panel name','Division','Part number','Description','QTY'].map(h=><th style={cell} key={h}>{h}</th>)}</tr></thead><tbody>{items.map(({p,d,i},index)=><tr key={i.id}><td style={cell}>{index+1}</td><td style={cell}>{p.panel_name}</td><td style={cell}>{d.division_type}</td><td style={cell}>{i.is_manual?i.custom_name:i.reference}</td><td style={cell}>{i.custom_desc||i.product_desc||i.description}</td><td style={cell}>{i.qty}</td></tr>)}</tbody></table></div>;
-}

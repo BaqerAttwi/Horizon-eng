@@ -45,6 +45,17 @@ Manages products, clients, reservations, and announcements. Can create/edit clie
 
 ## Features
 
+### Local Role Assistant
+- Floating avatar chat greets the signed-in worker by name and explains authorized workflows for all seven roles.
+- Owner and head engineer receive guidance across all help topics; execution guidance opens their Projects view.
+- Uses curated local guidance and read-only database lookups, without a cloud API, model download, or extra configuration. It is not a general-purpose LLM and does not perform record changes.
+- Ask “What do I have today?” for open work (including earlier assignments), deadlines, and role-specific records with links. Engineers see assigned/accepted collaboration projects, technicians see assigned execution projects, stock managers see procurement and stock, accounting sees projects and outstanding balances, and secretaries see client records and personal notification counts. Management sees projects, approvals, stock and outstanding balances.
+- Record questions include “Show my projects”, “What stock shortages do we have?”, “Show outstanding balances”, and `find project "Office"` / `find product "ABC"` / `find client "Company"`. Results show at most ten records per section, with deadlines evaluated in Beirut time.
+- `/api/assistant/chat` requires authentication, uses the current database role, validates message length, and limits requests to 30 per minute per IP.
+- Messages are rendered as plain text and kept only in browser memory; sign-out or a role/account change clears the chat. No chat content is stored in the database.
+- Avatar: `client/public/assistant-avatar.png` contains the supplied image, including its existing watermark; replace this file to use another avatar.
+- Verification: run `npm test` in `server` and `npm run build` in `client`.
+
 ### Product Management
 - Full catalog with brands, stock tracking, pricing (USD/EUR/cost)
 - Provision new products with auto-generated reference codes

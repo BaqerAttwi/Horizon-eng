@@ -12,7 +12,7 @@ const ROLE_PERMISSIONS = {
   technician: ['execution'],
 };
 
-const canViewPrices = role => !PRICE_HIDDEN_ROLES.includes(role);
+const canViewPrices = role => PROJECT_FINANCIAL_EXPORT_ROLES.includes(role);
 const canManageWorkflow = role => MANAGEMENT_ROLES.includes(role);
 const canExportProjectFinancials = role => PROJECT_FINANCIAL_EXPORT_ROLES.includes(role);
 const isRoleAllowed = (role, allowedRoles) => allowedRoles.includes(role);

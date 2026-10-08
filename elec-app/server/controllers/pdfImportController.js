@@ -121,7 +121,7 @@ function parsePdfText(text,divisionNames=DEFAULT_DIVISION_TYPES) {
 
   // Convert flat items into divisions per panel
   for (const panel of panels) {
-    const divMap = {};
+    const divMap = Object.create(null);
     const addItem = (item, isGroup) => {
       const dt = item.divType || 'INCOMING';
       if (!divMap[dt]) divMap[dt] = { division_type: dt, items: [] };
@@ -224,7 +224,7 @@ async function previewImport(req, res, next) {
       console.error('[PDF Import] Could not parse technical PDF:', parseError.message);
       return res.status(422).json({
         error: 'Could not read this technical PDF. Please export it again or upload a valid, non-password-protected PDF.',
-        details: parseError.message,
+
       });
     } finally {
       try { await parser.destroy(); } catch (_) { /* parser may not have fully initialized */ }
@@ -284,7 +284,7 @@ async function previewImport(req, res, next) {
     // This endpoint is used locally by authenticated staff. Returning the
     // stage error makes malformed vendor PDFs diagnosable instead of hiding it
     // behind the application's generic 500 response.
-    res.status(500).json({ error: `PDF preview failed: ${err.message}` });
+    next(err);
   }
 }
 
@@ -299,6 +299,10 @@ async function createFromImport(req, res, next) {
 
     if (!project_name) return res.status(400).json({ error: 'project_name required' });
     if (!panels?.length) return res.status(400).json({ error: 'No panel data provided' });
+
+    let validNumbers = false;
+    require('../middleware/numericValidation').numericValidation(req, res, () => { validNumbers = true; });
+    if (!validNumbers) return;
 
     // Auto-assign engineer to themselves
     const assignedEngineer = req.worker.role === 'engineer' ? req.worker.id : (engineer_id || null);
@@ -356,6 +360,8 @@ async function createFromImport(req, res, next) {
           // its template items. A group template is not itself billable; its
           // panel_crm_items are what drive pricing, exports, and reservations.
           if (item.item_group_id) {
+            const [[allowedGroup]] = await conn.execute("SELECT id FROM item_groups WHERE id=? AND (? IN ('owner','head_engineer') OR is_public=TRUE OR created_by=?)", [item.item_group_id, req.worker.role, req.worker.id]);
+            if (!allowedGroup) { const error = new Error('Imported item group is not accessible'); error.status = 403; throw error; }
             const groupQty = Math.max(1, parseInt(item.qty) || 1);
             const [instanceResult] = await conn.execute(
               'INSERT INTO division_item_group_instances(division_id,item_group_id,quantity,description) VALUES(?,?,?,?)',
@@ -408,6 +414,12 @@ async function createFromImport(req, res, next) {
 
           let basePriceUsd = parseFloat(item.base_price_usd) || 0;
           let basePriceEur = parseFloat(item.base_price_euro) || 0;
+          if (req.worker.role === 'engineer' && item.product_id) {
+            const [[product]] = await conn.execute('SELECT price_usd,price_euro FROM products WHERE id=?', [item.product_id]);
+            if (!product) { const error = new Error('Imported product does not exist'); error.status = 400; throw error; }
+            basePriceUsd = Number(product.price_usd) || 0;
+            basePriceEur = Number(product.price_euro) || 0;
+          }
           const rate = parseFloat(exchange_rate_eur_usd) || 1.18;
           if (basePriceUsd && !basePriceEur) {
             basePriceEur = (basePriceUsd / rate);

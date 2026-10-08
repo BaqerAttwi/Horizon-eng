@@ -1,11 +1,11 @@
 {
-  "routes": 147,
-  "total": 157,
+  "routes": 151,
+  "total": 164,
   "mismatches": [],
   "checks": [
     {
       "file": "elec-app\\client\\src\\App.jsx",
-      "line": 42,
+      "line": 44,
       "method": "get",
       "url": "/updates",
       "matched": true
@@ -169,6 +169,34 @@
       "line": 131,
       "method": "delete",
       "url": "/notifications/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\ReviewHistory.jsx",
+      "line": 13,
+      "method": "get",
+      "url": "/projects/:value/review-history",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\ReviewHistory.jsx",
+      "line": 13,
+      "method": "get",
+      "url": "/projects/:value/email-deliveries",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\ReviewHistory.jsx",
+      "line": 34,
+      "method": "post",
+      "url": "/email-deliveries/:value/retry",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\components\\RoleAssistant.jsx",
+      "line": 28,
+      "method": "post",
+      "url": "/assistant/chat",
       "matched": true
     },
     {
@@ -383,7 +411,7 @@
     },
     {
       "file": "elec-app\\client\\src\\hooks\\useCrmProject.js",
-      "line": 355,
+      "line": 356,
       "method": "post",
       "url": "/projects/:value/items/bulk-update",
       "matched": true
@@ -453,42 +481,49 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 75,
+      "line": 76,
       "method": "post",
       "url": "/projects/:value/items/bulk-update",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 141,
+      "line": 150,
       "method": "post",
       "url": "/projects/:value/items/bulk-update",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 151,
+      "line": 160,
       "method": "post",
       "url": "/projects/:value/items/bulk-update",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 359,
+      "line": 231,
+      "method": "patch",
+      "url": "/projects/:value/admin-approval",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
+      "line": 391,
       "method": "get",
       "url": "/projects/:value/crm",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\CrmProjectPage.jsx",
-      "line": 494,
+      "line": 526,
       "method": "patch",
       "url": "/projects/:value/execution/panels/:value",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\DashboardPage.jsx",
-      "line": 150,
+      "line": 151,
       "method": "get",
       "url": "/dashboard",
       "matched": true
@@ -684,21 +719,21 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProcurementPage.jsx",
-      "line": 7,
+      "line": 10,
       "method": "get",
       "url": "/procurement/projects",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProcurementPage.jsx",
-      "line": 9,
+      "line": 15,
       "method": "patch",
       "url": "/procurement/projects/:value/review",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProcurementPage.jsx",
-      "line": 10,
+      "line": 16,
       "method": "patch",
       "url": "/procurement/projects/:value/products/:value/receive",
       "matched": true
@@ -768,154 +803,168 @@
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 19,
+      "line": 20,
       "method": "patch",
       "url": "/projects/:value/stage",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 58,
+      "line": 59,
       "method": "get",
       "url": "/projects/draft-notifications",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 110,
+      "line": 111,
       "method": "get",
       "url": "/workers",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 111,
+      "line": 112,
       "method": "get",
       "url": "/clients",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 129,
+      "line": 130,
       "method": "patch",
       "url": "/projects/:value",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 130,
+      "line": 131,
       "method": "post",
       "url": "/projects",
-      "matched": true
-    },
-    {
-      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 259,
-      "method": "get",
-      "url": "/projects/:value/engineers",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
       "line": 261,
       "method": "get",
+      "url": "/projects/:value/engineers",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 263,
+      "method": "get",
       "url": "/workers",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 269,
+      "line": 271,
       "method": "post",
       "url": "/engineer-requests",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 279,
+      "line": 281,
       "method": "get",
       "url": "/projects/:value",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 281,
+      "line": 283,
       "method": "get",
       "url": "/projects/:value/quotation-revisions",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 307,
+      "line": 309,
       "method": "patch",
       "url": "/projects/:value",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 319,
+      "line": 322,
       "method": "patch",
       "url": "/projects/:value/admin-approval",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 341,
+      "line": 345,
       "method": "post",
       "url": "/projects/:value/quotation-revisions",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 349,
+      "line": 353,
       "method": "post",
       "url": "/projects/:value/quotation-revisions/:value/restore",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 362,
+      "line": 366,
       "method": "get",
       "url": "/projects/:value/quotation-revisions/:value/snapshot",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 645,
+      "line": 514,
+      "method": "patch",
+      "url": "/projects/:value/ready-for-review",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 514,
+      "method": "get",
+      "url": "/projects/:value",
+      "matched": true
+    },
+    {
+      "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
+      "line": 653,
       "method": "get",
       "url": "/projects",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 656,
+      "line": 664,
       "method": "delete",
       "url": "/projects/:value",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 804,
+      "line": 812,
       "method": "get",
       "url": "/clients",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 805,
+      "line": 813,
       "method": "get",
       "url": "/workers",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 817,
+      "line": 825,
       "method": "post",
       "url": "/projects/import-pdf/preview",
       "matched": true
     },
     {
       "file": "elec-app\\client\\src\\pages\\ProjectsPage.jsx",
-      "line": 858,
+      "line": 866,
       "method": "post",
       "url": "/projects/import-pdf/create",
       "matched": true
@@ -1097,7 +1146,7 @@
     },
     {
       "file": "elec-app\\client\\src\\utils\\pdfExport.js",
-      "line": 121,
+      "line": 137,
       "method": "get",
       "url": "/projects/:value/crm",
       "matched": true

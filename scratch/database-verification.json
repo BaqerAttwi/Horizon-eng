@@ -1,0 +1,12 @@
+{
+  "mode": "applied",
+  "timestamp": "2026-10-03T23:00:03.988Z",
+  "tables": 36,
+  "rows": 39492,
+  "existingDataUnchanged": true,
+  "migrationAppliedTwice": true,
+  "integrityFailures": [],
+  "foreignKeysChecked": 67,
+  "orphans": [],
+  "backup": "C:\\Users\\BaQer.-.AtTwi\\Downloads\\elec-app-3 - Copy\\scratch\\database-before-migration-1791068398428.sql"
+}

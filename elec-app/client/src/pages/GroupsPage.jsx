@@ -238,6 +238,7 @@ function GroupCard({ group, onEdit, onDelete, onAddItem, onRemoveItem }) {
           <span style={{fontSize:16,transition:'transform .2s',transform: expanded ? 'rotate(90deg)' : ''}}>▶</span>
           <div>
             <div style={{fontWeight:700,fontSize:14,color:'var(--white)'}}>{group.name}</div>
+            <div style={{fontSize:14,color:'var(--text)',lineHeight:1.5,whiteSpace:'pre-wrap',overflowWrap:'anywhere',margin:'6px 0'}}>{group.description || 'No description provided.'}</div>
             <div style={{fontSize:11,color:'var(--muted)',display:'flex',gap:8,alignItems:'center'}}>
               <span>by {group.created_by_name}</span>
               {group.is_public ? (
@@ -250,9 +251,11 @@ function GroupCard({ group, onEdit, onDelete, onAddItem, onRemoveItem }) {
           </div>
         </div>
         <div style={{display:'flex',gap:4}} onClick={e => e.stopPropagation()}>
-          <button className="btn-icon" title="Add item" onClick={() => setShowAdd(true)}>➕</button>
-          <button className="btn-icon" title="Edit" onClick={() => onEdit(group)}>✏️</button>
-          <button className="btn-icon" title="Delete" style={{color:'var(--danger)'}} onClick={() => onDelete(group.id)}>🗑</button>
+          {canEdit && <>
+            <button className="btn-icon" title="Add item" onClick={() => setShowAdd(true)}>➕</button>
+            <button className="btn-icon" title="Edit" onClick={() => onEdit(group)}>✏️</button>
+            <button className="btn-icon" title="Delete" style={{color:'var(--danger)'}} onClick={() => onDelete(group.id)}>🗑</button>
+          </>}
         </div>
       </div>
 
@@ -279,7 +282,7 @@ function GroupCard({ group, onEdit, onDelete, onAddItem, onRemoveItem }) {
                       <td style={{fontSize:11}}>{item.brand_name || '—'}</td>
                       <td className="mono">{priceDisplay(item.price_usd, item.price_euro)}</td>
                       <td>
-                        <button className="btn-icon" style={{color:'var(--danger)',fontSize:11}} onClick={() => removeItem(item.id)}>✕</button>
+                        {canEdit && <button className="btn-icon" style={{color:'var(--danger)',fontSize:11}} onClick={() => removeItem(item.id)}>✕</button>}
                       </td>
                     </tr>
                   ))}
@@ -298,9 +301,11 @@ function GroupCard({ group, onEdit, onDelete, onAddItem, onRemoveItem }) {
 
 export default function GroupsPage() {
   const [groups, setGroups] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
   const { worker, isRole } = useAuth();
+  const filteredGroups = groups.filter(group => group.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -338,6 +343,7 @@ export default function GroupsPage() {
           <button className="btn btn-primary" onClick={() => setModal({})}>+ New Group</button>
         </div>
 
+        <input className="form-input" aria-label="Search groups by name" placeholder="Search groups by name..." value={search} onChange={e => setSearch(e.target.value)} style={{marginBottom:16}} />
         {loading ? (
           <div style={{display:'flex',justifyContent:'center',padding:40}}><span className="spinner" /></div>
         ) : groups.length === 0 ? (
@@ -347,8 +353,10 @@ export default function GroupsPage() {
               <p>No groups yet. Create reusable product sets for fast CRM importing.</p>
             </div>
           </div>
+        ) : filteredGroups.length === 0 ? (
+          <div className="card" style={{padding:20}}>No groups match “{search}”. <button className="btn btn-secondary" onClick={() => setSearch('')}>Clear search</button></div>
         ) : (
-          groups.map(g => (
+          filteredGroups.map(g => (
             <GroupCard key={g.id} group={g} onEdit={(grp) => setModal(grp)} onDelete={del}
               onAddItem={() => {}} onRemoveItem={() => {}} />
           ))

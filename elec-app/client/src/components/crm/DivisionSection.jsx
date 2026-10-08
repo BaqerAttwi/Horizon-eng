@@ -192,6 +192,8 @@ function ManualProductModal({ project, onClose, onSaved, prefill }) {
 
 function GroupSelectModal({ project, division, panel, onClose, onGroupAdded }) {
   const [groups, setGroups] = useState([]);
+  const [search, setSearch] = useState('');
+  const filteredGroups = groups.filter(group => group.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [instanceQty, setInstanceQty] = useState(1);
@@ -224,10 +226,11 @@ function GroupSelectModal({ project, division, panel, onClose, onGroupAdded }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <span className="modal-title">Add Group Data</span>
+          <span className="modal-title">Add Group</span>
           <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
+          <input className="form-input" aria-label="Search groups by name" placeholder="Search groups by name..." value={search} onChange={e => setSearch(e.target.value)} style={{marginBottom:12}} />
           <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
             <label style={{ fontSize: 12, color: 'var(--muted)' }}>Group multiplier:</label>
             <input type="number" min={1} className="form-input" style={{ width: 70 }}
@@ -238,16 +241,19 @@ function GroupSelectModal({ project, division, panel, onClose, onGroupAdded }) {
             <div style={{display:'flex',justifyContent:'center',padding:20}}><span className="spinner" /></div>
           ) : groups.length === 0 ? (
             <div className="empty"><div className="empty-icon">📭</div><p>No groups available. Create them in Item Groups page.</p></div>
+          ) : filteredGroups.length === 0 ? (
+            <div className="empty"><p>No groups match “{search}”.</p><button className="btn btn-secondary" onClick={() => setSearch('')}>Clear search</button></div>
           ) : (
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:8}}>
-              {groups.map(g => (
-                <div key={g.id} className="card" style={{cursor:'pointer',padding:12,margin:0}}
-                  onClick={() => !adding && addGroupAsInstance(g)}>
-                  <div style={{fontWeight:700,fontSize:13,color:'var(--white)'}}>{g.name}</div>
+              {filteredGroups.map(g => (
+                <div key={g.id} className="card" style={{padding:12,margin:0}}>
+                  <div style={{fontWeight:700,fontSize:15,color:'var(--white)'}}>{g.name}</div>
+                  <div style={{fontSize:14,color:'var(--text)',lineHeight:1.5,whiteSpace:'pre-wrap',overflowWrap:'anywhere',marginTop:6}}>{g.description || 'No description provided.'}</div>
                   <div style={{fontSize:11,color:'var(--muted)',marginTop:4}}>
                     by {g.created_by_name} • {g.item_count} items
-                    {g.is_public && <span className="badge badge-green" style={{marginLeft:6,fontSize:9}}>Public</span>}
+                    {!!g.is_public && <span className="badge badge-green" style={{marginLeft:6,fontSize:9}}>Public</span>}
                   </div>
+                  <button className="btn btn-sm btn-primary" style={{marginTop:10}} disabled={adding} onClick={() => addGroupAsInstance(g)}>Add group</button>
                 </div>
               ))}
             </div>
@@ -265,7 +271,7 @@ function GroupSelectModal({ project, division, panel, onClose, onGroupAdded }) {
 function StandaloneItemsTable({ items, division, panel, exchangeRate, onItemUpdate, onItemDelete, hideCost, showCr, pendingPriceChanges, selectedItems, onToggleItem, onSelectAll, editView }) {
   if (!items.length) return null;
   return <div className="table-wrap" style={{ overflowX: 'auto', background: 'var(--panel)' }}>
-    <table style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+    <table className="crm-items-table">
       <thead><tr>
         <th style={{ width: 28, textAlign: 'center' }}><input type="checkbox"
           checked={items.every(i => selectedItems?.has(i.id))}
@@ -417,7 +423,7 @@ const DivisionSection = memo(function DivisionSection({ division, panel, project
 
       {false && division.items?.length > 0 && (
         <div className="table-wrap" style={{ overflowX: 'auto', background: 'var(--panel)' }}>
-          <table style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+          <table className="crm-items-table">
             <colgroup>
               <col style={{ width: 28 }} />
               <col style={{ width: 28 }} />

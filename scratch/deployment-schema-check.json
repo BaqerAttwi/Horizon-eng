@@ -1,0 +1,7 @@
+{
+  "freshImport": true,
+  "repeatedImport": true,
+  "tables": 38,
+  "integrityFailures": [],
+  "liveColumnsMissingFromSchema": []
+}

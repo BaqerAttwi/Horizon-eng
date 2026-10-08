@@ -5,6 +5,11 @@ const oneDrive = require('../utils/oneDrive');
 
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 
+function localFilePath(storedName) {
+  if (typeof storedName !== 'string' || path.basename(storedName) !== storedName || storedName === '.' || storedName === '..') throw new Error('Invalid attachment storage path');
+  return path.join(UPLOAD_DIR, storedName);
+}
+
 function ensureDir() {
   if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
@@ -97,12 +102,11 @@ async function downloadAttachment(req, res, next) {
       return res.redirect(url);
     }
 
-    const filePath = path.join(UPLOAD_DIR, attachment.stored_name);
+    const filePath = localFilePath(attachment.stored_name);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found on disk' });
 
-    res.setHeader('Content-Disposition', `attachment; filename="${attachment.file_name}"`);
-    res.setHeader('Content-Type', attachment.mime_type || 'application/octet-stream');
-    res.sendFile(filePath);
+    res.type(attachment.mime_type || 'application/octet-stream');
+    res.download(filePath, attachment.file_name);
   } catch (err) {
     next(err);
   }
@@ -121,7 +125,7 @@ async function deleteAttachment(req, res, next) {
     if (attachment.storage === 'onedrive') {
       await oneDrive.deleteFile(attachment.onedrive_item_id);
     } else if (attachment.storage === 'local') {
-      const filePath = path.join(UPLOAD_DIR, attachment.stored_name);
+      const filePath = localFilePath(attachment.stored_name);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
     // storage === 'link': nothing to clean up, just the DB row below

@@ -79,6 +79,9 @@ async function updateProjectStage(req, res, next) {
     if (toIndex > STAGES.indexOf('quotation') && !canManageWorkflow(req.worker.role)) {
       return res.status(403).json({ error: 'Management must approve and advance this project stage' });
     }
+    if (project.status === 'cancelled' || project.admin_approval === 'cancelled') return res.status(400).json({ error: 'This project is canceled; management must reopen it first' });
+    if (target === 'quotation' && project.admin_approval !== 'approved') return res.status(400).json({ error: 'Owner or Head of Engineering approval is required before quotation' });
+    if (toIndex > fromIndex && project.admin_approval !== 'approved') return res.status(400).json({ error: 'Management review and approval are required before advancing' });
     if (toIndex > fromIndex) {
       const error = await validateForwardTransition(project, target);
       if (error) return res.status(400).json({ error });
@@ -98,6 +101,9 @@ async function updateProjectStage(req, res, next) {
     if (project.engineer_id && Number(project.engineer_id) !== Number(req.worker.id)) await createNotification(project.engineer_id, 'status', `Project moved to ${target}`, project.project_name, '/projects');
     await notifyRoles(['owner','head_engineer'], 'status', `${project.project_name}: ${target}`, `${req.worker.name} moved the project to ${target}`, '/projects');
     const [[updated]] = await db.execute('SELECT * FROM projects WHERE id=?', [projectId]);
+    if (req.worker.role === 'engineer') {
+      for (const field of ['total_cost','total_price','project_discount_amount','total_vat','total_with_vat','vat_pct','project_discount_pct','exchange_rate_eur_usd','margin_warning_pct']) updated[field] = null;
+    }
     res.json(updated);
   } catch (err) { next(err); }
 }

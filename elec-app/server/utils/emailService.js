@@ -15,7 +15,11 @@ function initMailer() {
   console.log('[Mail] ✅ Resend initialized');
 }
 
+const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 function emailTemplate(title, message, link, senderName) {
+  title = escapeHtml(title);
+  message = escapeHtml(message).replace(/\r?\n/g, '<br>');
+  senderName = senderName ? escapeHtml(senderName) : '';
   const baseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
   const url = link ? `${baseUrl}${link}` : baseUrl;
 
@@ -59,35 +63,71 @@ function emailTemplate(title, message, link, senderName) {
 
 const fromAddr = () => process.env.EMAIL_FROM || 'noreply@app.hps-leb.com';
 
-async function sendEmail({ to, subject, text, html }) {
-  if (!resend) {
-    console.log('[Mail] ⏭️ Skipped (Resend not initialized):', to, subject);
-    return;
-  }
+const db = require('../db/connection');
+let processing = false;
+const MAX_ATTEMPTS = 6;
 
+async function sendEmail({ to, subject, text, html, userId = null, projectId = null }) {
+  const [result] = await db.execute(`INSERT INTO email_deliveries(user_id,project_id,recipient,subject,text_body,html_body)
+    VALUES(?,?,?,?,?,?)`, [userId, projectId, to, subject, text, html]);
+  return { id: result.insertId, status: 'queued' };
+}
+
+async function processEmailQueue() {
+  if (processing) return;
+  processing = true;
+  let connection;
   try {
-    await resend.emails.send({
-      from: fromAddr(),
-      to,
-      subject,
-      text,
-      html,
-    });
-    console.log('[Mail] ✅ Sent to:', to, '—', subject);
-  } catch (err) {
-    console.error('[Mail] ❌ Failed to send to', to, ':', err.message);
+    initMailer();
+    if (!resend) {
+      await db.execute("UPDATE email_deliveries SET last_error='Email service is not configured' WHERE status='queued'");
+      return;
+    }
+    connection = await db.getConnection();
+    const [[lock]] = await connection.execute("SELECT GET_LOCK('email-delivery-worker',0) acquired");
+    if (!lock.acquired) return;
+    // Recover work interrupted by a server restart. Reuse the same provider key.
+    await connection.execute("UPDATE email_deliveries SET status='queued' WHERE status='sending'");
+    const [rows] = await connection.execute("SELECT * FROM email_deliveries WHERE status='queued' AND next_attempt_at<=NOW() ORDER BY id LIMIT 20");
+    for (const row of rows) {
+      await connection.execute("UPDATE email_deliveries SET status='sending',attempts=attempts+1 WHERE id=?", [row.id]);
+      try {
+        const result = await resend.emails.send({ from: fromAddr(), to: row.recipient, subject: row.subject,
+          text: row.text_body, html: row.html_body }, { idempotencyKey: 'crm-email-' + row.id });
+        if (result.error || !result.data?.id) throw new Error(result.error?.message || 'Email provider did not accept the message');
+        await connection.execute("UPDATE email_deliveries SET status='accepted',provider_id=?,last_error=NULL,sent_at=NOW() WHERE id=?", [result.data.id,row.id]);
+      } catch (error) {
+        const attempts = row.attempts + 1;
+        const delay = Math.min(3600, 60 * 2 ** (attempts - 1));
+        await connection.execute(`UPDATE email_deliveries SET status=?,last_error=?,next_attempt_at=DATE_ADD(NOW(),INTERVAL ? SECOND) WHERE id=?`,
+          [attempts >= MAX_ATTEMPTS ? 'failed' : 'queued', String(error.message).slice(0,1000),delay,row.id]);
+      }
+    }
+  } catch (error) { console.error('[Email queue]', error.message); }
+  finally {
+    if (connection) {
+      try { await connection.execute("SELECT RELEASE_LOCK('email-delivery-worker')"); } finally { connection.release(); }
+    }
+    processing = false;
   }
 }
 
 async function notifyByEmail(worker, type, title, message, link, senderName) {
-  if (!worker.email) return;
+  if (!worker.email) {
+    await db.execute(`INSERT INTO email_deliveries(user_id,project_id,recipient,subject,text_body,html_body,status,last_error)
+      VALUES(?,?,?,?,?,?,'failed','Recipient has no email address')`,
+      [worker.id, /^\/projects\/(\d+)/.exec(link || '')?.[1] || null, '', '[Horizon CRM] ' + title, message, emailTemplate(title,message,link,senderName)]);
+    return;
+  }
 
   await sendEmail({
     to: worker.email,
+    userId: worker.id,
+    projectId: /^\/projects\/(\d+)/.exec(link || '')?.[1] || null,
     subject: `[Horizon CRM] ${title}`,
     text: `${message}\n\nView: ${link ? (process.env.CLIENT_URL || 'http://localhost:5173') + link : ''}`,
     html: emailTemplate(title, message, link, senderName),
   });
 }
 
-module.exports = { initMailer, sendEmail, notifyByEmail };
+module.exports = { initMailer, sendEmail, notifyByEmail, processEmailQueue };

@@ -323,9 +323,10 @@ export default function useCrmProject() {
   const handleReadyForReview = useCallback(async () => {
     try {
       await api.patch(`/projects/${id}/ready-for-review`);
-      toast.success('✅ Project marked ready for review — admin notified');
+      await load();
+      toast.success('✅ Submitted for approval — management notified');
     } catch (e) { toast.error(e.message); }
-  }, [id]);
+  }, [id, load]);
 
   const toggleSelectItem = useCallback((itemId) => {
     setSelectedItems(prev => {
@@ -422,7 +423,7 @@ export default function useCrmProject() {
 
   const brandData = useMemo(() => {
     if (activeTab !== 'brands') return [];
-    const map = {};
+    const map = Object.create(null);
     for (const panel of panels) {
       for (const div of panel.divisions || []) {
         for (const item of div.items || []) {
@@ -430,7 +431,7 @@ export default function useCrmProject() {
             ? (item.custom_brand || 'Unbranded')
             : (item.brand_name || 'Unbranded');
           const base = parseFloat(item.base_price_usd) || 0;
-          const qty = parseFloat(item.qty) || 1;
+          const qty = (parseFloat(item.qty) || 1) * (Number(panel.quantity) || 1);
           const baseTotal = base * qty;
           const discPctVal = parseFloat(item.discount_pct) || 0;
           const discAmt = baseTotal * (discPctVal / 100);
@@ -461,7 +462,7 @@ export default function useCrmProject() {
 
   const brandPreview = useMemo(() => {
     if (activeTab !== 'brands') return {};
-    const map = {};
+    const map = Object.create(null);
     for (const panel of panels) {
       for (const div of panel.divisions || []) {
         for (const item of div.items || []) {
@@ -474,7 +475,7 @@ export default function useCrmProject() {
           if (isNaN(discPct)) continue;
           const finalPrice = calcItemFinal(item, discPct);
           if (!map[brand]) map[brand] = 0;
-          map[brand] += finalPrice;
+          map[brand] += finalPrice * (Number(panel.quantity) || 1);
         }
       }
     }
@@ -499,7 +500,7 @@ export default function useCrmProject() {
 
   const reportSummary = useMemo(() => {
     if (activeTab !== 'report') return [];
-    const map = {};
+    const map = Object.create(null);
     for (const item of reportItems) {
       if (!map[item.reference]) map[item.reference] = { reference: item.reference, total_qty: 0 };
       map[item.reference].total_qty += item.qty;
