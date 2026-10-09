@@ -12,7 +12,7 @@ async function main() {
     for (const role of ROLES) {
       const [workers] = await db.execute('SELECT id FROM workers WHERE role=? LIMIT 1',[role]);
       const worker = { id:workers[0]?.id || 0, name:'Smoke check', role };
-      for (const intent of ['daily','projects','stock','clients','debt']) {
+      for (const intent of ['daily','projects','stock','clients','debt','approvals','requests']) {
         const result = await readRecords(db,worker,intent,intent==='daily'?'today':`find ${intent==='projects'?'project':intent==='clients'?'client':'product'} "__assistant_smoke_no_match__"`);
         if (!result || typeof result.reply !== 'string') throw Error(`Invalid result: ${role}/${intent}`);
       }

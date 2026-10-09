@@ -5,7 +5,7 @@ import './RoleAssistant.css';
 
 export default function RoleAssistant({ worker }) {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([{ reply:`Hello ${worker.name}, how can I help you today?`, suggestions:[] }]);
+  const [messages, setMessages] = useState([{ reply:`Hi ${worker.name}! Ready to get started? I can show your work today or help you with your ${worker.role.replaceAll('_',' ')} tools.`, suggestions:[] }]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -32,15 +32,29 @@ export default function RoleAssistant({ worker }) {
     } finally { if (!controller.signal.aborted) setBusy(false); }
   };
   const latest = [...messages].reverse().find(m => m.reply);
+  const rolePrompts = {
+    owner:['Show pending approvals','Show my requests','Show outstanding payments','Show stock shortages'],
+    head_engineer:['Show pending approvals','Show my requests','Show outstanding payments','Show stock shortages'],
+    engineer:['Show pending approvals','Show my requests','Show my projects'],
+    accounting:['Show outstanding payments','Show my projects','Show clients'],
+    stock_manager:['Show stock shortages','How do I approve procurement?'],
+    secretary:['Show clients','How do I check deadlines?'],
+    technician:['Show my assignments','How do I record testing?'],
+  };
+  const quickPrompts = ['What do I have today?', ...(rolePrompts[worker.role] || []), 'My role and tools', ...(topic ? ['What next?'] : [])];
+  const suggestions = [...new Map([...quickPrompts.map(label => ({label})), ...(latest?.suggestions || [])].map(s => [s.label,s])).values()];
   return <div className="role-assistant">
     {open && <section className="assistant-panel" role="dialog" aria-modal="false" aria-labelledby="assistant-title" onKeyDown={e => { if (e.key === 'Escape') close(); }}>
       <header><img src="/assistant-avatar.png" alt="" /><div><strong id="assistant-title">Horizon Assistant</strong><small>Local help · {worker.role.replaceAll('_',' ')}</small></div><button type="button" onClick={close} aria-label="Close assistant">×</button></header>
       <p className="assistant-note">Live records and guidance for your role. Chats stay in memory and clear when you sign out.</p>
       <div className="assistant-history" role="log" aria-live="polite" aria-relevant="additions text">
         {messages.map((m,i) => <div key={i} className={`assistant-message ${m.user ? 'from-user' : ''}`}><span>{m.user || m.reply}</span>{m.links?.map(l => <button type="button" key={l.path} onClick={() => { navigate(l.path); close(); }}>Open {l.label} →</button>)}</div>)}
-        {busy && <p>Finding guidance…</p>}<div ref={end} />
+        {busy && <p>Checking your request…</p>}<div ref={end} />
       </div>
-      <div className="assistant-suggestions">{(latest?.suggestions?.length ? latest.suggestions : [{ label:'My role and tools' }, { label:'What do I have today?' }]).map(s => <button type="button" key={s.label} disabled={busy} onClick={() => send(s.label)}>{s.label}</button>)}</div>
+      <div className="assistant-quick-actions" aria-label="Suggested questions">
+        <p>Choose what you need</p>
+        <div className="assistant-suggestions">{suggestions.map(s => <button type="button" key={s.label} disabled={busy} onClick={() => send(s.label)}>{s.label}</button>)}</div>
+      </div>
       {error && <p className="assistant-error" role="alert">{error}</p>}
       <form onSubmit={e => { e.preventDefault(); send(); }}><label className="assistant-input-label" htmlFor="assistant-input">Ask for help</label><textarea ref={field} id="assistant-input" value={input} maxLength={1000} rows={2} onChange={e => setInput(e.target.value)} placeholder="How do I…?" onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} /><button type="submit" disabled={busy || !input.trim()}>Send</button></form>
       <button className="assistant-clear" type="button" disabled={busy} onClick={() => { setMessages([{ reply:`Hello ${worker.name}, how can I help you today?`, suggestions:[] }]); setTopic(undefined); setError(''); setInput(''); }}>Clear chat</button>

@@ -46,13 +46,24 @@ function answer(worker, message, previousTopic) {
   if (!allowed.length) return { reply:'Your role is not recognized. Please contact the owner to check your access.', suggestions:[], links:[] };
   const text = message.toLowerCase().normalize('NFKC');
   if (/\b(ignore .*instructions|system prompt|bypass|sql|token|secret|hack)\b/.test(text)) return { reply:'I can explain authorized workflows, but cannot reveal credentials, bypass permissions, or execute commands. Choose a task below.', suggestions:allowed.slice(0,4).map(link), links:[] };
+  const casual = text.trim().replace(/[!?.]+/g, '').replace(/\s+/g, ' ');
+  let smallTalk;
+  if (/^(?:(?:hey|hi|hello)[, ]+)?(?:how are you|how are u|how r u|how's it going|how is it going|and you|what about you)$/.test(casual)) smallTalk = "I'm doing well, thank you! How are you? Ready to get started? Would you like to see what needs your attention today?";
+  else if (/^(?:i'?m |i am |doing )?(?:good|fine|great|well|okay|ok)(?: thanks| thank you)?(?: and you)?$/.test(casual)) smallTalk = "Glad to hear it! Let's get to work. Would you like your projects, requests and other items that need attention today?";
+  else if (/^(thanks|thank you|thank u|thx|thank you so much)$/.test(casual)) smallTalk = "You're welcome! Would you like to check what needs your attention today?";
+  else if (/^(bye|goodbye|see you|see you later)$/.test(casual)) return { reply:'See you later! Your work will be here when you return.', topic:previousTopic, links:[], suggestions:[{label:'What do I have today?'}] };
+  else if (/^(?:i'?m |i am )?(tired|stressed|busy|not good)$/.test(casual)) smallTalk = "Let's take it one step at a time. Would you like to start with the work that needs your attention today?";
+  if (smallTalk) return {reply:smallTalk,topic:'conversation:daily',links:[],suggestions:[{label:'Yes, show my work today'},{label:'My role and tools'}]};
   if (/\b(what can (i|you) do|my role|my tools|my permissions|available actions|what.*(access|role.*has))\b/.test(text)) return roleOverview(worker, allowed);
-  if (/^(hi|hello|hey|help)[!?.\s]*$/.test(text)) return { reply:`Hello ${worker.name}, how can I help you today? I can read your authorized records and guide you through your ${worker.role.replaceAll('_',' ')} tools. Ask “My role and tools” for your available actions or “What do I have today?” for your live overview.`, suggestions:[{ label:'My role and tools' }, { label:'What do I have today?' }, ...allowed.slice(0,3).map(link)], links:[] };
+  if (/^(hi|hello|hey|help|good morning|good afternoon|good evening)[!?.\s]*$/.test(text)) return { reply:`Hello ${worker.name}, how can I help you today? Let's get to work. Would you like to see what needs your attention today? I can also explain your role's tools.`, topic:'conversation:daily', suggestions:[{ label:'What do I have today?' }, { label:'My role and tools' }, ...allowed.slice(0,3).map(link)], links:[] };
   const words = text.match(/[a-z]+/g) || [];
   const score = t => t.words.reduce((n, w) => n + ((w.includes(' ') ? text.includes(w) : words.includes(w) || words.includes(w+'s')) ? 1 : 0), 0);
   const ranked = topics.map(t => ({ topic:t, score:score(t) })).filter(t => t.score > 0).sort((a,b) => b.score-a.score);
   let topic = /\b(requests?|help)\b.*\b(eng|engineer)\b/.test(text) ? topics.find(t => t.id === 'requests') : ranked[0]?.topic;
-  if (!topic && /\b(next|more|how|steps|explain|that|it)\b/.test(text)) topic = allowed.find(t => t.id === previousTopic);
+  if (!topic && /\b(next|more|how|steps|explain|that|it)\b/.test(text)) {
+    const context = {'records:approvals':'workflow','records:requests':'requests','records:debt':'debt','records:stock':'reservations','records:projects':worker.role==='technician' ? 'execution' : 'projects','records:clients':'clients','records:daily':worker.role==='technician' ? 'execution' : worker.role==='accounting' ? 'debt' : worker.role==='stock_manager' ? 'procurement' : worker.role==='secretary' ? 'clients' : 'workflow'};
+    topic = allowed.find(t => t.id === (context[previousTopic] || previousTopic));
+  }
   if (topic && !allowed.some(t => t.id === topic.id)) return { reply:'That section is outside your role’s access. Ask the owner or head engineer for assistance. I can help with your authorized tools below.', links:[], suggestions:allowed.slice(0,4).map(link) };
   if (topic) topic = allowed.find(t => t.id === topic.id);
   if (!topic) return { reply:'Could you tell me which task you need help with? Ask “What do I have today?”, “Show my projects”, or search by a quoted name, such as find project "Office". I can read authorized records and explain application workflows.', links:[], suggestions:[{ label:'What do I have today?' }, ...allowed.slice(0,4).map(link)] };

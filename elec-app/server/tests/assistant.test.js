@@ -4,6 +4,22 @@ const { answer, allowedTopics } = require('../utils/assistant');
 const { ROLES } = require('../utils/rolePolicy');
 const { chat } = require('../controllers/assistantController');
 const worker = role => ({ id:1, name:'Alex', role });
+test('next step after records explains the workflow appropriate to the role',()=> {
+  assert.equal(answer(worker('engineer'),'What next?','records:approvals').topic,'workflow');
+  assert.equal(answer(worker('accounting'),'What next?','records:daily').topic,'debt');
+  assert.equal(answer(worker('stock_manager'),'Explain more','records:daily').topic,'procurement');
+  assert.equal(answer(worker('technician'),'What next?','records:daily').topic,'execution');
+});
+test('short conversations naturally offer a work overview without exposing records', () => {
+  for(const role of ROLES) {
+    for(const prompt of ['Hey how are you?', 'how r u', 'I am good', 'thanks', 'I am tired']) {
+      const result=answer(worker(role),prompt);
+      assert.equal(result.topic,'conversation:daily');
+      assert.equal(result.links.length,0);
+      assert.ok(result.suggestions.some(s=>s.label==='Yes, show my work today'));
+    }
+  }
+});
 
 test('role overview exposes only authorized tools for every role', () => {
   for (const role of ROLES) {

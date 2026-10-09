@@ -4,6 +4,29 @@ const { readRecords, recordIntent, todayInBeirut } = require('../utils/assistant
 const { ROLES } = require('../utils/rolePolicy');
 const worker = role => ({ id:27, name:'Alex', role });
 const now = new Date('2026-10-05T10:00:00Z');
+test('focused follow-ups route correctly and reject unauthorized queues without queries', async()=> {
+  for(const [prompt,intent] of [['Show pending approvals','approvals'],['Show my requests','requests'],['Show outstanding payments','debt'],['Show stock shortages','stock']]) assert.equal(recordIntent(prompt),intent);
+  for(const role of ['accounting','secretary','stock_manager','technician']) {
+    const db={execute:async()=>{throw Error('Unauthorized query');}};
+    for(const intent of ['approvals','requests']) {
+      const result=await readRecords(db,worker(role),intent,'show records',now);
+      assert.match(result.reply,/outside your role/);
+    }
+  }
+});
+test('short acceptance follows only the offered overview; approval requests use real records', () => {
+  assert.equal(recordIntent('yes','conversation:daily'),'daily');
+  assert.equal(recordIntent('yes'),null);
+  assert.equal(recordIntent('any requests waiting for approval?'),'approvals');
+  assert.equal(recordIntent('How do I request approval?'),null);
+});
+test('engineer overview names project ids, waiting approvals and recheck notes without prices', async()=> {
+  const db={execute:async(sql)=>sql.includes('FROM projects p WHERE') ? [[{id:9,project_name:'Office',ready_for_review:1,admin_approval:'pending'},{id:10,project_name:'School',admin_approval:'recheck',rejection_note:'Check quantities'}]] : sql.includes('COUNT') ? [[{unread_count:0,pending_count:0}]] : [[]]};
+  const result=await readRecords(db,worker('engineer'),'daily','today',now);
+  assert.match(result.reply,/#9 Office.*waiting for management approval/);
+  assert.match(result.reply,/#10 School.*needs edits: Check quantities/);
+  assert.doesNotMatch(result.reply,/\$/);
+});
 function mockDatabase() {
   const calls = [];
   return { calls, async execute(sql,args) {

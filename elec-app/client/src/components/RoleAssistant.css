@@ -14,6 +14,9 @@
 .assistant-message.from-user{background:#0284c725;margin-left:25px}
 .assistant-message button,.assistant-suggestions button{display:block;border:1px solid #64748b80;border-radius:8px;padding:6px 9px;background:transparent;color:inherit;font-size:12px;margin-top:7px;text-align:left}
 .assistant-suggestions{display:flex;flex-wrap:wrap;gap:5px;padding:0 14px 10px}.assistant-suggestions button{margin:0}
+.assistant-quick-actions{flex-shrink:0;max-height:180px;overflow-y:auto;overscroll-behavior:contain;border-top:1px solid #64748b40}
+.assistant-quick-actions p{margin:8px 14px;font-size:12px;font-weight:600}
+.assistant-suggestions button{min-height:36px}
 .assistant-panel form{display:flex;gap:8px;padding:10px 14px;border-top:1px solid #64748b40}
 .assistant-panel textarea{flex:1;min-width:0;resize:none;border:1px solid #64748b80;border-radius:9px;padding:9px;background:transparent;color:inherit;font:inherit}
 .assistant-panel form button{border:0;border-radius:9px;background:#0369a1;color:#fff;padding:9px}
