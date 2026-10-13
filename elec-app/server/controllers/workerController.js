@@ -37,6 +37,7 @@ async function createWorker(req, res, next) {
 async function updateWorker(req, res, next) {
   try {
     const { name, email, phone, role } = req.body;
+    if (email !== undefined && req.worker.role !== 'owner') return res.status(403).json({ error: 'Only the owner can change email addresses' });
     const validRoles = ['owner','head_engineer','stock_manager','accounting','engineer','secretary','technician'];
     if (role && !validRoles.includes(role)) return res.status(400).json({ error: 'Invalid role' });
     const [[target]] = await db.execute('SELECT role FROM workers WHERE id=?', [req.params.id]);

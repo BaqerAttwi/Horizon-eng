@@ -315,7 +315,7 @@ async function createFromImport(req, res, next) {
       `INSERT INTO projects(project_name,engineer_id,client_id,exchange_rate_eur_usd,deadline,total_panels,vat_pct,project_discount_pct,margin_warning_pct,payment_terms,client_pdf_note,project_stage)
        VALUES(?,?,?,?,?,?,?,?,?,?,?,'design')`,
       [project_name, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.18, deadline||null, total_panels||panels.length,
-       parseFloat(vat_pct)||0,parseFloat(project_discount_pct)||0,parseFloat(margin_warning_pct)||10,payment_terms||null,client_pdf_note||null]
+       (vat_pct == null ? 11 : parseFloat(vat_pct)||0),parseFloat(project_discount_pct)||0,parseFloat(margin_warning_pct)||10,payment_terms||null,client_pdf_note||null]
     );
     const projectId = projResult.insertId;
     const finalQuoteNumber = quote_number?.trim() || generateQuotationNumber(project_name, projectId);

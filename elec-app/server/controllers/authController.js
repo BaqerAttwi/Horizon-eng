@@ -196,17 +196,37 @@ async function logout(req, res, next) {
 
 async function me(req, res, next) {
   try {
-    const [rows] = await db.execute('SELECT id, name, email, role, created_at FROM workers WHERE id=?', [req.worker.id]);
+    const [rows] = await db.execute('SELECT id, name, email, phone, role, created_at FROM workers WHERE id=?', [req.worker.id]);
     if (!rows.length) return res.status(404).json({ error: 'Worker not found' });
     const w = rows[0];
     res.json({
       id:          w.id,
       name:        w.name,
       email:       w.email,
+      phone:       w.phone,
       role:        w.role,
       permissions: req.worker.permissions,
     });
   } catch (err) { next(err); }
 }
 
-module.exports = { login, register, changePassword, setPassword, logout, me, ROLE_PERMISSIONS, JWT_SECRET };
+async function updateProfile(req, res, next) {
+  try {
+    const editsEmail = req.body.email !== undefined;
+    if (editsEmail && req.worker.role !== 'owner') return res.status(403).json({ error: 'Only the owner can change email addresses' });
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const phone = typeof req.body.phone === 'string' ? req.body.phone.trim() : '';
+    if (!name || name.length > 200 || phone.length > 50 || (editsEmail && (email.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))) {
+      return res.status(400).json({ error: 'Enter a name, valid email, and phone number of at most 50 characters' });
+    }
+    if (editsEmail) await db.execute('UPDATE workers SET name=?, email=?, phone=? WHERE id=?', [name, email, phone || null, req.worker.id]);
+    else await db.execute('UPDATE workers SET name=?, phone=? WHERE id=?', [name, phone || null, req.worker.id]);
+    return me(req, res, next);
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'This email is already in use' });
+    next(err);
+  }
+}
+
+module.exports = { login, register, changePassword, setPassword, logout, me, updateProfile, ROLE_PERMISSIONS, JWT_SECRET };

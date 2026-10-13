@@ -6,7 +6,7 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 const { getProjectEmailDeliveries, retryEmailDelivery } = require('../controllers/emailDeliveryController');
 const { validate } = require('../middleware/validate');
 
-const { login, register, changePassword, setPassword, logout, me } = require('../controllers/authController');
+const { login, register, changePassword, setPassword, logout, me, updateProfile } = require('../controllers/authController');
 const { handleUpload }         = require('../controllers/uploadController');
 const { getProducts, getProduct, updateProduct, getBrands, provisionProduct } = require('../controllers/productController');
 const { getWorkers, createWorker, updateWorker, deleteWorker } = require('../controllers/workerController');
@@ -87,6 +87,7 @@ router.post('/auth/register',        requireAuth, requireRole('owner','head_engi
 router.post('/auth/change-password', requireAuth, changePassword);
 router.post('/auth/set-password',    requireAuth, requireRole('owner','head_engineer'), setPassword);
 router.get('/auth/me',               requireAuth, me);
+router.patch('/auth/me',             requireAuth, updateProfile);
 router.post('/auth/logout',          requireAuth, logout);
 
 // ── Upload (owner + accounting) ──────────────────────────────
@@ -306,9 +307,10 @@ router.post('/division-types',requireAuth,requireRole('owner','head_engineer'),c
 router.patch('/division-types/:id',requireAuth,requireRole('owner','head_engineer'),updateDivisionType);
 router.delete('/division-types/:id',requireAuth,requireRole('owner','head_engineer'),deleteDivisionType);
 
-const {getProcurementQueue,reviewProcurement,receiveProcurementStock}=require('../controllers/procurementController');
+const {getProcurementQueue,reviewProcurement,receiveProcurementStock,receiveManualProcurementItem}=require('../controllers/procurementController');
 router.get('/procurement/projects',requireAuth,requireRole('owner','head_engineer','stock_manager'),getProcurementQueue);
 router.patch('/procurement/projects/:projectId/review',requireAuth,requireRole('owner','head_engineer','stock_manager'),serializeProject,guardProjectProgress,reviewProcurement);
 router.patch('/procurement/projects/:projectId/products/:productId/receive',requireAuth,requireRole('owner','head_engineer','stock_manager'),serializeProject,guardProjectProgress,receiveProcurementStock);
+router.patch('/procurement/projects/:projectId/manual-items/:itemId/receive',requireAuth,requireRole('owner','head_engineer','stock_manager'),serializeProject,guardProjectProgress,receiveManualProcurementItem);
 
 module.exports = router;

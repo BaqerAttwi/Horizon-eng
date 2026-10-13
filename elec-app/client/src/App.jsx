@@ -116,16 +116,7 @@ function ProjectRedirect() {
 }
 
 function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme, onOpenTutorial, visibleNav, activeWorkspace }) {
-  const { worker, logout, can, isRole } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success('👋 Logged out');
-      navigate('/login');
-    } catch (error) { toast.error(error.message); }
-  };
+  const { worker } = useAuth();
 
   return (
     <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
@@ -159,6 +150,7 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme, onOpenTutorial
 
       {/* Notification bell for desktop */}
       <div className="sidebar-updates"><UpdatesLink /></div>
+      {worker && <RoleAssistant key={`${worker.id}-${worker.role}`} worker={worker} />}
       <div className="sidebar-help">
         <button className="nav-link tutorial-nav" onClick={onOpenTutorial}>
           <span className="nav-icon"><AppIcon name="help" /></span>
@@ -181,7 +173,7 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme, onOpenTutorial
       {worker && (
         <div className="sidebar-profile">
           <div className="sidebar-user">
-            <span className="sidebar-avatar" style={{ '--role-tone': ROLE_COLORS[worker.role] }}><AppIcon name={worker.role} /></span>
+            <span className="sidebar-avatar" style={{ '--role-tone': ROLE_COLORS[worker.role] }} aria-hidden="true">{worker.name?.slice(0, 1).toUpperCase()}</span>
             <div className="sidebar-user-copy">
               <div className="sidebar-user-name">{worker.name}</div>
               <div className="sidebar-user-role" style={{ color: ROLE_COLORS[worker.role] }}>
@@ -189,13 +181,7 @@ function Sidebar({ mobileOpen, setMobileOpen, theme, toggleTheme, onOpenTutorial
               </div>
             </div>
           </div>
-          <button
-            className="btn btn-secondary btn-sm"
-            style={{ width: '100%', justifyContent: 'center' }}
-            onClick={handleLogout}
-          >
-            <span>↪</span> Sign Out
-          </button>
+
         </div>
       )}
     </aside>
@@ -254,7 +240,6 @@ function AppLayout() {
     <div className={`layout${theme === 'light' ? ' light-mode' : ''}`}>
       {worker && <Sidebar visibleNav={visibleNav} activeWorkspace={activeWorkspace} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} theme={theme} toggleTheme={toggleTheme} onOpenTutorial={() => { setMobileOpen(false); setTutorialRequest(v => v + 1); }} />}
       {worker && <RoleTutorial worker={worker} openRequest={tutorialRequest} onCloseRequest={() => {}} />}
-      {worker && <RoleAssistant key={`${worker.id}-${worker.role}`} worker={worker} />}
 
       {/* Mobile overlay backdrop */}
       {mobileOpen && (

@@ -67,7 +67,7 @@ function money(value, currency = '$') {
 
 function activePanels(project) {
   return (project.panels || [])
-    .filter(panel => (panel.divisions || []).some(div => (div.items || []).some(item => item.visible_in_client_pdf !== 0)))
+    .filter(panel => (panel.divisions || []).some(div => (div.items || []).some(item => item.visible_in_client_pdf !== 0) || (div.group_instances || []).length))
     .sort((a, b) => Number(a.panel_number) - Number(b.panel_number));
 }
 
@@ -86,7 +86,7 @@ export function drawTechnicalQuotation(project, fields, logoPng) {
     doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text('HORIZON POWER SOLUTION', pw / 2, 14, { align: 'center' });
     doc.setFontSize(15); doc.text('TECHNICAL OFFER', pw / 2, 23, { align: 'center' });
     doc.setFontSize(6.5); doc.text(clean(fields.documentCode, 'HPS-COM-PR02-L02'), pw - 47, 12);
-    doc.text(`Edition ${clean(fields.edition, '1')}`, pw - 47, 18);
+    doc.text(`Revision ${clean(fields.revision ?? fields.edition, '1')}`, pw - 47, 18);
     doc.text(`Quote # ${quoteNo}`, pw - 47, 24);
   };
   const sections = panels.length ? panels : [{ panel_number: '', panel_name: 'No technical items', divisions: [] }];
@@ -96,30 +96,36 @@ export function drawTechnicalQuotation(project, fields, logoPng) {
       ? `Panel #${panel.panel_number} - ${clean(panel.panel_name, 'Panel')}`
       : 'No technical items';
     const body = [];
-    let number = 1;
     (panel.divisions || []).forEach(div => {
-      (div.items || []).filter(item => item.visible_in_client_pdf !== 0).forEach(item => {
+      const addItem = item => {
+        if (item.visible_in_client_pdf === 0) return;
         body.push([
-          number++, clean(panel.panel_name, `Panel ${panel.panel_number}`), clean(div.division_type, '-'),
+          clean(div.division_type, '-'),
           clean(item.is_manual ? item.custom_name : item.reference, '-'),
           clean(item.custom_desc || item.product_desc || item.description, '-'), clean(item.qty, '1'),
         ]);
+      };
+      (div.items || []).filter(item => !item.source_group_instance_id).forEach(addItem);
+      (div.group_instances || []).forEach(group => {
+        body.push([{ content: `Group: ${clean(group.group_name, `Group #${group.item_group_id}`)}`, colSpan: 4,
+          styles: { fillColor: [240, 244, 249], fontStyle: 'bold' } }]);
+        (group.items || []).forEach(addItem);
       });
     });
-    if (number === 1) body.push(['', '', '', '', 'No technical items', '']);
-    if (panels.length) body.push([{ content: `End of Panel #${panel.panel_number} - ${clean(panel.panel_name, 'Panel')}`, colSpan: 6,
+    if (!body.length) body.push(['', '', 'No technical items', '']);
+    if (panels.length) body.push([{ content: `End of Panel #${panel.panel_number} - ${clean(panel.panel_name, 'Panel')}`, colSpan: 4,
       styles: { fillColor: [232, 245, 249], textColor: BLUE, fontStyle: 'bold', cellPadding: 1.2, lineColor: BLUE, lineWidth: { bottom: 0.6 } } }]);
     if (nextY > doc.internal.pageSize.getHeight() - 30) { doc.addPage(); nextY = 32; }
     autoTable(doc, {
       startY: nextY, margin: { left: 7, right: 7, top: 32, bottom: 12 }, theme: 'grid',
       head: [
-        [{ content: panelTitle, colSpan: 6, styles: { fillColor: BLUE, textColor: 255, fontStyle: 'bold', fontSize: 8, cellPadding: 1.6, halign: 'left' } }],
-        ['#', 'Panel name', 'Division', 'Part number', 'Description', 'QTY'],
+        [{ content: panelTitle, colSpan: 4, styles: { fillColor: BLUE, textColor: 255, fontStyle: 'bold', fontSize: 8, cellPadding: 1.6, halign: 'left' } }],
+        ['Division', 'Part number', 'Description', 'QTY'],
       ],
       body,
       styles: { fontSize: 5.8, cellPadding: 0.8, lineColor: BORDER, lineWidth: 0.15, textColor: 10, overflow: 'linebreak' },
       headStyles: { fillColor: BLUE, textColor: 255, fontStyle: 'bold', halign: 'center' },
-      columnStyles: { 0: { cellWidth: 8, halign: 'center' }, 1: { cellWidth: 42 }, 2: { cellWidth: 31 }, 3: { cellWidth: 42 }, 4: { cellWidth: pw - 147 }, 5: { cellWidth: 10, halign: 'center' } },
+      columnStyles: { 0: { cellWidth: 31 }, 1: { cellWidth: 42 }, 2: { cellWidth: pw - 97 }, 3: { cellWidth: 10, halign: 'center' } },
       rowPageBreak: 'avoid', pageBreak: 'auto',
       didDrawPage: () => drawHeader(),
     });
@@ -229,7 +235,7 @@ export async function exportProjectPdf(projectId, type = 'owner', fields = {}) {
     y += 10;
 
     const activePanels = panels
-      .filter(p => (p.divisions || []).some(d => (d.items || []).length))
+      .filter(p => (p.divisions || []).some(d => (d.items || []).length || (d.group_instances || []).length))
       .sort((a, b) => a.panel_number - b.panel_number);
 
     let panelGrand = 0;
@@ -340,7 +346,6 @@ export async function exportProjectPdf(projectId, type = 'owner', fields = {}) {
         // Collect individual items (skip group instance items)
         for (const item of div.items || []) {
           if (item.visible_in_client_pdf === 0) continue;
-          if (item.source_group_instance_id) continue;
           const ref = item.is_manual ? (item.custom_name || 'Manual') : item.reference;
           allItems.push({ ref: ref || '—', desc: item.custom_desc || item.product_desc || item.description || '—', qty: item.qty ?? 1, division: div.division_type || '' });
         }
@@ -646,23 +651,23 @@ export async function exportProjectPdf(projectId, type = 'owner', fields = {}) {
 
   autoTable(doc, {
     startY: y,
-    head: [['Brand', 'Items', 'Total Cost', 'Total Price', 'Profit / Loss']],
+    head: [['Brand', 'Total Cost', 'Total Price', 'Profit / Loss']],
     body: brandRows.map(b => {
       const profit = b.total_price - b.total_cost;
-      return [b.brand, `${b.count}`, `$${b.total_cost.toFixed(2)}`, `$${b.total_price.toFixed(2)}`, profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`];
+      return [b.brand, `$${b.total_cost.toFixed(2)}`, `$${b.total_price.toFixed(2)}`, profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`];
     }),
-    foot: [['TOTAL', `${brandRows.reduce((s, b) => s + b.count, 0)}`, `$${brandGrandCost.toFixed(2)}`, `$${brandGrandPrice.toFixed(2)}`,
+    foot: [['TOTAL', `$${brandGrandCost.toFixed(2)}`, `$${brandGrandPrice.toFixed(2)}`,
       (brandGrandPrice - brandGrandCost) >= 0 ? `+$${(brandGrandPrice - brandGrandCost).toFixed(2)}` : `-$${Math.abs(brandGrandPrice - brandGrandCost).toFixed(2)}`
     ]],
     theme: 'grid',
     headStyles: { fontSize: 7, fillColor: [71, 85, 105], textColor: 255 },
     bodyStyles: { fontSize: 7 },
     footStyles: { fontSize: 7, fillColor: [240, 244, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
-    columnStyles: { 0: { cellWidth: 50 }, 3: { halign: 'right', fontStyle: 'bold' }, 4: { halign: 'right', fontStyle: 'bold' } },
+    columnStyles: { 0: { cellWidth: 50 }, 2: { halign: 'right', fontStyle: 'bold' }, 3: { halign: 'right', fontStyle: 'bold' } },
     margin: { left: 16, right: 16, top: 28 },
     tableWidth: pw - 32,
     didParseCell: (data) => {
-      if (data.section === 'body' && data.column.index === 4) {
+      if (data.section === 'body' && data.column.index === 3) {
         const val = data.cell.raw;
         if (typeof val === 'string') {
           if (val.startsWith('+')) data.cell.styles.textColor = [34, 197, 94];

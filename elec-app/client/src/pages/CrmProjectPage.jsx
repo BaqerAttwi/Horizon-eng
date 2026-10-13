@@ -250,9 +250,9 @@ export default function CrmProjectPage() {
       </section>
       <div className="page-header">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button className="btn btn-sm btn-secondary" onClick={() => navigate('/projects')}>← Back</button>
-            <div className="page-title">🔧 {project.project_name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <button className="btn btn-sm btn-secondary" style={{ flexShrink: 0 }} onClick={() => navigate('/projects')}>← Back</button>
+            <div className="page-title" style={{ minWidth: 0 }}>🔧 {project.project_name}</div>
           </div>
           <div className="page-subtitle">
             Engineer: {project.engineer_name || '—'} • Client: {project.client_name || '—'} •
@@ -546,8 +546,6 @@ export default function CrmProjectPage() {
                   <thead>
                     <tr style={{ borderBottom: '2px solid var(--border)' }}>
                       <th style={{ textAlign: 'left', padding: '8px 10px' }}>Brand</th>
-                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Items</th>
-                      <th style={{ textAlign: 'right', padding: '8px 10px' }}>Total Qty</th>
                       {!hideCost && <th style={{ textAlign: 'right', padding: '8px 10px' }}>Total Cost</th>}
                       <th style={{ textAlign: 'right', padding: '8px 10px' }}>Current Total</th>
                       <th style={{ textAlign: 'center', padding: '8px 10px', minWidth: 70 }}>Current Disc %</th>
@@ -568,8 +566,6 @@ export default function CrmProjectPage() {
                       return (
                       <tr key={b.brand} style={{ borderBottom: '1px solid var(--border)' }}>
                         <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--accent)' }}>{b.brand}</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{b.count}</td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{b.total_qty}</td>
                         {!hideCost && <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>${b.total_cost.toFixed(2)}</td>}
                         <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>${b.total_price.toFixed(2)}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
@@ -609,8 +605,6 @@ export default function CrmProjectPage() {
                   <tfoot>
                     <tr style={{ borderTop: '2px solid var(--border)', fontWeight: 700 }}>
                       <td style={{ padding: '8px 10px' }}>Total</td>
-                      <td style={{ padding: '8px 10px', textAlign: 'right' }}>{brandData.reduce((s, b) => s + b.count, 0)}</td>
-                      <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>{brandData.reduce((s, b) => s + b.total_qty, 0)}</td>
                       {!hideCost && <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--white)' }}>${brandData.reduce((s, b) => s + b.total_cost, 0).toFixed(2)}</td>}
                       <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--success)' }}>${brandData.reduce((s, b) => s + b.total_price, 0).toFixed(2)}</td>
                       {Object.keys(brandDiscountEdits).some(k => brandDiscountEdits[k] !== undefined && brandDiscountEdits[k] !== '') && (

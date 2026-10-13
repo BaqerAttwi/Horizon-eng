@@ -19,7 +19,7 @@ function WorkerModal({ worker, onClose, onSaved }) {
     if (isNew && (!form.password || form.password.length < 6)) { toast.error('Password must be at least 6 characters'); return; }
     setSaving(true);
     try {
-      const body = isNew ? form : { name: form.name, email: form.email, phone: form.phone, role: form.role };
+      const body = isNew ? form : { name: form.name, ...(isRole('owner') ? { email: form.email } : {}), phone: form.phone, role: form.role };
       const r = isNew
         ? await api.post('/workers', body)
         : await api.patch(`/workers/${worker.id}`, body);
@@ -62,7 +62,8 @@ function WorkerModal({ worker, onClose, onSaved }) {
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Email</label>
-              <input className="form-input" type="email" placeholder="email@company.com" {...f('email')} />
+              <input className="form-input" type="email" readOnly={!isNew && !isRole('owner')} placeholder="email@company.com" {...f('email')} />
+              {!isNew && !isRole('owner') && <small style={{ color: 'var(--muted)' }}>Only the owner can change email addresses.</small>}
             </div>
             <div className="form-group">
               <label className="form-label">Phone</label>

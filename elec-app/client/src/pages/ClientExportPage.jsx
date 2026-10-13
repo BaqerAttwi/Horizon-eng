@@ -73,7 +73,7 @@ export default function ClientExportPage() {
       <div className="card"><div className="card-body"><div className="form-grid">
         <div className="form-group"><label className="form-label">Document Type</label><select className="form-input" value={form.format} onChange={e => setForm(v => ({ ...v, format: e.target.value }))}>{!isEngineer && <option value="quotation">{documentTitle}</option>}<option value="technical">Technical Quotation</option></select></div>
         {input(`${form.format === 'technical' ? 'Quotation' : documentTitle} Number *`, 'quoteNumber')}
-        {form.format === 'technical' ? <>{input('Document Code', 'documentCode')}{input('Edition', 'edition')}</> : <>
+        {form.format === 'technical' ? <>{input('Document Code', 'documentCode')}{input('Revision', 'edition')}</> : <>
           {input(`${documentTitle} Date`, 'quoteDate', 'date')}{input(invoice ? 'Delivery Date *' : 'Expiry Date', invoice ? 'deliveryDate' : 'expiryDate', 'date')}{input('Project', 'projectName')}{input('Buyer Name', 'buyerName')}{input('Buyer Address', 'buyerAddress')}{input('Buyer Phone', 'buyerPhone')}{input('Contact Person', 'buyerContact')}{input('Buyer Email', 'buyerEmail', 'email')}{input('Buyer VAT #', 'buyerVat')}{input('Payment Terms', 'paymentTerms', 'textarea', true)}
           {input('Validity', 'validity')}{input('Delivery Time', 'deliveryTime')}{input('Currency Symbol', 'currency')}{input('Currency Name', 'currencyName')}{input('Incoterm Description', 'incoterm')}{input('Incoterms 2020', 'incotermCode')}
           {input('Additional Info', 'additionalInfo', 'textarea', true)}

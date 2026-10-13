@@ -3,18 +3,19 @@ const { createNotification, notifyRoles } = require('./notificationController');
 const { logActivity } = require('./activityController');
 
 async function getDemand(projectId) {
-  const [rows] = await db.execute(`SELECT pci.product_id,COALESCE(pr.reference,pci.custom_name,'Manual item') item_name,
+  const [rows] = await db.execute(`SELECT pci.product_id,CASE WHEN pci.product_id IS NULL THEN pci.id ELSE NULL END manual_item_id,COALESCE(pr.reference,pci.custom_name,'Manual item') item_name,
     COALESCE(pr.description,pci.custom_desc,'') description,SUM(pci.qty*COALESCE(pcp.quantity,1)) required_qty,
-    pr.stock_qty,pr.reserved_qty,COALESCE(ppa.allocated_qty,0) allocated_qty,
-    CASE WHEN pci.product_id IS NULL THEN 0 ELSE GREATEST(0,pr.stock_qty-GREATEST(pr.reserved_qty-SUM(pci.qty*COALESCE(pcp.quantity,1)),0))+COALESCE(ppa.allocated_qty,0) END available_for_project
+    pr.stock_qty,pr.reserved_qty,CASE WHEN pci.product_id IS NULL THEN COALESCE(pmr.received_qty,0) ELSE COALESCE(ppa.allocated_qty,0) END allocated_qty,
+    CASE WHEN pci.product_id IS NULL THEN COALESCE(pmr.received_qty,0) ELSE GREATEST(0,pr.stock_qty-GREATEST(pr.reserved_qty-SUM(pci.qty*COALESCE(pcp.quantity,1)),0))+COALESCE(ppa.allocated_qty,0) END available_for_project
     FROM panel_crm_items pci JOIN panel_divisions pd ON pd.id=pci.division_id
     JOIN project_crm_panels pcp ON pcp.id=pd.panel_id LEFT JOIN products pr ON pr.id=pci.product_id
     LEFT JOIN project_procurement_allocations ppa ON ppa.project_id=pcp.project_id AND ppa.product_id=pci.product_id
+    LEFT JOIN project_manual_procurement_receipts pmr ON pmr.project_id=pcp.project_id AND pmr.item_id=pci.id AND pci.product_id IS NULL
     WHERE pcp.project_id=?
-    GROUP BY pci.product_id,
+    GROUP BY pci.product_id,CASE WHEN pci.product_id IS NULL THEN pci.id ELSE NULL END,
       COALESCE(pr.reference,pci.custom_name,'Manual item'),
       COALESCE(pr.description,pci.custom_desc,''),
-      pr.stock_qty,pr.reserved_qty,ppa.allocated_qty
+      pr.stock_qty,pr.reserved_qty,ppa.allocated_qty,pmr.received_qty
     ORDER BY item_name`,[projectId]);
   return rows.map(row=>({...row,required_qty:Number(row.required_qty)||0,stock_qty:Number(row.stock_qty)||0,reserved_qty:Number(row.reserved_qty)||0,
     allocated_qty:Number(row.allocated_qty)||0,available_for_project:Number(row.available_for_project)||0,shortage_qty:Math.max(0,(Number(row.required_qty)||0)-(Number(row.available_for_project)||0))}));
@@ -70,4 +71,23 @@ async function receiveProcurementStock(req,res,next) {
   } catch(error) { next(error); }
 }
 
-module.exports={getProcurementQueue,reviewProcurement,receiveProcurementStock,getDemand};
+async function receiveManualProcurementItem(req,res,next) {
+  try {
+    const projectId=Number(req.params.projectId),itemId=Number(req.params.itemId),quantity=Number(req.body.quantity);
+    if (!Number.isSafeInteger(quantity)||quantity<1||quantity>2147483647) return res.status(400).json({error:'quantity must be a positive whole number'});
+    const [[project]]=await db.execute('SELECT id,project_stage FROM projects WHERE id=? AND deleted_at IS NULL',[projectId]);
+    if (!project) return res.status(404).json({error:'Project not found'});
+    if (project.project_stage!=='procurement') return res.status(409).json({error:'Items can only be received here while the project is in Procurement'});
+    const [[item]]=await db.execute(`SELECT pci.id,pci.custom_name FROM panel_crm_items pci
+      JOIN panel_divisions pd ON pd.id=pci.division_id JOIN project_crm_panels pcp ON pcp.id=pd.panel_id
+      WHERE pcp.project_id=? AND pci.id=? AND pci.product_id IS NULL LIMIT 1`,[projectId,itemId]);
+    if (!item) return res.status(404).json({error:'Manual item is not required by this project'});
+    await db.execute(`INSERT INTO project_manual_procurement_receipts(project_id,item_id,received_qty,updated_by)
+      VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE received_qty=received_qty+VALUES(received_qty),updated_by=VALUES(updated_by)`,
+      [projectId,itemId,quantity,req.worker.id]);
+    logActivity({project_id:projectId,item_id:itemId,action:'procurement_manual_item_received',field_name:item.custom_name||'Manual item',new_value:`+${quantity} received for this project`,performed_by:req.worker.id});
+    res.json({manual_item_id:itemId,added:quantity,items:await getDemand(projectId)});
+  } catch(error) { next(error); }
+}
+
+module.exports={getProcurementQueue,reviewProcurement,receiveProcurementStock,receiveManualProcurementItem,getDemand};

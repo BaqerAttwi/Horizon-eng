@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
   const isRole = (...roles) => roles.includes(worker?.role);
 
   return (
-    <AuthContext.Provider value={{ worker, loading, login, logout, can, isRole }}>
+    <AuthContext.Provider value={{ worker, loading, login, logout, can, isRole, refreshWorker: async () => { const { data } = await api.get('/auth/me'); setWorker(data); return data; } }}>
       {children}
     </AuthContext.Provider>
   );

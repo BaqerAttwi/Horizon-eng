@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import AppIcon from './AppIcon';
+import AccountMenu from './AccountMenu';
 
 export const WORKSPACES = [
   { id: 'crm', label: 'CRM', icon: 'clients', color: '#3979df', description: 'Clients, projects & collaboration', routes: ['/projects', '/clients', '/messages', '/calendar'] },
@@ -39,6 +40,6 @@ export default function WorkspaceLauncher({ workspaces, active, onSelect, worker
     <span className="topbar-workspace" style={{ color: active.color }}>{active.label}</span>
     <span className="topbar-spacer" />
     <span className="topbar-user">{worker.name}</span>
-    <span className="topbar-avatar">{worker.name?.slice(0, 1).toUpperCase()}</span>
+    <AccountMenu />
   </header>;
 }

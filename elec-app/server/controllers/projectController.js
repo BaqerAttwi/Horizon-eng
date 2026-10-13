@@ -171,7 +171,7 @@ async function createProject(req, res, next) {
     const [result] = await db.execute(
       `INSERT INTO projects(project_name,quote_number,engineer_id,client_id,exchange_rate_eur_usd,deadline,notes,total_panels,vat_pct,project_discount_pct,payment_terms,margin_warning_pct,client_pdf_note)
        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [project_name, quote_number?.trim() || null, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.18, deadline||null, notes||null, total_panels||0, vat_pct ?? 0, parseFloat(project_discount_pct) || 0, payment_terms || null, margin_warning_pct ?? 10, client_pdf_note || null]
+      [project_name, quote_number?.trim() || null, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.18, deadline||null, notes||null, total_panels||0, vat_pct ?? 11, parseFloat(project_discount_pct) || 0, payment_terms || null, margin_warning_pct ?? 10, client_pdf_note || null]
     );
     const projectId = result.insertId;
     if (!quote_number?.trim()) {
@@ -204,7 +204,7 @@ async function createProject(req, res, next) {
     const pDiscountPct = parseFloat(project_discount_pct) || 0;
     const pDiscountAmount = totalPrice * (pDiscountPct / 100);
     const pNetAfterDiscount = totalPrice - pDiscountAmount;
-    const pVatPct = parseFloat(req.body.vat_pct) || 0;
+    const pVatPct = req.body.vat_pct == null ? 11 : parseFloat(req.body.vat_pct) || 0;
     const pTotalVat = pNetAfterDiscount * (pVatPct / 100);
     await db.execute(
       'UPDATE projects SET total_cost=?, total_price=?, project_discount_amount=?, total_vat=?, total_with_vat=? WHERE id=?',

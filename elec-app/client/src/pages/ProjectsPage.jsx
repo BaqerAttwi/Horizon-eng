@@ -86,7 +86,7 @@ function ProjectModal({ project, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     project_name: '', quote_number: '', engineer_id: '', client_id: '',
-    exchange_rate_eur_usd: 1.18, deadline: '', notes: '', total_panels: 0, vat_pct: 0,
+    exchange_rate_eur_usd: 1.18, deadline: '', notes: '', total_panels: 0, vat_pct: 11,
       project_discount_pct: 0, margin_warning_pct: 10, payment_terms: '70% at order, 30% after inspection', client_pdf_note: '',
     ...(project ? {
       project_name: project.project_name,
@@ -139,7 +139,7 @@ function ProjectModal({ project, onClose, onSaved }) {
   const f = k => ({ value: form[k] || '', onChange: e => setForm(p => ({ ...p, [k]: e.target.value })) });
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">{project?.id ? 'Edit Project' : '+ New Project CRM'}</span>
@@ -217,7 +217,7 @@ function ProjectModal({ project, onClose, onSaved }) {
           </div>
         </div>
         <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          {project?.id && <button className="btn btn-secondary" onClick={onClose}>Cancel</button>}
           <button className="btn btn-primary" onClick={save} disabled={saving}>
             {saving ? <><span className="spinner" />Saving...</> : '💾 Save'}
           </button>
@@ -605,7 +605,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
                     <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Additional Info (one item per line)</label><textarea className="form-textarea" rows={3} value={clientExport.additionalInfo} onChange={e => setClientExport(p => ({ ...p, additionalInfo: e.target.value }))} /></div>
                   </> : <>
                     <div className="form-group"><label className="form-label">Document Code</label><input className="form-input" value={clientExport.documentCode} onChange={e => setClientExport(p => ({ ...p, documentCode: e.target.value }))} /></div>
-                    <div className="form-group"><label className="form-label">Edition</label><input className="form-input" value={clientExport.edition} onChange={e => setClientExport(p => ({ ...p, edition: e.target.value }))} /></div>
+                    <div className="form-group"><label className="form-label">Revision</label><input className="form-input" value={clientExport.edition} onChange={e => setClientExport(p => ({ ...p, edition: e.target.value }))} /></div>
                   </>}
                 </div>
                 <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={pdfExporting || !clientExport.quoteNumber.trim()} onClick={() => handleExportPdf(clientExport.format, clientExport)}>
@@ -716,6 +716,7 @@ export default function ProjectsPage() {
                 const progress = project.total_panels > 0 ? Math.round((project.completed_panels / project.total_panels) * 100) : 0;
                 return <button className="project-progress-card" key={project.id} onClick={() => setDetail(project.id)}>
                   <strong>{project.project_name}</strong>
+                  <span className="project-eq-number">{project.quote_number || '—'}</span>
                   <span>{project.engineer_name || 'Unassigned'} · {project.client_name || 'No client'}</span>
                   <div className="project-mini-progress"><i style={{ width: `${progress}%` }} /></div>
                   <small>{progress}% · {project.completed_panels || 0}/{project.total_panels || 0} panels</small>
@@ -733,14 +734,14 @@ export default function ProjectsPage() {
           <table>
             <thead>
               <tr>
-                <th>ID</th><th>Project Name</th><th>Engineer</th><th>Client</th>
+                <th>ID</th><th>EQ Number</th><th>Project Name</th><th>Engineer</th><th>Client</th>
                 <th>Admin</th><th>Client</th><th>Stage</th><th>Deadline</th>
                 <th>Priority</th><th>Progress</th><th>Panels</th><th>Total $</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {!filtered.length && !loading && (
-                <tr><td colSpan={13}><div className="empty"><div className="empty-icon">{search ? '🔍' : '🔧'}</div><p>{search ? 'No projects match your search.' : 'No projects yet.'}</p></div></td></tr>
+                <tr><td colSpan={14}><div className="empty"><div className="empty-icon">{search ? '🔍' : '🔧'}</div><p>{search ? 'No projects match your search.' : 'No projects yet.'}</p></div></td></tr>
               )}
               {filtered.map(p => {
                 const pri = priorityLabel(p);
@@ -748,8 +749,9 @@ export default function ProjectsPage() {
                 return (
                   <tr key={p.id}>
                     <td className="mono" style={{ color: 'var(--muted)' }}>{p.id}</td>
+                    <td><button className="project-eq-number" onClick={() => setDetail(p.id)}>{p.quote_number || '—'}</button></td>
                     <td style={{ fontWeight: 600, color: 'var(--white)', cursor: 'pointer' }} onClick={() => setDetail(p.id)}>
-                      {p.project_name}<div style={{fontSize:10,color:'var(--muted)'}}>{p.quote_number}</div>
+                      {p.project_name}
                     </td>
                     <td style={{ fontSize: 12 }}>{p.engineer_name || <span style={{ color: 'var(--muted)' }}>—</span>}</td>
                     <td style={{ fontSize: 12 }}>{p.client_name || <span style={{ color: 'var(--muted)' }}>—</span>}</td>
@@ -803,7 +805,7 @@ function ImportPdfModal({ onClose, onCreated }) {
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [preview, setPreview] = useState(null);
-  const [form, setForm] = useState({ project_name: '', quote_number:'', client_id: '', engineer_id: '', deadline: '', exchange_rate: 1.18, panel_count: '', vat_pct:0, project_discount_pct:0, margin_warning_pct:10, payment_terms:'70% at order, 30% after inspection', client_pdf_note:'' });
+  const [form, setForm] = useState({ project_name: '', quote_number:'', client_id: '', engineer_id: '', deadline: '', exchange_rate: 1.18, panel_count: '', vat_pct:11, project_discount_pct:0, margin_warning_pct:10, payment_terms:'70% at order, 30% after inspection', client_pdf_note:'' });
   const [clients, setClients] = useState([]);
   const [engineers, setEngineers] = useState([]);
   const [unmatchedAction, setUnmatchedAction] = useState({});
