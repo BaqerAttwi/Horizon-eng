@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +7,7 @@ import { calcItemFinal, calcItemCurrentPrice, recalcPanelTotal } from '../utils/
 
 export default function useCrmProject() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { isRole } = useAuth();
 
@@ -30,7 +31,7 @@ export default function useCrmProject() {
   const [previewDiscPct, setPreviewDiscPct] = useState(0);
   const [applyingBrandDisc, setApplyingBrandDisc] = useState(false);
   const [activeTab, setActiveTab] = useState('items');
-  const [editView, setEditView] = useState(false);
+  const [editView, setEditView] = useState(() => searchParams.get('edit') === '1');
   const [divisionTypes,setDivisionTypes]=useState([]);
 
   const hideCost = isRole('engineer');

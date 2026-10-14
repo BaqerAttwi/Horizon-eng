@@ -843,3 +843,8 @@ CREATE TABLE IF NOT EXISTS email_deliveries (
 INSERT IGNORE INTO project_review_history(project_id,action,status,note,performed_by,created_at,legacy_activity_id)
  SELECT project_id,IF(action='ready_for_review','submitted','decision'),IF(action='ready_for_review','pending',SUBSTRING_INDEX(new_value,': ',1)),
  new_value,performed_by,created_at,id FROM activity_logs WHERE project_id IS NOT NULL AND action IN ('ready_for_review','admin_approval');
+
+-- Editable version advances after each rejection; saved revisions stay immutable.
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='projects' AND COLUMN_NAME='current_version');
+SET @sql = IF(@exists=0, 'ALTER TABLE projects ADD COLUMN current_version INT NOT NULL DEFAULT 1', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

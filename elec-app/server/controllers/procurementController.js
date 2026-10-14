@@ -4,7 +4,8 @@ const { logActivity } = require('./activityController');
 
 async function getDemand(projectId) {
   const [rows] = await db.execute(`SELECT pci.product_id,CASE WHEN pci.product_id IS NULL THEN pci.id ELSE NULL END manual_item_id,COALESCE(pr.reference,pci.custom_name,'Manual item') item_name,
-    COALESCE(pr.description,pci.custom_desc,'') description,SUM(pci.qty*COALESCE(pcp.quantity,1)) required_qty,
+    COALESCE(pr.description,pci.custom_desc,'') description,
+    SUM(pci.qty*COALESCE(pcp.quantity,1)) required_qty,
     pr.stock_qty,pr.reserved_qty,CASE WHEN pci.product_id IS NULL THEN COALESCE(pmr.received_qty,0) ELSE COALESCE(ppa.allocated_qty,0) END allocated_qty,
     CASE WHEN pci.product_id IS NULL THEN COALESCE(pmr.received_qty,0) ELSE GREATEST(0,pr.stock_qty-GREATEST(pr.reserved_qty-SUM(pci.qty*COALESCE(pcp.quantity,1)),0))+COALESCE(ppa.allocated_qty,0) END available_for_project
     FROM panel_crm_items pci JOIN panel_divisions pd ON pd.id=pci.division_id
@@ -17,8 +18,14 @@ async function getDemand(projectId) {
       COALESCE(pr.description,pci.custom_desc,''),
       pr.stock_qty,pr.reserved_qty,ppa.allocated_qty,pmr.received_qty
     ORDER BY item_name`,[projectId]);
-  return rows.map(row=>({...row,required_qty:Number(row.required_qty)||0,stock_qty:Number(row.stock_qty)||0,reserved_qty:Number(row.reserved_qty)||0,
-    allocated_qty:Number(row.allocated_qty)||0,available_for_project:Number(row.available_for_project)||0,shortage_qty:Math.max(0,(Number(row.required_qty)||0)-(Number(row.available_for_project)||0))}));
+  const [noteRows] = await db.execute(`SELECT i.id,i.product_id,i.notes,p.panel_number,p.panel_name,d.division_type FROM panel_crm_items i
+    JOIN panel_divisions d ON d.id=i.division_id JOIN project_crm_panels p ON p.id=d.panel_id
+    WHERE p.project_id=? ORDER BY p.panel_number,d.id,i.id`,[projectId]);
+  return rows.map(row=>{
+    const occurrences = noteRows.filter(item=>row.product_id ? Number(item.product_id)===Number(row.product_id) : Number(item.id)===Number(row.manual_item_id));
+    const values = occurrences.map(item=>item.notes);
+    return {...row,note_occurrences:occurrences.map(item=>({id:item.id,notes:item.notes || '',panel_number:item.panel_number,panel_name:item.panel_name,division_type:item.division_type})),item_notes:[...new Set(values.filter(Boolean))].join('\n'),required_qty:Number(row.required_qty)||0,stock_qty:Number(row.stock_qty)||0,reserved_qty:Number(row.reserved_qty)||0,
+    allocated_qty:Number(row.allocated_qty)||0,available_for_project:Number(row.available_for_project)||0,shortage_qty:Math.max(0,(Number(row.required_qty)||0)-(Number(row.available_for_project)||0))}; });
 }
 
 async function getProcurementQueue(req,res,next) {
@@ -26,8 +33,28 @@ async function getProcurementQueue(req,res,next) {
     const [projects]=await db.execute(`SELECT p.id,p.project_name,p.quote_number,p.project_stage,p.deadline,p.procurement_status,
       p.procurement_note,p.procurement_reviewed_at,w.name engineer_name,r.name reviewed_by_name FROM projects p
       LEFT JOIN workers w ON w.id=p.engineer_id LEFT JOIN workers r ON r.id=p.procurement_reviewed_by
-      WHERE p.deleted_at IS NULL AND p.project_stage='procurement' ORDER BY p.updated_at ASC`);
-    for (const project of projects) { project.items=await getDemand(project.id); project.shortage_count=project.items.filter(item=>item.shortage_qty>0).length; }
+      WHERE p.deleted_at IS NULL AND p.project_stage='procurement' ORDER BY p.created_at ASC,p.id ASC`);
+    for (const project of projects) {
+      project.items=await getDemand(project.id);
+      project.shortage_count=project.items.filter(item=>item.shortage_qty>0).length;
+      if (['owner','head_engineer'].includes(req.worker.role)) {
+        const [rows] = await db.execute(`SELECT i.id,i.product_id,i.custom_name,i.cr_amount FROM panel_crm_items i
+          JOIN panel_divisions d ON d.id=i.division_id JOIN project_crm_panels p ON p.id=d.panel_id
+          WHERE p.project_id=?`, [project.id]);
+        for (const item of project.items) {
+          const selectedManual = !item.product_id && rows.find(row => Number(row.id) === Number(item.manual_item_id));
+          const manualName = (selectedManual?.custom_name || '').trim().toLowerCase();
+          const matches = rows.filter(row => item.product_id
+            ? Number(row.product_id) === Number(item.product_id)
+            : !row.product_id && (manualName
+              ? (row.custom_name || '').trim().toLowerCase() === manualName
+              : Number(row.id) === Number(item.manual_item_id)));
+          item.crm_item_ids = matches.map(row => row.id);
+          const amounts = new Set(matches.map(row => Number(row.cr_amount) || 0));
+          item.cr_amount = amounts.size === 1 ? [...amounts][0] : null;
+        }
+      }
+    }
     res.json(projects);
   } catch(error) { next(error); }
 }
@@ -36,10 +63,12 @@ async function reviewProcurement(req,res,next) {
   try {
     const projectId=Number(req.params.projectId),action=String(req.body.action||'').toLowerCase(),note=req.body.note?.trim()||null;
     if (!['approve','reject'].includes(action)) return res.status(400).json({error:'action must be approve or reject'});
+    if (action==='reject'&&!note) return res.status(400).json({error:'A review note is required when rejecting procurement'});
     const [[project]]=await db.execute('SELECT id,project_name,project_stage,engineer_id FROM projects WHERE id=? AND deleted_at IS NULL',[projectId]);
     if (!project) return res.status(404).json({error:'Project not found'});
     if (project.project_stage!=='procurement') return res.status(409).json({error:'Project is not in Procurement'});
     const items=await getDemand(projectId),shortages=items.filter(item=>item.shortage_qty>0);
+    if (action==='approve'&&!items.length) return res.status(409).json({error:'Cannot approve procurement without CRM items'});
     if (action==='approve'&&shortages.length) return res.status(409).json({error:`Cannot approve: ${shortages.length} item${shortages.length===1?' has':'s have'} a stock shortage`});
     const status=action==='approve'?'approved':'rejected';
     await db.execute('UPDATE projects SET procurement_status=?,procurement_note=?,procurement_reviewed_by=?,procurement_reviewed_at=NOW() WHERE id=?',[status,note,req.worker.id,projectId]);
@@ -90,4 +119,21 @@ async function receiveManualProcurementItem(req,res,next) {
   } catch(error) { next(error); }
 }
 
-module.exports={getProcurementQueue,reviewProcurement,receiveProcurementStock,receiveManualProcurementItem,getDemand};
+async function updateProcurementItemNote(req,res,next) {
+  try {
+    const { notes } = req.body;
+    if (typeof notes !== 'string' || notes.length > 5000) return res.status(400).json({error:'Item note must be text up to 5000 characters'});
+    const [[project]] = await db.execute('SELECT id,project_stage FROM projects WHERE id=? AND deleted_at IS NULL',[req.params.projectId]);
+    if (!project) return res.status(404).json({error:'Project not found'});
+    if (project.project_stage !== 'procurement') return res.status(409).json({error:'Project is not in Procurement'});
+    const [items] = await db.execute(`SELECT i.id FROM panel_crm_items i JOIN panel_divisions d ON d.id=i.division_id
+      JOIN project_crm_panels p ON p.id=d.panel_id WHERE p.project_id=? AND i.id=?`,[req.params.projectId,req.params.itemId]);
+    if (!items.length) return res.status(404).json({error:'Item not found in this project'});
+    await db.execute(`UPDATE panel_crm_items i JOIN panel_divisions d ON d.id=i.division_id JOIN project_crm_panels p ON p.id=d.panel_id
+      SET i.notes=? WHERE p.project_id=? AND i.id=?`,[notes,req.params.projectId,req.params.itemId]);
+    await logActivity({project_id:req.params.projectId,item_id:req.params.itemId,action:'item_note_updated',field_name:'notes',new_value:notes,performed_by:req.worker.id});
+    res.json({notes});
+  } catch(error) { next(error); }
+}
+
+module.exports={updateProcurementItemNote,getProcurementQueue,reviewProcurement,receiveProcurementStock,receiveManualProcurementItem,getDemand};

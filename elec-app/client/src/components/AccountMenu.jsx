@@ -1,3 +1,4 @@
+import { useConfirmUnsaved } from '../context/UnsavedChangesContext';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 export default function AccountMenu() {
   const { worker, logout, refreshWorker } = useAuth();
   const navigate = useNavigate();
+  const confirmUnsaved = useConfirmUnsaved();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -47,7 +49,7 @@ export default function AccountMenu() {
       {open && <div className="account-options" id="account-options">
         <strong>{worker.name}</strong>
         <button onClick={edit}>Edit Profile</button>
-        <button onClick={signOut} disabled={signingOut}>{signingOut ? 'Signing out…' : 'Sign Out'}</button>
+        <button onClick={()=>confirmUnsaved(signOut)} disabled={signingOut}>{signingOut ? 'Signing out…' : 'Sign Out'}</button>
       </div>}
     </div>
     {form && createPortal(<div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Edit Profile"><form className="modal" onSubmit={save}>

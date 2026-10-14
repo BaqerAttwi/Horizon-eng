@@ -1,6 +1,12 @@
-import { useState, memo } from 'react';
+import { useConfirmUnsaved, useUnsavedChange } from '../../context/UnsavedChangesContext';
+import ItemNoteEditor from '../ItemNoteEditor';
+import { useRef, useState, memo } from 'react';
 
 const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRate, onUpdate, onDelete, hideCost, showCr, pendingPriceChange, isSelected, onToggleSelect, editView }) {
+  const latestItem = useRef(item);
+  latestItem.current = item;
+  const confirmUnsaved = useConfirmUnsaved();
+  const enterEditing = ()=>confirmUnsaved(()=>{setForm({...latestItem.current});setEditing(true);});
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...item });
 
@@ -45,9 +51,10 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
   };
 
   const handleSave = async () => {
-    if (await onUpdate(item.id, form) === false) return;
+    if (await onUpdate(item.id, form) === false) return false;
     setEditing(false);
   };
+  useUnsavedChange({ dirty: editing && Object.keys(form).some(key => String(form[key] ?? '') !== String(item[key] ?? '')), label: `Item edit: ${name}`, save: handleSave, discard: ()=>{setForm({...item});setEditing(false);} });
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave(); }
   };
@@ -66,6 +73,7 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
           <input type="number" min="0" step="0.1" className="form-input crm-percent-input" defaultValue={item[field] || 0}
             onBlur={e => { if (Number(e.target.value) !== Number(item[field] || 0)) updatePercent(field, e.target.value); }} />
         </td>)}
+        <td><ItemNoteEditor value={item.notes} label={`Note for ${name}`} onSave={notes=>onUpdate(item.id,{notes})} /></td>
         <td className="crm-actions-column"><button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }} onClick={() => onDelete(item.id)}>✕</button></td>
       </tr>
     );
@@ -132,6 +140,7 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
         {showCr && <td className="mono" style={{ fontWeight: 700, color: nProfit >= 0 ? 'var(--success)' : 'var(--danger)', verticalAlign: 'middle' }}>
           ${nProfit.toFixed(2)}
         </td>}
+        <td><textarea className="form-input" rows={2} maxLength={5000} aria-label={`Note for ${name}`} placeholder="Leave an item note…" value={form.notes || ''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></td>
         <td style={{ verticalAlign: 'middle' }}>
           <button className="btn btn-sm btn-primary" style={{ marginRight: 4 }}
             onClick={handleSave}>Save</button>
@@ -143,7 +152,7 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
 
   return (
     <tr className="crm-item-row" style={{ ...(pendingPriceChange ? { background: 'rgba(245,158,11,0.06)' } : {}), ...(editView ? { cursor: 'pointer' } : {}) }}
-      onClick={() => { if (editView) setEditing(true); }}>
+      onClick={() => { if (editView) enterEditing(); }}>
       <td style={{ textAlign: 'center', verticalAlign: 'middle', width: 28 }} onClick={e => e.stopPropagation()}>
         <input type="checkbox" checked={!!isSelected}
           onChange={() => onToggleSelect?.(item.id)}
@@ -179,8 +188,9 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
       {!hideCost && <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>{profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>}
       {showCr && <td className="mono" style={{ color: 'var(--accent2)' }}>${crAmount.toFixed(2)}</td>}
       {showCr && <td className="mono" style={{ fontWeight: 700, color: nProfit >= 0 ? 'var(--success)' : 'var(--danger)' }}>${nProfit.toFixed(2)}</td>}
+      <td><ItemNoteEditor value={item.notes} label={`Note for ${name}`} onSave={notes=>onUpdate(item.id,{notes})} /></td>
       <td className="crm-actions-column" onClick={e => e.stopPropagation()}>
-        <button className="btn-icon" title="Edit" onClick={() => setEditing(true)}>✏️</button>
+        <button className="btn-icon" title="Edit" onClick={enterEditing}>✏️</button>
         <button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }}
           onClick={() => onDelete(item.id)}>✕</button>
       </td>

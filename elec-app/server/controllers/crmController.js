@@ -535,6 +535,7 @@ async function createCrmItem(req, res, next) {
 
 async function updateCrmItem(req, res, next) {
   try {
+    if (req.body.notes !== undefined && (typeof req.body.notes !== 'string' || req.body.notes.length > 5000)) return res.status(400).json({error:'Item note must be text up to 5000 characters'});
     const hasAccess = await checkDivisionAccess(req, res, req.params.divisionId, req.params.projectId, req.params.panelId);
     if (!hasAccess) return;
 
@@ -695,7 +696,7 @@ async function getProjectCrm(req, res, next) {
 
     // Get project info with exchange rate
     const [project] = await db.execute(
-      `SELECT p.*, w.name as engineer_name, c.name as client_name
+      `SELECT p.*, w.name as engineer_name, c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_address, c.tax_id as client_tax_id
        FROM projects p
        LEFT JOIN workers w ON p.engineer_id=w.id
        LEFT JOIN clients c ON p.client_id=c.id
@@ -864,6 +865,14 @@ async function copyPanelFromProject(req, res, next) {
       );
       const newDivisionId = divResult.insertId;
 
+      const [sourceGroups] = await conn.execute('SELECT * FROM division_item_group_instances WHERE division_id=?',[sd.id]);
+      const groupMap = new Map();
+      for (const group of sourceGroups) {
+        const [groupResult] = await conn.execute('INSERT INTO division_item_group_instances(division_id,item_group_id,quantity,description) VALUES(?,?,?,?)',
+          [newDivisionId,group.item_group_id,group.quantity,group.description || null]);
+        groupMap.set(Number(group.id),groupResult.insertId);
+      }
+
       const [sourceItems] = await conn.execute('SELECT * FROM panel_crm_items WHERE division_id=?', [sd.id]);
 
       for (const si of sourceItems) {
@@ -886,12 +895,12 @@ async function copyPanelFromProject(req, res, next) {
           `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
             custom_name,custom_desc,custom_brand,custom_price_euro,custom_price_usd,
             qty,base_price_usd,base_price_euro,markupP_pct,discount_pct,manpower_pct,markupM_pct,
-            markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,cost,cr_amount,notes,override_markup,visible_in_client_pdf)
-           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,cost,cr_amount,notes,override_markup,visible_in_client_pdf,source_group_instance_id)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [newDivisionId, si.product_id, newManualProductId, si.is_manual,
            si.custom_name, si.custom_desc, si.custom_brand, si.custom_price_euro, si.custom_price_usd,
            si.qty, si.base_price_usd, si.base_price_euro, si.markupP_pct, si.discount_pct, si.manpower_pct, si.markupM_pct,
-           si.markupP_amt, si.discount_amt, si.totalpriceT, si.manpower_amt, si.markupM_amt, si.totalfinalProduct, si.cost, si.cr_amount||0, si.notes, 0, si.visible_in_client_pdf]
+           si.markupP_amt, si.discount_amt, si.totalpriceT, si.manpower_amt, si.markupM_amt, si.totalfinalProduct, si.cost, si.cr_amount||0, si.notes, si.override_markup, si.visible_in_client_pdf, si.source_group_instance_id ? groupMap.get(Number(si.source_group_instance_id)) || null : null]
         );
       }
 
@@ -1117,8 +1126,9 @@ async function applyBrandDiscount(req, res, next) {
        LEFT JOIN products p ON pci.product_id = p.id
        LEFT JOIN brands b ON p.brand_id = b.id
        WHERE pcp.project_id = ?
-         AND (b.name = ? OR (pci.is_manual = 1 AND pci.custom_brand = ?))`,
-      [projectId, brand, brand]
+         AND CASE WHEN pci.is_manual=1 THEN COALESCE(NULLIF(pci.custom_brand,''),'Unbranded')
+           ELSE COALESCE(NULLIF(b.name,''),'Unbranded') END = ?`,
+      [projectId, brand]
     );
 
     if (!items.length) {

@@ -128,6 +128,8 @@ router.delete('/clients/:id',   requireAuth, requireRole('owner','head_engineer'
 // ── Projects (all roles read, owner+engineer write) ──────────
 router.get('/projects',                      requireAuth, getProjects);
 router.get('/projects/draft-notifications', requireAuth, getDraftNotifications);
+router.get('/projects/recycle-bin', requireAuth, requireRole('owner'), require('../controllers/recycleBinController').getRecycleBin);
+router.post('/projects/:id/restore', requireAuth, requireRole('owner'), serializeProject, require('../controllers/recycleBinController').restoreProject);
 router.get('/projects/:id',                  requireAuth, getProject);
 router.post('/projects',                     requireAuth, requireRole('owner','head_engineer','engineer'), validate('createProject'), createProject);
 router.post('/projects/import-pdf/preview',  requireAuth, requireRole('owner','head_engineer','engineer'), uploadPdf.single('file'), previewImport);
@@ -145,7 +147,7 @@ router.get('/projects/:projectId/quotation-revisions', requireAuth, getQuotation
 router.get('/projects/:projectId/quotation-revisions/:revisionId/snapshot', requireAuth, requireRole('owner','head_engineer'), getQuotationRevisionSnapshot);
 router.post('/projects/:projectId/quotation-revisions/:revisionId/restore', requireAuth, requireRole('owner','head_engineer'), serializeProject, guardProjectEdit, restoreQuotationRevision);
 router.get('/engineer-workload', requireAuth, requireRole('owner','head_engineer'), getEngineerWorkload);
-router.delete('/projects/:id',               requireAuth, requireRole('owner','head_engineer'), deleteProject);
+router.delete('/projects/:id',               requireAuth, requireRole('owner','head_engineer'), serializeProject, deleteProject);
 router.post('/projects/:id/items',           requireAuth, requireRole('owner','head_engineer','engineer'), serializeProject, guardProjectEdit, addProjectItem);
 router.delete('/projects/:id/items/:itemId', requireAuth, requireRole('owner','head_engineer','engineer'), serializeProject, guardProjectEdit, removeProjectItem);
 
@@ -312,5 +314,7 @@ router.get('/procurement/projects',requireAuth,requireRole('owner','head_enginee
 router.patch('/procurement/projects/:projectId/review',requireAuth,requireRole('owner','head_engineer','stock_manager'),serializeProject,guardProjectProgress,reviewProcurement);
 router.patch('/procurement/projects/:projectId/products/:productId/receive',requireAuth,requireRole('owner','head_engineer','stock_manager'),serializeProject,guardProjectProgress,receiveProcurementStock);
 router.patch('/procurement/projects/:projectId/manual-items/:itemId/receive',requireAuth,requireRole('owner','head_engineer','stock_manager'),serializeProject,guardProjectProgress,receiveManualProcurementItem);
+
+router.patch('/procurement/projects/:projectId/items/:itemId/note',requireAuth,requireRole('owner','head_engineer','stock_manager'),serializeProject,guardProjectProgress,require('../controllers/procurementController').updateProcurementItemNote);
 
 module.exports = router;

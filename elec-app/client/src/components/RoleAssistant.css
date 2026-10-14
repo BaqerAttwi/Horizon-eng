@@ -1,6 +1,6 @@
 .role-assistant{flex-shrink:0;padding:6px 12px;color:var(--white);font-size:14px}
 .assistant-launcher{display:flex;width:100%;align-items:center;gap:9px;border:1px solid #38bdf8;border-radius:10px;padding:5px 10px;background:#153047;color:#fff;cursor:pointer;font-weight:600}
-.assistant-launcher img{width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:50% 25%}
+.assistant-launcher img{width:32px;height:32px;flex-shrink:0;border-radius:50%;object-fit:cover;object-position:50% 25%}
 .assistant-panel{position:fixed;left:calc(var(--sidebar) + 12px);bottom:16px;z-index:300;width:min(390px,calc(100vw - var(--sidebar) - 28px));height:min(640px,calc(100dvh - 32px));display:flex;flex-direction:column;background:var(--card-bg,#172337);color:var(--white);font-size:14px;border:1px solid #64748b;border-radius:18px;box-shadow:0 16px 60px #0005;overflow:hidden}
 .light-mode .assistant-panel{background:#fff;color:#172337}
 .assistant-panel header{display:flex;align-items:center;gap:10px;padding:14px;background:#153047;color:#fff}

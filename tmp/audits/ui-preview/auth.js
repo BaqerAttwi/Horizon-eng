@@ -1,0 +1,1 @@
+export const useAuth=()=>({isRole:(...roles)=>roles.includes('owner')});

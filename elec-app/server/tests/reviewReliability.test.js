@@ -99,3 +99,12 @@ test('timeouts exhaust retries; successful messages keep the provider id', async
   await success.processEmailQueue();
   assert.equal(success.writes.find(row => row.sql.includes("status='accepted'")).params[0], 'provider-19');
 });
+
+test('item notes preserve approval but mixed note/price edits still require review',async()=>{
+  for (const [body,expectedWrites] of [[{notes:'Delivery note'},0],[{notes:'Delivery note',base_price_usd:12},2]]) {
+    const api=reviewModule({admin_approval:'approved',ready_for_review:true,client_approval:'approved'});
+    let passed=false;
+    await api.guardProjectEdit({reviewProjectId:1,worker:{role:'owner',id:1},method:'PATCH',path:'/projects/1/panels/2/divisions/3/items/4',body},response(),error=>{if(error)throw error;passed=true;});
+    assert.equal(passed,true);assert.equal(api.writes.length,expectedWrites);
+  }
+});

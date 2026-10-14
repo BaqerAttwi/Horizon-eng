@@ -1,0 +1,17 @@
+const path = require('path');
+const fs = require('fs');
+const root = path.resolve(__dirname, '../..');
+const esbuild = require(path.join(root, 'elec-app/client/node_modules/esbuild'));
+const express = require(path.join(root, 'elec-app/server/node_modules/express'));
+const output = path.join(__dirname, 'ui-preview');
+fs.mkdirSync(output, { recursive: true });
+const data = Array.from({length:8}, (_,i)=>({id:i+1,project_name:i===0?'Hospital Electrical Upgrade with a long project name for mobile layout':'Project '+(i+1),quote_number:'EQ-2026-'+(i+1),engineer_name:'Test Engineer',procurement_status:i===2?'rejected':i===3?'approved':'pending',shortage_count:i===1||i===3?0:1,items:[{product_id:4,item_name:'SWITCH-4',description:'Long item description for horizontal table scrolling',required_qty:12,stock_qty:10,reserved_qty:4,allocated_qty:0,available_for_project:10,shortage_qty:i===1||i===3?0:2,note_occurrences:[{id:1,notes:'Existing note',panel_number:1,panel_name:'Main',division_type:'Power'}],crm_item_ids:[1,2],cr_amount:5,item_notes:'Existing note'}]}));
+fs.writeFileSync(path.join(output,'api.js'), 'let rows='+JSON.stringify(data)+';export default {get:async()=>({data:rows}),patch:async(url,body)=>{if(body.notes==="FAIL")throw Error("Simulated save failure");if(url.endsWith("/note")) rows=rows.map(p=>p.id===1?{...p,items:p.items.map(i=>({...i,item_notes:body.notes,note_occurrences:i.note_occurrences.map(n=>({...n,notes:body.notes}))}))}:p);return {data:{}}},post:async()=>({data:{}})};');
+fs.writeFileSync(path.join(output,'auth.js'), "export const useAuth=()=>({isRole:(...roles)=>roles.includes('owner')});");
+const ready = esbuild.build({stdin:{contents:"import React from 'react';import {createRoot} from 'react-dom/client';import {createBrowserRouter,RouterProvider,Link,useLocation} from 'react-router-dom';import {UnsavedChangesProvider} from './elec-app/client/src/context/UnsavedChangesContext';import Page from './elec-app/client/src/pages/ProcurementPage.jsx';function Fixture(){const loc=useLocation();return <><Link to='/away'>Leave queue (test)</Link>{loc.pathname==='/away'?<p>Other page</p>:<Page/>}</>}const router=createBrowserRouter([{path:'*',element:<UnsavedChangesProvider><Fixture/></UnsavedChangesProvider>}]);createRoot(document.getElementById('root')).render(<RouterProvider router={router}/>);",resolveDir:root,loader:'jsx'},bundle:true,outfile:path.join(output,'bundle.js'),jsx:'automatic',plugins:[{name:'fixture-api',setup(build){build.onResolve({filter:/api\/client$/},()=>({path:path.join(output,'api.js')}));build.onResolve({filter:/context\/AuthContext$/},()=>({path:path.join(output,'auth.js')}));}}],nodePaths:[path.join(root,'elec-app/client/node_modules')]});
+const app=express();
+app.get('/bundle.js',(q,r)=>r.sendFile(path.join(output,'bundle.js')));
+app.get('/style.css',(q,r)=>r.sendFile(path.join(root,'elec-app/client/src/index.css')));
+app.get('/app',(q,r)=>r.send('<html><head><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/style.css"></head><body><div id="root"></div><script src="/bundle.js"></script></body></html>'));
+app.get('/',(q,r)=>r.send('<body style="margin:0;background:#555"><iframe title="Mobile 390px" src="/app?project=1" style="width:390px;height:850px;border:0"></iframe><iframe title="Desktop 1100px" src="/app?project=1" style="width:1100px;height:850px;border:0"></iframe></body>'));
+ready.then(()=>app.listen(5187,'127.0.0.1',()=>console.log('Fixture preview http://127.0.0.1:5187')));

@@ -61,9 +61,15 @@ async function createDiscount(req, res, next) {
 async function updateDiscount(req, res, next) {
   try {
     const { discount_pct, notes } = req.body;
-    await db.execute('UPDATE product_discounts SET discount_pct=?,notes=? WHERE id=? AND deleted_at IS NULL',
-      [discount_pct||0, notes||null, req.params.id]);
-    const [rows] = await db.execute('SELECT * FROM product_discounts WHERE id=?', [req.params.id]);
+    if (discount_pct !== undefined && (discount_pct === null || discount_pct === '' || !Number.isFinite(Number(discount_pct)) || Number(discount_pct)<0 || Number(discount_pct)>100)) return res.status(400).json({error:'Discount must be between 0 and 100 percent'});
+    const [[existing]] = await db.execute('SELECT id FROM product_discounts WHERE id=? AND deleted_at IS NULL',[req.params.id]);
+    if (!existing) return res.status(404).json({error:'Discount not found'});
+    const fields=[],params=[];
+    if (discount_pct !== undefined) {fields.push('discount_pct=?');params.push(Number(discount_pct));}
+    if (notes !== undefined) {fields.push('notes=?');params.push(notes || null);}
+    if (!fields.length) return res.status(400).json({error:'Nothing to update'});
+    await db.execute(`UPDATE product_discounts SET ${fields.join(',')} WHERE id=? AND deleted_at IS NULL`,[...params,req.params.id]);
+    const [rows] = await db.execute('SELECT * FROM product_discounts WHERE id=? AND deleted_at IS NULL', [req.params.id]);
     res.json(rows[0]);
   } catch (err) { console.error('[Discounts] ❌', err.message); next(err); }
 }
@@ -86,6 +92,7 @@ async function bulkUpdateBrandDiscounts(req, res, next) {
   try {
     const { discounts } = req.body;
     if (!Array.isArray(discounts)) return res.status(400).json({ error: 'discounts array required' });
+    if (discounts.some(d => !d || !Number.isSafeInteger(Number(d.brand_id)) || Number(d.brand_id)<1 || !Number.isFinite(Number(d.discount_pct)) || Number(d.discount_pct)<0 || Number(d.discount_pct)>100)) return res.status(400).json({error:'Each brand discount requires a valid brand and a percentage between 0 and 100'});
 
     for (const d of discounts) {
       const brandId = parseInt(d.brand_id);

@@ -34,9 +34,9 @@ async function addGroupToDivision(req, res, next) {
     const rate = parseFloat(proj?.exchange_rate_eur_usd) || 1.18;
 
     // Inherit markup from division or fallback to panel
-    const markupP = parseFloat(div.markupP) || parseFloat(div.panel_markupP) || 0;
-    const markupM = parseFloat(div.markupM) || parseFloat(div.panel_markupM) || 0;
-    const manpower = parseFloat(div.manpower_pct) || parseFloat(div.panel_manpower_pct) || 0;
+    const markupP = parseFloat(div.markupP ?? div.panel_markupP) || 0;
+    const markupM = parseFloat(div.markupM ?? div.panel_markupM) || 0;
+    const manpower = parseFloat(div.manpower_pct ?? div.panel_manpower_pct) || 0;
 
     conn = await db.getConnection();
     await conn.beginTransaction();

@@ -305,7 +305,10 @@ export default function GroupsPage() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
   const { worker, isRole } = useAuth();
-  const filteredGroups = groups.filter(group => group.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+  const groupQuery = search.trim().toLocaleLowerCase();
+  const filteredGroups = groups.filter(group =>
+    [group.name, group.description].some(value => (value || '').toLocaleLowerCase().includes(groupQuery))
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -343,7 +346,7 @@ export default function GroupsPage() {
           <button className="btn btn-primary" onClick={() => setModal({})}>+ New Group</button>
         </div>
 
-        <input className="form-input" aria-label="Search groups by name" placeholder="Search groups by name..." value={search} onChange={e => setSearch(e.target.value)} style={{marginBottom:16}} />
+        <input className="form-input" aria-label="Search groups by name or description" placeholder="Search groups by name or description..." value={search} onChange={e => setSearch(e.target.value)} style={{marginBottom:16}} />
         {loading ? (
           <div style={{display:'flex',justifyContent:'center',padding:40}}><span className="spinner" /></div>
         ) : groups.length === 0 ? (

@@ -31,7 +31,7 @@ const schemas = {
   createDiscount: z.object({
     product_id: z.union([z.number(), z.string()]).pipe(z.coerce.number()).optional().nullable(),
     brand_id: z.union([z.number(), z.string()]).pipe(z.coerce.number()).optional().nullable(),
-    discount_pct: z.union([z.number(), z.string()]).pipe(z.coerce.number()).optional().default(0),
+    discount_pct: z.union([z.number(), z.string()]).pipe(z.coerce.number().min(0).max(100)).optional().default(0),
     notes: z.string().optional().nullable(),
   }).refine(d => d.product_id || d.brand_id, { message: 'product_id or brand_id required' }),
   createProject: z.object({

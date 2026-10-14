@@ -65,8 +65,8 @@ async function recalcLegacyProjectTotals(projectId) {
 async function getProjects(req, res, next) {
   try {
     const user = req.worker;
-    if (user.role === 'technician' || user.role === 'stock_manager') {
-      return res.status(403).json({ error: 'Access denied — use /technicians/my-projects instead' });
+    if (!['owner','head_engineer','engineer','accounting'].includes(user.role)) {
+      return res.status(403).json({ error: 'Access denied — your role cannot access project records' });
     }
     let whereClause = 'WHERE p.deleted_at IS NULL';
     const params = [];
@@ -82,7 +82,7 @@ async function getProjects(req, res, next) {
     }
 
     const [projects] = await db.execute(
-      `SELECT p.*, w.name as engineer_name, c.name as client_name,
+      `SELECT p.*, w.name as engineer_name, c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_address, c.tax_id as client_tax_id,
               (SELECT COUNT(*) FROM project_items pi WHERE pi.project_id=p.id) as item_count,
               COALESCE(
                 (SELECT COUNT(*) FROM project_crm_panels pcp WHERE pcp.project_id=p.id), 0
@@ -112,8 +112,8 @@ async function getProject(req, res, next) {
     const user = req.worker;
     const projectId = req.params.id;
 
-    if (user.role === 'technician' || user.role === 'stock_manager') {
-      return res.status(403).json({ error: 'Access denied — use the Execution view instead' });
+    if (!['owner','head_engineer','engineer','accounting'].includes(user.role)) {
+      return res.status(403).json({ error: 'Access denied — your role cannot access project records' });
     }
 
     // Check if engineer has access to this project
@@ -130,7 +130,7 @@ async function getProject(req, res, next) {
     }
 
     const [rows] = await db.execute(
-      `SELECT p.*, w.name as engineer_name, c.name as client_name,
+      `SELECT p.*, w.name as engineer_name, c.name as client_name, c.email as client_email, c.phone as client_phone, c.address as client_address, c.tax_id as client_tax_id,
               COALESCE((SELECT SUM(pp.amount) FROM project_payments pp WHERE pp.project_id=p.id), 0) as total_paid,
               GREATEST(0, COALESCE(NULLIF(p.total_with_vat, 0), p.total_price) -
                 COALESCE((SELECT SUM(pp.amount) FROM project_payments pp WHERE pp.project_id=p.id), 0)) as outstanding_balance
@@ -277,7 +277,17 @@ async function updateProject(req, res, next) {
 
     if (!fields.length) return res.status(400).json({ error: 'Nothing to update' });
     params.push(req.params.id);
-    await db.execute(`UPDATE projects SET ${fields.join(',')} WHERE id=?`, params);
+    if (client_approval === 'rejected' && oldClientApproval !== 'rejected') {
+      const connection = await db.getConnection();
+      try {
+        await connection.beginTransaction();
+        await connection.execute(`UPDATE projects SET ${fields.join(',')} WHERE id=?`, params);
+        await require('../utils/rejectedVersion').preserveRejectedVersion(connection, req.params.id, client_rejection_note, req.worker.id, 'client');
+        await connection.commit();
+      } catch (error) { await connection.rollback(); throw error; } finally { connection.release(); }
+    } else {
+      await db.execute(`UPDATE projects SET ${fields.join(',')} WHERE id=?`, params);
+    }
 
     if (status !== undefined) {
       await recalcReservedQty();
@@ -361,10 +371,10 @@ async function removeProjectItem(req, res, next) {
 
 async function deleteProject(req, res, next) {
   try {
-    const [deleted] = await db.execute('DELETE FROM projects WHERE id=?', [req.params.id]);
+    const [deleted] = await db.execute('UPDATE projects SET deleted_at=NOW() WHERE id=? AND deleted_at IS NULL', [req.params.id]);
     if (!deleted.affectedRows) return res.status(404).json({ error: 'Project not found' });
     await recalcReservedQty();
-    res.json({ message: 'Project permanently deleted' });
+    res.json({ message: 'Project moved to recycle bin for one year' });
   } catch (err) { console.error('[Projects] ❌ delete:', err.message); next(err); }
 }
 
@@ -402,7 +412,9 @@ async function adminApproval(req, res, next) {
       client_approval=IF(? IN ('pending','recheck','cancelled','rejected'),'pending',client_approval),
       project_stage=IF(? IN ('recheck','rejected') AND project_stage IN ('quotation','approval'),'design',project_stage),
       status=CASE WHEN ?='cancelled' THEN 'cancelled' WHEN status='cancelled' THEN 'draft' ELSE status END WHERE id=?`,
-      [admin_approval, note || null, admin_approval, admin_approval, admin_approval, admin_approval, req.params.id], { projectId: req.params.id, action: project.status === 'cancelled' && admin_approval === 'pending' ? 'reopened' : 'decision', status: admin_approval, note, workerId: req.worker.id });
+      [admin_approval === 'rejected' ? 'pending' : admin_approval, note || null, admin_approval, admin_approval, admin_approval, admin_approval, req.params.id], { projectId: req.params.id, action: project.status === 'cancelled' && admin_approval === 'pending' ? 'reopened' : 'decision', status: admin_approval, note, workerId: req.worker.id }, ['rejected','recheck'].includes(admin_approval)
+        ? connection => require('../utils/rejectedVersion').preserveRejectedVersion(connection, req.params.id, note, req.worker.id, 'admin', admin_approval)
+        : undefined);
     await recalcReservedQty();
     logActivity({ project_id: req.params.id, action: 'admin_approval', field_name: 'admin_approval', old_value: project.admin_approval, new_value: admin_approval + (note ? ': ' + note : ''), performed_by: req.worker.id });
     const [rows] = await db.execute('SELECT * FROM projects WHERE id=?', [req.params.id]);

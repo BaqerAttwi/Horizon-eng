@@ -28,10 +28,15 @@ async function captureQuotationSnapshot(projectId, executor = db) {
         FROM panel_crm_items i LEFT JOIN products p ON p.id=i.product_id LEFT JOIN brands b ON b.id=p.brand_id
         WHERE i.division_id=? ORDER BY i.id`, [division.id]);
       division.items = items;
+      const [groups] = await executor.execute(`SELECT g.*,ig.name group_name FROM division_item_group_instances g
+        JOIN item_groups ig ON ig.id=g.item_group_id WHERE g.division_id=? ORDER BY g.id`, [division.id]);
+      division.group_instances = groups;
     }
     panel.divisions = divisions;
   }
-  return { version: 1, captured_at: new Date().toISOString(), project, manualProducts, panels };
+  const [items] = await executor.execute(`SELECT i.*,p.reference,p.description FROM project_items i
+    LEFT JOIN products p ON p.id=i.product_id WHERE i.project_id=? ORDER BY i.id`, [projectId]);
+  return { version: 1, captured_at: new Date().toISOString(), project, manualProducts, panels, items };
 }
 
 async function assertProjectAccess(req, res, projectId) {
@@ -149,6 +154,11 @@ async function restoreQuotationRevision(req, res, next) {
     if (!revision) return res.status(404).json({ error: 'Quotation revision not found' });
     if (!revision.snapshot_json) return res.status(409).json({ error: 'This older revision contains totals only. Item restoration is available for newly saved revisions.' });
     const snapshot = decodeSnapshot(revision.snapshot_json);
+    const [availableGroups] = await db.execute('SELECT id FROM item_groups');
+    const availableGroupIds = new Set(availableGroups.map(group => Number(group.id)));
+    if ((snapshot.panels || []).some(panel => (panel.divisions || []).some(division => (division.group_instances || []).some(group => !availableGroupIds.has(Number(group.item_group_id)))))) {
+      return res.status(409).json({ error: 'A reusable group in this revision was deleted. Restore the group before restoring this revision.' });
+    }
     const current = await captureQuotationSnapshot(projectId);
     conn = await db.getConnection();
     await conn.beginTransaction();
@@ -160,6 +170,18 @@ async function restoreQuotationRevision(req, res, next) {
     await conn.execute('DELETE FROM panel_manual_products WHERE project_id=?', [projectId]);
     const [existingProductRows] = await conn.execute('SELECT id FROM products');
     const existingProductIds = new Set(existingProductRows.map(row => Number(row.id)));
+    if (Array.isArray(snapshot.items)) {
+      if (snapshot.items.some(item=>!existingProductIds.has(Number(item.product_id)))) {
+        const error = new Error('A product in this saved version was deleted. Restore the product before restoring this version.');
+        error.status = 409;
+        throw error;
+      }
+      await conn.execute('DELETE FROM project_items WHERE project_id=?', [projectId]);
+      for (const item of snapshot.items) {
+        await conn.execute('INSERT INTO project_items(project_id,product_id,qty,unit_cost,unit_price,price_currency,notes) VALUES(?,?,?,?,?,?,?)',
+          [projectId,item.product_id,item.qty,item.unit_cost,item.unit_price,item.price_currency,item.notes]);
+      }
+    }
     const manualMap = new Map();
     for (const manual of snapshot.manualProducts || []) {
       const [result] = await conn.execute(`INSERT INTO panel_manual_products(project_id,name,description,price_euro,price_usd,brand) VALUES(?,?,?,?,?,?)`,
@@ -174,9 +196,15 @@ async function restoreQuotationRevision(req, res, next) {
       for (const division of panel.divisions || []) {
         const [divResult] = await conn.execute(`INSERT INTO panel_divisions(panel_id,division_type,markupP,markupM,manpower_pct) VALUES(?,?,?,?,?)`,
           [panelResult.insertId,division.division_type,division.markupP,division.markupM,division.manpower_pct]);
+        const groupMap = new Map();
+        for (const group of division.group_instances || []) {
+          const [groupResult] = await conn.execute('INSERT INTO division_item_group_instances(division_id,item_group_id,quantity,description) VALUES(?,?,?,?)',
+            [divResult.insertId,group.item_group_id,group.quantity,group.description || null]);
+          groupMap.set(Number(group.id),groupResult.insertId);
+        }
         for (const item of division.items || []) {
-          await conn.execute(`INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,custom_name,custom_desc,custom_brand,custom_price_euro,custom_price_usd,qty,base_price_usd,base_price_euro,markupP_pct,markupP_amt,discount_pct,discount_amt,totalpriceT,manpower_pct,manpower_amt,markupM_pct,markupM_amt,totalfinalProduct,cost,cr_amount,override_markup,visible_in_client_pdf,notes)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, [divResult.insertId,existingProductIds.has(Number(item.product_id))?item.product_id:null,item.manual_product_id?manualMap.get(Number(item.manual_product_id))||null:null,item.is_manual,item.custom_name,item.custom_desc,item.custom_brand,item.custom_price_euro,item.custom_price_usd,item.qty,item.base_price_usd,item.base_price_euro,item.markupP_pct,item.markupP_amt,item.discount_pct,item.discount_amt,item.totalpriceT,item.manpower_pct,item.manpower_amt,item.markupM_pct,item.markupM_amt,item.totalfinalProduct,item.cost,item.cr_amount,item.override_markup,item.visible_in_client_pdf,item.notes]);
+          await conn.execute(`INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,custom_name,custom_desc,custom_brand,custom_price_euro,custom_price_usd,qty,base_price_usd,base_price_euro,markupP_pct,markupP_amt,discount_pct,discount_amt,totalpriceT,manpower_pct,manpower_amt,markupM_pct,markupM_amt,totalfinalProduct,cost,cr_amount,override_markup,visible_in_client_pdf,notes,source_group_instance_id)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, [divResult.insertId,existingProductIds.has(Number(item.product_id))?item.product_id:null,item.manual_product_id?manualMap.get(Number(item.manual_product_id))||null:null,item.is_manual,item.custom_name,item.custom_desc,item.custom_brand,item.custom_price_euro,item.custom_price_usd,item.qty,item.base_price_usd,item.base_price_euro,item.markupP_pct,item.markupP_amt,item.discount_pct,item.discount_amt,item.totalpriceT,item.manpower_pct,item.manpower_amt,item.markupM_pct,item.markupM_amt,item.totalfinalProduct,item.cost,item.cr_amount,item.override_markup,item.visible_in_client_pdf,item.notes,item.source_group_instance_id ? groupMap.get(Number(item.source_group_instance_id)) || null : null]);
         }
       }
     }

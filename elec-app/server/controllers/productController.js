@@ -82,7 +82,7 @@ async function updateProduct(req, res, next) {
     }
     const [[before]] = await db.execute('SELECT stock_qty,reserved_qty,min_stock_level FROM products WHERE id=?', [req.params.id]);
     if (!before) return res.status(404).json({ error: 'Product not found' });
-    if ([stock_qty, min_stock_level].some(value => value !== undefined && !Number.isSafeInteger(Number(value)))) return res.status(400).json({ error: 'Stock quantities must be whole numbers' });
+    if ([stock_qty, min_stock_level].some(value => value !== undefined && (!Number.isSafeInteger(Number(value)) || Number(value)<0))) return res.status(400).json({ error: 'Stock quantities must be nonnegative whole numbers' });
     const fields = [], params = [];
 
     if (stock_qty  !== undefined) { fields.push('stock_qty=?');   params.push(parseInt(stock_qty)); }

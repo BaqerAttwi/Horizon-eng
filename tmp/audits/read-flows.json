@@ -1,0 +1,1237 @@
+[
+  {
+    "role": "owner",
+    "route": "/health",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/auth/me",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/products",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/products/:id",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/brands",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/discounts",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/reservations",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/reservations/product/:productId",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/reservation-history",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/workers",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/clients",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/draft-notifications",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/recycle-bin",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:id",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/email-deliveries",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/review-history",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/stage-history",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/quotation-revisions",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot",
+    "status": 404
+  },
+  {
+    "role": "owner",
+    "route": "/engineer-workload",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/crm",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/panels",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/panels/:panelId/divisions",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/manual-products",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/engineer-requests/pending",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/engineer-requests/sent",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/engineers",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/analytics/summary",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/analytics/engineers",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/analytics/clients",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/analytics/projects/:projectId/team",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/dashboard",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/notifications",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/price-changes",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/price-changes/my",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/price-changes/project/:projectId",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/item-groups",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/item-groups/:id",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/item-groups/:id/items",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/execution",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/execution/view",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/technicians/my-projects",
+    "status": 403
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/technicians",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/manual-product-requests",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/activity",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/attachments",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/onedrive/status",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/projects/:projectId/payments",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/debt",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/export/products",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/export/projects",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/export/analytics",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/export/reservations",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/export/crm/:projectId",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/messages",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/updates",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/division-types",
+    "status": 200
+  },
+  {
+    "role": "owner",
+    "route": "/procurement/projects",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/health",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/auth/me",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/products",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/products/:id",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/brands",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/discounts",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/reservations",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/reservations/product/:productId",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/reservation-history",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/workers",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/clients",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/draft-notifications",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/recycle-bin",
+    "status": 403
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:id",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/email-deliveries",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/review-history",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/stage-history",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/quotation-revisions",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot",
+    "status": 404
+  },
+  {
+    "role": "head_engineer",
+    "route": "/engineer-workload",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/crm",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/panels",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/panels/:panelId/divisions",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/manual-products",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/engineer-requests/pending",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/engineer-requests/sent",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/engineers",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/analytics/summary",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/analytics/engineers",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/analytics/clients",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/analytics/projects/:projectId/team",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/dashboard",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/notifications",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/price-changes",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/price-changes/my",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/price-changes/project/:projectId",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/item-groups",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/item-groups/:id",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/item-groups/:id/items",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/execution",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/execution/view",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/technicians/my-projects",
+    "status": 403
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/technicians",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/manual-product-requests",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/activity",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/attachments",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/onedrive/status",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/projects/:projectId/payments",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/debt",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/export/products",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/export/projects",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/export/analytics",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/export/reservations",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/export/crm/:projectId",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/messages",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/updates",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/division-types",
+    "status": 200
+  },
+  {
+    "role": "head_engineer",
+    "route": "/procurement/projects",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/health",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/auth/me",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/products",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/products/:id",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/brands",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/discounts",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/reservations",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/reservations/product/:productId",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/reservation-history",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/workers",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/clients",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/draft-notifications",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/recycle-bin",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:id",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/email-deliveries",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/review-history",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/stage-history",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/quotation-revisions",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/engineer-workload",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/crm",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/panels",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/panels/:panelId/divisions",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/manual-products",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/engineer-requests/pending",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/engineer-requests/sent",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/engineers",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/analytics/summary",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/analytics/engineers",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/analytics/clients",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/analytics/projects/:projectId/team",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/dashboard",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/notifications",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/price-changes",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/price-changes/my",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/price-changes/project/:projectId",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/item-groups",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/item-groups/:id",
+    "status": 404
+  },
+  {
+    "role": "engineer",
+    "route": "/item-groups/:id/items",
+    "status": 404
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/execution",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/execution/view",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/technicians/my-projects",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/technicians",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/manual-product-requests",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/activity",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/attachments",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/onedrive/status",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/projects/:projectId/payments",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/debt",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/export/products",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/export/projects",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/export/analytics",
+    "status": 403
+  },
+  {
+    "role": "engineer",
+    "route": "/export/reservations",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/export/crm/:projectId",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/messages",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/updates",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/division-types",
+    "status": 200
+  },
+  {
+    "role": "engineer",
+    "route": "/procurement/projects",
+    "status": 403
+  },
+  {
+    "role": "accounting",
+    "status": "not tested",
+    "reason": "No local account for this role"
+  },
+  {
+    "role": "stock_manager",
+    "status": "not tested",
+    "reason": "No local account for this role"
+  },
+  {
+    "role": "secretary",
+    "status": "not tested",
+    "reason": "No local account for this role"
+  },
+  {
+    "role": "technician",
+    "route": "/health",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/auth/me",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/products",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/products/:id",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/brands",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/discounts",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/reservations",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/reservations/product/:productId",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/reservation-history",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/workers",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/clients",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/draft-notifications",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/projects/recycle-bin",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:id",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/email-deliveries",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/review-history",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/stage-history",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/quotation-revisions",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/quotation-revisions/:revisionId/snapshot",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/engineer-workload",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/crm",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/panels",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/panels/:panelId/divisions",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/manual-products",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/items",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/engineer-requests/pending",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/engineer-requests/sent",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/engineers",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/analytics/summary",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/analytics/engineers",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/analytics/clients",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/analytics/projects/:projectId/team",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/dashboard",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/notifications",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/price-changes",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/price-changes/my",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/price-changes/project/:projectId",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/item-groups",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/item-groups/:id",
+    "status": 404
+  },
+  {
+    "role": "technician",
+    "route": "/item-groups/:id/items",
+    "status": 404
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/execution",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/execution/view",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/technicians/my-projects",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/technicians",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/panels/:panelId/divisions/:divisionId/group-instances",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/manual-product-requests",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/activity",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/attachments",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/onedrive/status",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/projects/:projectId/payments",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/debt",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/export/products",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/export/projects",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/export/analytics",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/export/reservations",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/export/crm/:projectId",
+    "status": 403
+  },
+  {
+    "role": "technician",
+    "route": "/messages",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/updates",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/division-types",
+    "status": 200
+  },
+  {
+    "role": "technician",
+    "route": "/procurement/projects",
+    "status": 403
+  }
+]

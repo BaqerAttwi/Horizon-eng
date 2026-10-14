@@ -707,3 +707,23 @@ button.project-eq-number { cursor:pointer; }
 .crm-items-table .crm-item-row td > div { font-size: 12px !important; color: var(--text) !important; }
 .crm-items-table .crm-item-row .form-input { font-size: 14px !important; padding: 6px 8px !important; min-width: 76px !important; }
 .crm-items-table .crm-item-row .crm-description { min-width: 260px; max-width: 380px; white-space: normal; overflow-wrap: anywhere; color: var(--text); text-align: left !important; }
+
+/* Keep wide editable tables inside their scroll container on narrow screens. */
+.item-note-editor { min-width:200px; max-width:320px; white-space:normal; }
+.item-note-editor textarea { width:100%; resize:vertical; }
+.procurement-page .table-wrap { width:100%; max-width:100%; min-width:0; }
+.procurement-page small { overflow-wrap:anywhere; }
+@media(max-width:768px) {
+  .procurement-page input,.procurement-page textarea,.item-note-editor textarea { font-size:16px; }
+  .procurement-page .btn,.item-note-editor .btn { min-height:36px; }
+}
+
+.procurement-filters { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.procurement-progress { margin:0 0 16px; }
+.procurement-progress > div { display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; font-size:12px; margin-bottom:6px; }
+.procurement-progress span { color:var(--muted); }
+.procurement-progress progress { width:100%; height:10px; accent-color:var(--success); }
+.unsaved-indicator { display:block; color:var(--accent2); margin:4px 0; white-space:normal; }
+.unsaved-changes-modal { max-width:540px; }
+.unsaved-changes-modal ul { max-height:180px; overflow:auto; padding-left:20px; overflow-wrap:anywhere; }
+@media(max-width:480px) { .unsaved-changes-modal .modal-footer { flex-wrap:wrap; } .unsaved-changes-modal .modal-footer .btn { flex:1 1 100%; } }

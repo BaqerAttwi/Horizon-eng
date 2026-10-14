@@ -35,7 +35,7 @@ export function drawCommercialDocument(project, fields = {}, logoPng) {
     doc.text(lines,x+1,y+7,{lineHeightFactor:1.15});
   };
   const seller = 'Horizon Power Solution\nVerdun - Miraj Center - GF\nBeirut, Lebanon\n+961 1 741030\nMOF #: 3890959';
-  const buyer = [value('buyerName',project.client_name),value('buyerAddress'),value('buyerPhone'),value('buyerContact'),value('buyerEmail'),value('buyerVat') && `VAT #: ${value('buyerVat')}`].filter(Boolean).join('\n');
+  const buyer = [value('buyerName',project.client_name),value('buyerAddress',project.client_address),value('buyerPhone',project.client_phone),value('buyerContact'),value('buyerEmail',project.client_email),value('buyerVat',project.client_tax_id) && `VAT #: ${value('buyerVat',project.client_tax_id)}`].filter(Boolean).join('\n');
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
   const metadataHeight = content => Math.max(9, 4 + doc.splitTextToSize(text(content), 42).length * 3.3);
   const numberHeight = metadataHeight(quoteNo);
@@ -53,9 +53,9 @@ export function drawCommercialDocument(project, fields = {}, logoPng) {
     box(105,20,90,9,'Pages','');
     box(105,29,45,numberHeight,`${title} Number`,quoteNo);
     box(150,29,45,numberHeight,'Date',value('quoteDate'));
-    box(105,29+numberHeight,45,referenceHeight,'Buyer Reference',value('projectName',project.project_name));
+    box(105,29+numberHeight,45,referenceHeight,'Client Reference',value('projectName',project.project_name));
     box(150,29+numberHeight,45,referenceHeight,invoice ? 'Delivery Date' : 'Expiry',value(invoice ? 'deliveryDate' : 'expiryDate'));
-    box(15,buyerY,90,buyerHeight,'Buyer',buyer);
+    box(15,buyerY,90,buyerHeight,'Client',buyer);
     box(105,buyerY,90,buyerHeight,'','');
     const y=buyerY+buyerHeight;
     box(15,y,90,paymentHeight,'Delivery / Incoterms',value('incoterm','Ex-work our workshop in Beirut'));

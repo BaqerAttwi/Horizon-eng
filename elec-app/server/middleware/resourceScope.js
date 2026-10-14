@@ -8,7 +8,7 @@ async function checkResourceScope(req, res) {
   const checks = [
     ['panelId', 'SELECT project_id FROM project_crm_panels WHERE id=?'],
     ['divisionId', 'SELECT d.panel_id, p.project_id FROM panel_divisions d JOIN project_crm_panels p ON p.id=d.panel_id WHERE d.id=?'],
-    ['itemId', req.path?.includes('/execution/items/') || req.path?.includes('/manual-items/')
+    ['itemId', req.path?.includes('/execution/items/') || req.path?.includes('/manual-items/') || req.path?.startsWith('/procurement/projects/')
       ? 'SELECT i.division_id,d.panel_id,p.project_id FROM panel_crm_items i JOIN panel_divisions d ON d.id=i.division_id JOIN project_crm_panels p ON p.id=d.panel_id WHERE i.id=?'
       : req.path?.includes('/panels/')
         ? 'SELECT i.division_id,d.panel_id,p.project_id FROM panel_crm_items i JOIN panel_divisions d ON d.id=i.division_id JOIN project_crm_panels p ON p.id=d.panel_id WHERE i.id=?'

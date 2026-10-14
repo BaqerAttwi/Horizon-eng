@@ -55,10 +55,11 @@ async function recordReview(projectId, action, status, note, workerId, executor 
     [projectId, action, status, note || null, workerId]);
 }
 
-async function persistReview(sql, params, event) {
+async function persistReview(sql, params, event, beforeUpdate) {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
+    if (beforeUpdate) await beforeUpdate(connection);
     await connection.execute(sql, params);
     await recordReview(event.projectId, event.action, event.status, event.note, event.workerId, connection);
     await connection.commit();
@@ -79,7 +80,9 @@ async function guardProjectEdit(req, res, next) {
     // Invalidate before accepting an edit: even a partially failed edit cannot retain approval.
     const projectMetadata = req.method === 'PATCH' && /^\/projects\/[^/]+$/.test(req.path || '');
     const reviewedFields = ['project_name','client_id','quote_number','total_panels','exchange_rate_eur_usd','vat_pct','project_discount_pct','payment_terms','client_pdf_note'];
-    const changesReviewedWork = !projectMetadata || reviewedFields.some(field => req.body[field] !== undefined && String(req.body[field] ?? '') !== String(project[field] ?? ''));
+    const noteOnlyEdit = req.method === 'PATCH' && /\/panels\/[^/]+\/divisions\/[^/]+\/items\/[^/]+$/.test(req.path || '')
+      && Object.keys(req.body || {}).length === 1 && typeof req.body.notes === 'string' && req.body.notes.length <= 5000;
+    const changesReviewedWork = !noteOnlyEdit && (!projectMetadata || reviewedFields.some(field => req.body[field] !== undefined && String(req.body[field] ?? '') !== String(project[field] ?? '')));
     if (changesReviewedWork && (project.admin_approval === 'approved' || project.ready_for_review)) {
       const connection = await db.getConnection();
       try {

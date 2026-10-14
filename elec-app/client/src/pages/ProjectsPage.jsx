@@ -1,3 +1,5 @@
+import { useConfirmUnsaved, useUnsavedChange } from '../context/UnsavedChangesContext';
+import RecycleBin from '../components/RecycleBin';
 import ReviewHistory from '../components/ReviewHistory';
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -21,6 +23,7 @@ function ProjectStageBar({ project, onChanged, canManage }) {
     catch (e) { toast.error(e.response?.data?.error || e.message); }
     finally { setSaving(false); }
   };
+  useUnsavedChange({ dirty: !!note.trim(), label: `Unsubmitted stage note: ${project.project_name}`, discard:()=>setNote(''), busy:saving });
   const nextStage = PROJECT_STAGES[current + 1];
   const engineerCanAdvance = current < PROJECT_STAGES.indexOf('quotation');
   const awaitingStock = project.project_stage === 'procurement' && project.procurement_status !== 'approved';
@@ -85,7 +88,7 @@ function ProjectModal({ project, onClose, onSaved }) {
   const [clients, setClients] = useState([]);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    project_name: '', quote_number: '', engineer_id: '', client_id: '',
+    project_name: '', quote_number: '', engineer_id: worker?.role === 'engineer' ? worker.id : '', client_id: '',
     exchange_rate_eur_usd: 1.18, deadline: '', notes: '', total_panels: 0, vat_pct: 11,
       project_discount_pct: 0, margin_warning_pct: 10, payment_terms: '70% at order, 30% after inspection', client_pdf_note: '',
     ...(project ? {
@@ -105,6 +108,8 @@ function ProjectModal({ project, onClose, onSaved }) {
     } : {}),
   });
 
+  const [initialForm] = useState(form);
+  const confirmUnsaved = useConfirmUnsaved();
   const isEngineer = isRole('engineer');
 
   useEffect(() => {
@@ -120,7 +125,7 @@ function ProjectModal({ project, onClose, onSaved }) {
   }, [worker, isEngineer, project]);
 
   const save = async () => {
-    if (!form.project_name.trim()) { toast.error('Project name is required'); return; }
+    if (!form.project_name.trim()) { toast.error('Project name is required'); return false; }
     setSaving(true);
     try {
       const payload = isEngineer
@@ -132,10 +137,12 @@ function ProjectModal({ project, onClose, onSaved }) {
       toast.success(`✅ Project "${form.project_name}" ${project?.id ? 'updated' : 'created'}`);
       onSaved(r.data, !!project?.id);
       onClose();
-    } catch (e) { toast.error(e.message); }
+      return true;
+    } catch (e) { toast.error(e.message); return false; }
     finally { setSaving(false); }
   };
 
+  useUnsavedChange({ dirty: JSON.stringify(form) !== JSON.stringify(initialForm), label: `Project details: ${form.project_name || 'New project'}`, save, discard:()=>setForm(initialForm), busy:saving });
   const f = k => ({ value: form[k] || '', onChange: e => setForm(p => ({ ...p, [k]: e.target.value })) });
 
   return (
@@ -143,7 +150,7 @@ function ProjectModal({ project, onClose, onSaved }) {
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">{project?.id ? 'Edit Project' : '+ New Project CRM'}</span>
-          <button className="btn-icon" onClick={onClose}>✕</button>
+          <button className="btn-icon" onClick={()=>confirmUnsaved(onClose)}>✕</button>
         </div>
         <div className="modal-body">
           <div className="form-group">
@@ -217,7 +224,7 @@ function ProjectModal({ project, onClose, onSaved }) {
           </div>
         </div>
         <div className="modal-footer">
-          {project?.id && <button className="btn btn-secondary" onClick={onClose}>Cancel</button>}
+          {project?.id && <button className="btn btn-secondary" onClick={()=>confirmUnsaved(onClose)}>Cancel</button>}
           <button className="btn btn-primary" onClick={save} disabled={saving}>
             {saving ? <><span className="spinner" />Saving...</> : '💾 Save'}
           </button>
@@ -246,6 +253,8 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
   });
   const [clientRejectNote, setClientRejectNote] = useState('');
   const [adminReviewNote, setAdminReviewNote] = useState('');
+  const confirmUnsaved = useConfirmUnsaved();
+  useUnsavedChange({ dirty: !!adminReviewNote.trim() || (!!clientRejectNote.trim() && clientRejectNote !== project?.client_rejection_note), label:'Unsubmitted project review notes', discard:()=>{setAdminReviewNote('');setClientRejectNote('');}, busy:updating });
   const [collaborators, setCollaborators] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [inviteEngId, setInviteEngId] = useState('');
@@ -294,6 +303,10 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
       projectName: previous.projectName || project.project_name || '',
       quoteNumber: previous.quoteNumber || project.quote_number || '',
       buyerName: previous.buyerName || project.client_name || '',
+      buyerAddress: previous.buyerAddress || project.client_address || '',
+      buyerPhone: previous.buyerPhone || project.client_phone || '',
+      buyerEmail: previous.buyerEmail || project.client_email || '',
+      buyerVat: previous.buyerVat || project.client_tax_id || '',
       paymentTerms: previous.paymentTerms || project.payment_terms || '',
       expiryDate: previous.expiryDate || expiry.toISOString().slice(0, 10),
     }));
@@ -307,6 +320,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
         payload.client_rejection_note = clientRejectNote;
       }
       const r = await api.patch(`/projects/${projectId}`, payload);
+      if (client_approval === 'rejected') setRevisions((await api.get(`/projects/${projectId}/quotation-revisions`)).data);
       setProject(p => ({ ...p, ...r.data }));
       if (client_approval !== 'rejected') setClientRejectNote('');
       onUpdated && onUpdated(r.data);
@@ -316,10 +330,11 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
   };
 
   const changeAdminApproval = async (admin_approval) => {
-    if (['recheck','cancelled'].includes(admin_approval) && !adminReviewNote.trim()) return toast.error('Enter notes for the engineer first');
+    if (['rejected','recheck','cancelled'].includes(admin_approval) && !adminReviewNote.trim()) return toast.error('Enter notes for the engineer first');
     setUpdating(true);
     try {
       const r = await api.patch(`/projects/${projectId}/admin-approval`, { admin_approval, rejection_note: adminReviewNote.trim() || null });
+      api.get(`/projects/${projectId}/quotation-revisions`).then(x=>setRevisions(x.data)).catch(e=>toast.error(e.message));
       setAdminReviewNote('');
       setProject(p => ({ ...p, ...r.data }));
       onUpdated && onUpdated(r.data);
@@ -376,7 +391,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
 
   return (
     <>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay" onClick={()=>confirmUnsaved(onClose)}>
         <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
             <div>
@@ -385,18 +400,19 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
                 ID: {project.id} • Engineer: {project.engineer_name || '—'} • Client: {project.client_name || '—'}
               </div>
             </div>
-            <button className="btn-icon" onClick={onClose}>✕</button>
+            <button className="btn-icon" onClick={()=>confirmUnsaved(onClose)}>✕</button>
           </div>
           <div className="modal-body">
 
-            <div style={{fontSize:11,color:'var(--muted)'}}>Quotation: <strong>{project.quote_number}</strong>{revisions[0] ? ` • Latest revision R${revisions[0].revision_number}` : ''}</div>
+            <div style={{fontSize:11,color:'var(--muted)'}}>Quotation: <strong>{project.quote_number}</strong> · Editable version V{project.current_version || 1}{revisions[0] ? ` • Latest revision R${revisions[0].revision_number}` : ''}</div>
             <ProjectStageBar project={project} canManage={isRole('owner','head_engineer')} onChanged={p=>{setProject(v=>({...v,...p}));onUpdated?.(p);}} />
-            {isRole('owner','head_engineer') && revisions.length > 0 && <section className="revision-history">
+            {isRole('owner','head_engineer') && <section className="revision-history">
               <div className="revision-history-head">
                 <div><span className="workflow-eyebrow">Quotation records</span><strong>Revision History</strong></div>
                 <span className="badge badge-purple">{revisions.length} saved</span>
               </div>
               <div className="revision-list">
+                {!revisions.length && <p>No saved versions yet. Rejecting or requesting recheck saves the current version here. Earlier decisions cannot recreate past item contents.</p>}
                 {revisions.map(revision => {
                   const snapshot = revisionSnapshots[revision.id] || null;
                   const panelCount = snapshot?.panels?.length || 0;
@@ -411,6 +427,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
                     </div>
                     {open && <div className="revision-detail">
                       {loadingSnapshot === revision.id ? <div className="tint-box"><span className="spinner"/> Loading saved items…</div> : !revision.has_snapshot ? <div className="tint-box">This older revision saved totals only. Full item history starts with newly created revisions.</div> : !snapshot ? null : <>
+                        {snapshot.items?.length > 0 && <div><h4>Saved project items</h4>{snapshot.items.map((item,index)=><p key={item.id || index}>{item.reference || item.product_id} · {item.description} · Qty {item.qty}</p>)}</div>}
                         <div className="revision-summary"><span>{panelCount} panels</span><span>{itemCount} item lines</span><span>VAT {Number(snapshot.project?.vat_pct||0)}%</span><span>Discount {Number(snapshot.project?.project_discount_pct||0)}%</span></div>
                         {(snapshot.panels||[]).map(panel=><div className="revision-panel" key={panel.id}>
                           <strong>{panel.panel_name || `Panel ${panel.panel_number}`} × {panel.quantity || 1}</strong>
@@ -491,7 +508,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--white)', marginBottom: 8 }}>👑 Owner Controls</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                   <span style={{ fontSize: 11, color: 'var(--muted)', marginRight: 4 }}>Admin Approval:</span>
-                  {['pending', 'approved', 'recheck', 'cancelled'].map(a => (
+                  {['pending', 'approved', 'rejected', 'recheck', 'cancelled'].map(a => (
                     <button key={a} className={`btn btn-sm ${project.admin_approval === a ? 'btn-primary' : 'btn-secondary'}`}
                       disabled={project.admin_approval === a || updating}
                       onClick={() => changeAdminApproval(a)}
@@ -574,6 +591,12 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
               <button className="btn btn-primary" onClick={() => { onClose(); window.open(`/projects/${project.id}/crm`, '_blank'); }}>
                 📋 Open CRM Editor
               </button>
+              {isRole('owner','head_engineer') && <button className="btn btn-secondary"
+                disabled={project.project_stage !== 'procurement'}
+                title={project.project_stage === 'procurement' ? 'Open this project in the procurement queue' : 'Move the project to Procurement first'}
+                onClick={()=>navigate(`/procurement?project=${project.id}`)}>
+                📦 Open Procurement Queue
+              </button>}
               {isRole('owner','head_engineer') || (isRole('engineer') && project.client_approval !== 'approved') ? (
                 <button className="btn btn-secondary" onClick={() => setShowEdit(true)}>
                   ✏️ Edit Project
@@ -599,7 +622,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
                   <div className="form-group"><label className="form-label">Document Type</label><select className="form-input" value={clientExport.format} onChange={e => setClientExport(p => ({ ...p, format: e.target.value }))}><option value="quotation">Quotation</option><option value="technical">Technical Quotation</option></select></div>
                   <div className="form-group"><label className="form-label">Quotation Number *</label><input className="form-input" value={clientExport.quoteNumber} placeholder="e.g. EQ260068" onChange={e => setClientExport(p => ({ ...p, quoteNumber: e.target.value }))} /></div>
                   {clientExport.format === 'quotation' ? <>
-                    {[['quoteDate','Quotation Date','date'],['expiryDate','Expiry Date','date'],['projectName','Project'],['buyerName','Buyer Name'],['buyerAddress','Buyer Address'],['buyerPhone','Buyer Phone'],['buyerContact','Contact Person'],['buyerEmail','Buyer Email','email'],['buyerVat','Buyer VAT #'],['paymentTerms','Payment Terms'],['validity','Validity'],['deliveryTime','Delivery Time'],['currency','Currency Symbol'],['incoterm','Incoterm'],['signatoryName','Signatory Name']].map(([name, label, type = 'text']) => (
+                    {[['quoteDate','Quotation Date','date'],['expiryDate','Expiry Date','date'],['projectName','Project'],['buyerName','Client Name'],['buyerAddress','Client Address'],['buyerPhone','Client Phone'],['buyerContact','Contact Person'],['buyerEmail','Client Email','email'],['buyerVat','Client VAT #'],['paymentTerms','Payment Terms'],['validity','Validity'],['deliveryTime','Delivery Time'],['currency','Currency Symbol'],['incoterm','Incoterm'],['signatoryName','Signatory Name']].map(([name, label, type = 'text']) => (
                       <div className="form-group" key={name}><label className="form-label">{label}</label><input type={type} className="form-input" value={clientExport[name]} onChange={e => setClientExport(p => ({ ...p, [name]: e.target.value }))} /></div>
                     ))}
                     <div className="form-group" style={{ gridColumn: '1 / -1' }}><label className="form-label">Additional Info (one item per line)</label><textarea className="form-textarea" rows={3} value={clientExport.additionalInfo} onChange={e => setClientExport(p => ({ ...p, additionalInfo: e.target.value }))} /></div>
@@ -659,11 +682,11 @@ export default function ProjectsPage() {
   useEffect(() => { load(); }, []);
 
   const del = async (p) => {
-    if (!confirm(`Permanently delete project "${p.project_name}"? All CRM data will be removed.`)) return;
+    if (!confirm(`Move project "${p.project_name}" to the recycle bin? Admin can restore it for one year.`)) return;
     try {
       await api.delete(`/projects/${p.id}`);
       setProjects(ps => ps.filter(x => x.id !== p.id));
-      toast.success('Project deleted');
+      toast.success('Project moved to recycle bin');
     } catch (e) { toast.error(e.message); }
   };
 
@@ -688,6 +711,7 @@ export default function ProjectsPage() {
   return (
     <div className="page">
       <DraftNotification />
+      {isRole('owner') && <RecycleBin onRestored={load} />}
       <div className="page-header">
         <div>
           <div className="page-title">🔧 Projects CRM</div>

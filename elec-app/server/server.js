@@ -70,6 +70,10 @@ const server = app.listen(PORT, () => {
   console.log(`[Server] ✅ Running on http://localhost:${PORT}`);
 
   ensureOwner();
+  const purgeRecycleBin = () => require('./controllers/recycleBinController').purgeExpiredProjects()
+    .catch(error => console.error('[Recycle bin]', error.message));
+  purgeRecycleBin();
+  setInterval(purgeRecycleBin, 60 * 60 * 1000).unref();
 
   // Initialize email service
   initMailer();

@@ -44,7 +44,7 @@ export default function ClientExportPage() {
     api.get(`/projects/${id}/crm`).then(({ data }) => {
       if (cancelled) return;
       setProject(data);
-      setForm(v => ({ ...v, format: isEngineer ? 'technical' : v.format, additionalInfo: isInvoiceStage(data) ? defaults.additionalInfo.replace('Our offer is valid for 2 weeks.\n', '') : defaults.additionalInfo, quoteNumber: data.quote_number || v.quoteNumber, projectName: data.project_name || '', buyerName: data.client_name || '', paymentTerms: data.payment_terms || '', vatPctOverride: String(Number(data.vat_pct) || 0) }));
+      setForm(v => ({ ...v, format: isEngineer ? 'technical' : v.format, additionalInfo: isInvoiceStage(data) ? defaults.additionalInfo.replace('Our offer is valid for 2 weeks.\n', '') : defaults.additionalInfo, quoteNumber: data.quote_number || v.quoteNumber, projectName: data.project_name || '', buyerName: data.client_name || '', buyerAddress: data.client_address || '', buyerPhone: data.client_phone || '', buyerEmail: data.client_email || '', buyerVat: data.client_tax_id || '', paymentTerms: data.payment_terms || '', vatPctOverride: String(Number(data.vat_pct) || 0) }));
     }).catch(e => {
       if (!cancelled) setLoadError(e.message);
     });
@@ -74,7 +74,7 @@ export default function ClientExportPage() {
         <div className="form-group"><label className="form-label">Document Type</label><select className="form-input" value={form.format} onChange={e => setForm(v => ({ ...v, format: e.target.value }))}>{!isEngineer && <option value="quotation">{documentTitle}</option>}<option value="technical">Technical Quotation</option></select></div>
         {input(`${form.format === 'technical' ? 'Quotation' : documentTitle} Number *`, 'quoteNumber')}
         {form.format === 'technical' ? <>{input('Document Code', 'documentCode')}{input('Revision', 'edition')}</> : <>
-          {input(`${documentTitle} Date`, 'quoteDate', 'date')}{input(invoice ? 'Delivery Date *' : 'Expiry Date', invoice ? 'deliveryDate' : 'expiryDate', 'date')}{input('Project', 'projectName')}{input('Buyer Name', 'buyerName')}{input('Buyer Address', 'buyerAddress')}{input('Buyer Phone', 'buyerPhone')}{input('Contact Person', 'buyerContact')}{input('Buyer Email', 'buyerEmail', 'email')}{input('Buyer VAT #', 'buyerVat')}{input('Payment Terms', 'paymentTerms', 'textarea', true)}
+          {input(`${documentTitle} Date`, 'quoteDate', 'date')}{input(invoice ? 'Delivery Date *' : 'Expiry Date', invoice ? 'deliveryDate' : 'expiryDate', 'date')}{input('Project', 'projectName')}{input('Client Name', 'buyerName')}{input('Client Address', 'buyerAddress')}{input('Client Phone', 'buyerPhone')}{input('Contact Person', 'buyerContact')}{input('Client Email', 'buyerEmail', 'email')}{input('Client VAT #', 'buyerVat')}{input('Payment Terms', 'paymentTerms', 'textarea', true)}
           {input('Validity', 'validity')}{input('Delivery Time', 'deliveryTime')}{input('Currency Symbol', 'currency')}{input('Currency Name', 'currencyName')}{input('Incoterm Description', 'incoterm')}{input('Incoterms 2020', 'incotermCode')}
           {input('Additional Info', 'additionalInfo', 'textarea', true)}
           {input('VAT %', 'vatPctOverride', 'number')}{input('VAT Amount Override', 'vatAmountOverride', 'number')}{input('Total Override', 'totalOverride', 'number')}

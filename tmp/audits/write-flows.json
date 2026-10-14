@@ -1,0 +1,98 @@
+[
+  {
+    "flow": "Login, profile, email permissions and account administration",
+    "status": "passed"
+  },
+  {
+    "flow": "Client creation, editing, validation and deletion",
+    "status": "passed"
+  },
+  {
+    "flow": "Inventory stock/pricing and brand discount lifecycle",
+    "status": "passed"
+  },
+  {
+    "flow": "Project creation, panel/division/item pricing and visibility",
+    "status": "passed"
+  },
+  {
+    "flow": "Collaboration invites, response and project access",
+    "status": "passed"
+  },
+  {
+    "flow": "Item groups, zero markup inheritance and quantity/description edits",
+    "status": "passed"
+  },
+  {
+    "flow": "Quotation revision capture and restore preserves group structure",
+    "status": "passed"
+  },
+  {
+    "flow": "Review, quotation, client approval and procurement transitions",
+    "status": "passed"
+  },
+  {
+    "flow": "Technician assignments, completion, note edits and delivery",
+    "status": "passed"
+  },
+  {
+    "flow": "Installment payments, debt and payment deletion",
+    "status": "passed"
+  },
+  {
+    "flow": "Attachments, announcements, updates and notifications",
+    "status": "passed"
+  },
+  {
+    "flow": "Dashboard, calendar sources, analytics, export and role guards",
+    "status": "passed"
+  },
+  {
+    "flow": "Division types create, rename and archive",
+    "status": "passed"
+  },
+  {
+    "flow": "Copy panels preserves groups, quantities, overrides and manual items",
+    "status": "passed"
+  },
+  {
+    "flow": "Bulk pricing edits, replacement and project brand discounts",
+    "status": "passed"
+  },
+  {
+    "flow": "Price-change request approval and rejection",
+    "status": "passed"
+  },
+  {
+    "flow": "Manual product requests: approve, reject and direct owner addition",
+    "status": "passed"
+  },
+  {
+    "flow": "Reservation add, release, insufficient stock and history",
+    "status": "passed"
+  },
+  {
+    "flow": "PDF import confirmation creates grouped and manual items",
+    "status": "passed"
+  },
+  {
+    "flow": "Manual product library, item removal and group/division/panel deletion",
+    "status": "passed"
+  },
+  {
+    "flow": "Excel import, PDF preview and unsupported upload handling",
+    "status": "passed"
+  },
+  {
+    "flow": "Role assistant guidance and record lookups",
+    "status": "passed"
+  },
+  {
+    "flow": "Read endpoint matrix across all seven roles",
+    "status": "passed"
+  },
+  {
+    "flow": "Password changes invalidate the old session",
+    "status": "passed"
+  }
+]

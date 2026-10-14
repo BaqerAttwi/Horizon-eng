@@ -28,31 +28,26 @@ pm2 stop horizon-app        # or: sudo systemctl stop horizon-app
 ```bash
 cd ~/horizon-app
 git fetch origin
-git reset --hard origin/main   # discards any local server-side edits — make sure nothing important is uncommitted first
+git pull --ff-only origin main   # resolve any local changes before continuing
 ```
 
 ## 3. Update the database — keeping your existing data, no drop
 
-`schema.sql` uses `CREATE TABLE IF NOT EXISTS` and idempotent column checks
-throughout, so it's safe to run directly against your **existing**
-database — it only adds whatever's missing (new tables like
-`project_technicians`/`oauth_tokens`, new columns like the technician role
-and the OneDrive attachment fields) and leaves every existing row in every
-existing table untouched.
+For the existing production database described in the supplied 14 October 2026 schema listing, follow [the additive upgrade instructions](elec-app/docs/UPGRADE-2026-10-14.md).
 
-```bash
-mysql -u <db_user> -p <db_name> < elec-app/server/db/schema.sql
-```
+Apply only this release migration to the existing database:
 
-(Only if you ever genuinely want to start from an empty database instead —
-not the case here — you'd `DROP DATABASE` first. Skip that entirely for a
-normal update.)
+~~~bash
+mysql -u <db_user> -p <db_name> < elec-app/server/db/migrations/20261014_project_retention_versions.sql
+~~~
+
+It adds projects.current_version only if it is missing. It does not drop tables, delete rows, or replace your database. Use schema.sql for a fresh installation or a separately reviewed full schema upgrade; do not replace production data with a development dump.
 
 ## 4. Update `.env`
 
 ```bash
 cd ~/horizon-app/elec-app/server
-cp .env.example .env   # or edit your existing .env — add any new variables listed in .env.example that you don't have yet
+test -f .env || cp .env.example .env   # preserve existing production settings
 nano .env
 ```
 

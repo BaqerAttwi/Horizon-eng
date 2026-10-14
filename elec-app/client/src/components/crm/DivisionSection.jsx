@@ -193,7 +193,10 @@ function ManualProductModal({ project, onClose, onSaved, prefill }) {
 function GroupSelectModal({ project, division, panel, onClose, onGroupAdded }) {
   const [groups, setGroups] = useState([]);
   const [search, setSearch] = useState('');
-  const filteredGroups = groups.filter(group => group.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+  const groupQuery = search.trim().toLocaleLowerCase();
+  const filteredGroups = groups.filter(group =>
+    [group.name, group.description].some(value => (value || '').toLocaleLowerCase().includes(groupQuery))
+  );
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [instanceQty, setInstanceQty] = useState(1);
@@ -230,7 +233,7 @@ function GroupSelectModal({ project, division, panel, onClose, onGroupAdded }) {
           <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
-          <input className="form-input" aria-label="Search groups by name" placeholder="Search groups by name..." value={search} onChange={e => setSearch(e.target.value)} style={{marginBottom:12}} />
+          <input className="form-input" aria-label="Search groups by name or description" placeholder="Search groups by name or description..." value={search} onChange={e => setSearch(e.target.value)} style={{marginBottom:12}} />
           <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
             <label style={{ fontSize: 12, color: 'var(--muted)' }}>Group multiplier:</label>
             <input type="number" min={1} className="form-input" style={{ width: 70 }}
@@ -280,7 +283,7 @@ function StandaloneItemsTable({ items, division, panel, exchangeRate, onItemUpda
         <th style={{ width: 32 }}>👁</th><th>Name</th><th>Qty</th>{!hideCost && <><th>Price for 1 $ / €</th><th>Price $ / €</th></>}<th>Description</th><th>Brand</th>
         {hideCost && <><th>Disc%</th><th>mkP%</th><th>Man%</th><th>mkM%</th></>}
         {!hideCost && <><th>Disc%</th><th>After Disc $</th><th>mkP%</th><th>T.PriceT $</th><th>Man%</th><th>mkM%</th><th>Final $ / €</th></>}
-        {!hideCost && <><th>Cost $</th><th>Profit $</th></>}{showCr && <><th>C.R $</th><th>N Profit $</th></>}<th className="crm-actions-column">Actions</th>
+        {!hideCost && <><th>Cost $</th><th>Profit $</th></>}{showCr && <><th>C.R $</th><th>N Profit $</th></>}<th>Notes</th><th className="crm-actions-column">Actions</th>
       </tr></thead>
       <tbody>{items.map(item => <CrmItemRow key={item.id} item={item} division={division} panel={panel} exchangeRate={exchangeRate}
         onUpdate={onItemUpdate} onDelete={onItemDelete} hideCost={hideCost} showCr={showCr}
@@ -457,11 +460,12 @@ const DivisionSection = memo(function DivisionSection({ division, panel, project
                 </th>
                 <th style={{ width: 32 }}><span style={{ fontSize: 11 }}>👁</span></th>
                 <th>Name</th><th>Qty</th>{!hideCost && <><th>Price for 1 $ / €</th><th>Price $ / €</th></>}<th>Description</th><th>Brand</th>
+                {hideCost && <><th>Disc%</th><th>mkP%</th><th>Man%</th><th>mkM%</th></>}
                 {!hideCost && <><th>Disc%</th><th>After Disc $</th><th>mkP%</th><th>T.PriceT $</th>
                 <th>Man%</th><th>mkM%</th><th>Final $ / €</th></>}
                 {!hideCost && <><th>Cost $</th><th>Profit $</th></>}
                 {showCr && <><th style={{ width: 60 }}>C.R $</th><th style={{ width: 70 }}>N Profit $</th></>}
-                <th></th>
+                <th>Notes</th><th></th>
               </tr>
             </thead>
             <tbody>

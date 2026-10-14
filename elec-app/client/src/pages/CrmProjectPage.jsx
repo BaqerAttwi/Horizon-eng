@@ -1,3 +1,4 @@
+import { useConfirmUnsaved, useUnsavedChange } from '../context/UnsavedChangesContext';
 import ReviewHistory from '../components/ReviewHistory';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -17,12 +18,14 @@ function BulkEditModal({ onClose, onApply, count }) {
   const [form, setForm] = useState({ markupP_pct: '', manpower_pct: '', markupM_pct: '', discount_pct: '' });
 
   const hasAny = Object.values(form).some(v => v !== '');
+  const confirmUnsaved = useConfirmUnsaved();
+  useUnsavedChange({dirty:hasAny,label:'Bulk item edits',discard:()=>setForm({markupP_pct:'',manpower_pct:'',markupM_pct:'',discount_pct:''})});
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={()=>confirmUnsaved(onClose)}>
       <div className="modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <span className="modal-title">✏️ Bulk Edit ({count} items)</span>
-          <button className="btn-icon" onClick={onClose}>✕</button>
+          <button className="btn-icon" onClick={()=>confirmUnsaved(onClose)}>✕</button>
         </div>
         <div className="modal-body">
           <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>Leave blank to keep current values.</div>
@@ -36,7 +39,7 @@ function BulkEditModal({ onClose, onApply, count }) {
           ))}
         </div>
         <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-secondary" onClick={()=>confirmUnsaved(onClose)}>Cancel</button>
           <button className="btn btn-primary" disabled={!hasAny} onClick={() => {
             const changes = {};
             for (const [k, v] of Object.entries(form)) { if (v !== '') changes[k] = parseFloat(v); }
@@ -70,16 +73,19 @@ function CrItemsPage({ projectId, panels, onChanged }) {
 
   const apply = async group => {
     const value = Number(edits[group.key]);
-    if (!Number.isFinite(value) || value < 0) return toast.error('Enter a valid C.R. amount');
+    if (!Number.isFinite(value) || value < 0) {toast.error('Enter a valid C.R. amount');return false;}
     setSaving(group.key);
     try {
       await api.post(`/projects/${projectId}/items/bulk-update`, { item_ids: group.items.map(item => item.id), changes: { cr_amount: value } });
       toast.success(`C.R. updated for ${group.items.length} matching items`);
+      setEdits(v=>({...v,[group.key]:''}));
       await onChanged();
-    } catch (e) { toast.error(e.message); }
+      return true;
+    } catch (e) { toast.error(e.message); return false; }
     finally { setSaving(null); }
   };
 
+  useUnsavedChange({dirty:Object.values(edits).some(value=>String(value).trim()),label:'CRM C.R. edits',busy:saving !== null,save:async()=>{for(const group of groups){if(edits[group.key] !== undefined && String(edits[group.key]).trim() && await apply(group)===false)return false;}return true;},discard:()=>setEdits({})});
   return <div className="card"><div className="card-body" style={{ overflowX: 'auto' }}>
     <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>All project items are grouped by product/name. Applying a C.R. amount updates every matching occurrence across all panels and divisions.</div>
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}><thead><tr style={{ borderBottom: '2px solid var(--border)' }}>
@@ -101,6 +107,7 @@ function ProjectMarkupPage({ projectId, panels, exchangeRate, onChanged }) {
   const [panelEdits, setPanelEdits] = useState({});
   const [saving, setSaving] = useState(false);
   const [savingPanel, setSavingPanel] = useState(null);
+  useUnsavedChange({dirty:Object.values(form).some(value=>value !== '') || Object.values(panelEdits).some(edit=>Object.values(edit).some(value=>value !== '')),label:'Unapplied project or panel markup',busy:saving || savingPanel !== null,discard:()=>{setForm({markupP_pct:'',manpower_pct:'',markupM_pct:''});setPanelEdits({});}});
   const values = {
     markupP_pct: Number(form.markupP_pct) || 0,
     manpower_pct: Number(form.manpower_pct) || 0,
@@ -149,6 +156,7 @@ function ProjectMarkupPage({ projectId, panels, exchangeRate, onChanged }) {
     try {
       await api.post(`/projects/${projectId}/items/bulk-update`, { item_ids: itemIds, changes: values });
       toast.success(`Markup updated for ${itemIds.length} items`);
+      setForm({markupP_pct:'',manpower_pct:'',markupM_pct:''});setPanelEdits({});
       await onChanged();
     } catch (e) { toast.error(e.message); }
     finally { setSaving(false); }
@@ -159,6 +167,7 @@ function ProjectMarkupPage({ projectId, panels, exchangeRate, onChanged }) {
     try {
       await api.post(`/projects/${projectId}/items/bulk-update`, { item_ids: row.items.map(item => item.id), changes: row.panelValues });
       toast.success(`Markup updated for Panel #${row.panel.panel_number}`);
+      setPanelEdits(v=>({...v,[row.panel.id]:{}}));
       await onChanged();
     } catch (e) { toast.error(e.message); }
     finally { setSavingPanel(null); }
@@ -203,7 +212,7 @@ export default function CrmProjectPage() {
     showBrandPreview, setShowBrandPreview,
     previewBrand, previewDiscPct,
     applyingBrandDisc,
-    activeTab, setActiveTab,
+    activeTab, setActiveTab: setActiveTabRaw,
     editView, setEditView,
     hideCost, showCr, exchangeRate,
     load, addPanel, openCopyPanel, copyPanel,
@@ -220,6 +229,9 @@ export default function CrmProjectPage() {
     reportItems, reportSummary,
     projectTotal, baseTotal, discPct, discAmt, netAfterDisc, vatPct, vatAmt, projectTotalWithVat,
   } = useCrmProject();
+  const confirmUnsaved = useConfirmUnsaved();
+  const setActiveTab = value=>{if(value!==activeTab)confirmUnsaved(()=>setActiveTabRaw(value));};
+  useUnsavedChange({dirty:!!reviewNote.trim() || Object.values(brandDiscountEdits).some(value=>value != null && String(value).trim()),label:'Unsubmitted project review notes or brand discounts',busy:reviewSaving || applyingBrandDisc,discard:()=>{setReviewNote('');setBrandDiscountEdits({});}});
 
   if (loading) return <div className="page"><div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /> Loading CRM...</div></div>;
   if (!project) return <div className="page"><div className="empty"><p>Project not found</p></div></div>;

@@ -65,12 +65,13 @@ const GroupInstanceSection = memo(function GroupInstanceSection({ instance, divi
                     style={{ width: 15, height: 15, cursor: 'pointer' }} />
                 </th>
                 <th style={{ width: 32 }}><span style={{ fontSize: 11 }}>👁</span></th>
-                <th>Name</th><th>Qty</th><th>Price for 1 $ / €</th><th>Price $ / €</th><th>Description</th><th>Brand</th>
-                <th>Disc%</th><th>After Disc $</th><th>mkP%</th><th>T.PriceT $</th>
-                <th>Man%</th><th>mkM%</th><th>Final $ / €</th>
+                <th>Name</th><th>Qty</th>{!hideCost && <><th>Price for 1 $ / €</th><th>Price $ / €</th></>}<th>Description</th><th>Brand</th>
+                {hideCost && <><th>Disc%</th><th>mkP%</th><th>Man%</th><th>mkM%</th></>}
+                {!hideCost && <><th>Disc%</th><th>After Disc $</th><th>mkP%</th><th>T.PriceT $</th>
+                <th>Man%</th><th>mkM%</th><th>Final $ / €</th></>}
                 {!hideCost && <><th>Cost $</th><th>Profit $</th></>}
                 {showCr && <><th style={{ width: 60 }}>C.R $</th><th style={{ width: 70 }}>N Profit $</th></>}
-                <th></th>
+                <th>Notes</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -83,7 +84,7 @@ const GroupInstanceSection = memo(function GroupInstanceSection({ instance, divi
                   editView={editView} />
               ))}
             </tbody>
-            <tfoot>
+            {!hideCost && <tfoot>
               <tr style={{ borderTop: '2px solid var(--accent2)', fontWeight: 700, background: 'rgba(245,158,11,0.06)' }}>
                 <td colSpan={14} style={{ padding: '6px 10px', fontSize: 12, color: 'var(--accent2)', textAlign: 'right' }}>
                   Group Total:
@@ -109,9 +110,9 @@ const GroupInstanceSection = memo(function GroupInstanceSection({ instance, divi
                     ${instance.items.reduce((s, i) => s + ((parseFloat(i.totalfinalProduct) || 0) - ((parseFloat(i.cr_amount) || 0) * (parseFloat(i.qty) || 1))), 0).toFixed(2)}
                   </td>
                 )}
-                <td></td>
+                <td colSpan={2}></td>
               </tr>
-            </tfoot>
+            </tfoot>}
           </table>
         </div>
       )}

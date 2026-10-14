@@ -250,31 +250,28 @@ async function toggleItemExecution(req, res, next) {
     );
     if (!projectItem) return res.status(404).json({ error: 'Item not found in this project' });
 
-    // If qty_done provided, derive is_completed from item's qty
-    let finalIsCompleted = is_completed ? 1 : 0;
-    let finalQtyDone = undefined;
-    if (qty_done !== undefined) {
-      const itemQty = parseInt(projectItem.qty) || 1;
-      finalQtyDone = Math.min(Math.max(0, parseInt(qty_done) || 0), itemQty);
-      finalIsCompleted = finalQtyDone >= itemQty ? 1 : 0;
-    }
-
     const [[existing]] = await db.execute(
-      'SELECT id FROM item_completion WHERE project_id = ? AND item_id = ?',
+      'SELECT id,is_completed,qty_done FROM item_completion WHERE project_id = ? AND item_id = ?',
       [projectId, itemId]
     );
+    const changesProgress = qty_done !== undefined || (is_completed !== undefined && is_completed !== null);
+    const itemQty = parseInt(projectItem.qty) || 1;
+    let finalIsCompleted = existing?.is_completed ? 1 : 0;
+    let finalQtyDone = existing?.qty_done ?? (finalIsCompleted ? itemQty : 0);
+    if (qty_done !== undefined) {
+      finalQtyDone = Math.min(Math.max(0, parseInt(qty_done) || 0), itemQty);
+      finalIsCompleted = finalQtyDone >= itemQty ? 1 : 0;
+    } else if (changesProgress) {
+      finalIsCompleted = is_completed ? 1 : 0;
+      finalQtyDone = finalIsCompleted ? itemQty : 0;
+    }
+    if (!changesProgress && execution_notes === undefined) return res.status(400).json({ error: 'Nothing to update' });
 
     if (existing) {
-      const sets = ['completed_by = ?', 'completed_at = IF(? = 1, NOW(), NULL)'];
-      const params = [req.worker.id, finalIsCompleted];
-      if (finalQtyDone !== undefined) {
-        sets.unshift('qty_done = ?');
-        params.unshift(finalQtyDone);
-        sets.unshift('is_completed = ?');
-        params.unshift(finalIsCompleted);
-      } else {
-        sets.unshift('is_completed = ?');
-        params.unshift(finalIsCompleted);
+      const sets = [], params = [];
+      if (changesProgress) {
+        sets.push('is_completed = ?', 'qty_done = ?', 'completed_by = ?', 'completed_at = IF(? = 1, NOW(), NULL)');
+        params.push(finalIsCompleted, finalQtyDone, req.worker.id, finalIsCompleted);
       }
       if (execution_notes !== undefined) {
         sets.push('execution_notes = ?');
@@ -300,7 +297,7 @@ async function toggleItemExecution(req, res, next) {
 
     logActivity({
       project_id: projectId, item_id: itemId,
-      action: finalIsCompleted ? 'execution_item_completed' : 'execution_item_uncompleted',
+      action: !changesProgress ? 'execution_item_notes_updated' : finalIsCompleted ? 'execution_item_completed' : 'execution_item_uncompleted',
       field_name: 'execution_item',
       new_value: execution_notes || null,
       performed_by: req.worker.id
