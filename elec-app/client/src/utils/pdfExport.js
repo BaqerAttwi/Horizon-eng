@@ -109,7 +109,8 @@ export function drawTechnicalQuotation(project, fields, logoPng) {
       (div.group_instances || []).forEach(group => {
         const groupStyles = { fillColor: [240, 244, 249], fontStyle: 'bold' };
         body.push([
-          { content: clean(group.group_name, `Group #${group.item_group_id}`), colSpan: 2, styles: groupStyles },
+          { content: clean(div.division_type, '-'), styles: groupStyles },
+          { content: clean(group.group_name, `Group #${group.item_group_id}`), styles: groupStyles },
           { content: clean(group.description, '-'), styles: groupStyles },
           { content: clean(group.quantity, '1'), styles: groupStyles },
         ]);
