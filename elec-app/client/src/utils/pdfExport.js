@@ -107,8 +107,12 @@ export function drawTechnicalQuotation(project, fields, logoPng) {
       };
       (div.items || []).filter(item => !item.source_group_instance_id).forEach(addItem);
       (div.group_instances || []).forEach(group => {
-        body.push([{ content: `Group: ${clean(group.group_name, `Group #${group.item_group_id}`)}`, colSpan: 4,
-          styles: { fillColor: [240, 244, 249], fontStyle: 'bold' } }]);
+        const groupStyles = { fillColor: [240, 244, 249], fontStyle: 'bold' };
+        body.push([
+          { content: clean(group.group_name, `Group #${group.item_group_id}`), colSpan: 2, styles: groupStyles },
+          { content: clean(group.description, '-'), styles: groupStyles },
+          { content: clean(group.quantity, '1'), styles: groupStyles },
+        ]);
         (group.items || []).forEach(addItem);
       });
     });
