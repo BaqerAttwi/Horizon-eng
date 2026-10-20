@@ -6,7 +6,7 @@ async function generateReference(name) {
   const prefix = name.replace(/[^a-z0-9]/gi, '').substring(0, 8).toUpperCase();
   const [existing] = await db.execute(
     'SELECT COUNT(*) as cnt FROM products WHERE reference LIKE ?',
-    [`${prefix}%`]
+    [`MAN-${prefix}-%`]
   );
   const num = (parseInt(existing[0].cnt) || 0) + 1;
   return `MAN-${prefix}-${String(num).padStart(3, '0')}`;
@@ -26,7 +26,7 @@ async function createManualProductRequest(req, res, next) {
       const [result] = await db.execute(
         `INSERT INTO products (reference, description, price_usd, price_euro, brand_id, stock_qty, reserved_qty)
          VALUES (?, ?, ?, ?, NULL, 0, 0)`,
-        [ref, description || null, price_usd || null, price_euro || null]
+        [ref, description?.trim() || name.trim(), price_usd || null, price_euro || null]
       );
       const [newProduct] = await db.execute('SELECT * FROM products WHERE id=?', [result.insertId]);
       return res.status(201).json({ product: newProduct[0], auto_approved: true });
@@ -111,7 +111,7 @@ async function approveManualProductRequest(req, res, next) {
     const [productResult] = await conn.execute(
       `INSERT INTO products (reference, description, price_usd, price_euro, brand_id, stock_qty, reserved_qty)
        VALUES (?, ?, ?, ?, NULL, 0, 0)`,
-      [ref, r.description, r.price_usd, r.price_euro]
+      [ref, r.description?.trim() || r.name, r.price_usd, r.price_euro]
     );
 
     // Update request status

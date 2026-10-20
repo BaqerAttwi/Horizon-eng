@@ -298,6 +298,7 @@ async function createFromImport(req, res, next) {
       vat_pct, project_discount_pct, margin_warning_pct, payment_terms, client_pdf_note } = req.body;
 
     if (!project_name) return res.status(400).json({ error: 'project_name required' });
+    if (!Number.isSafeInteger(Number(client_id)) || Number(client_id) <= 0) return res.status(400).json({ error: 'Client is required' });
     if (!panels?.length) return res.status(400).json({ error: 'No panel data provided' });
 
     let validNumbers = false;

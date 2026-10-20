@@ -126,6 +126,7 @@ function ProjectModal({ project, onClose, onSaved }) {
 
   const save = async () => {
     if (!form.project_name.trim()) { toast.error('Project name is required'); return false; }
+    if (!form.client_id) { toast.error('Client is required'); return false; }
     setSaving(true);
     try {
       const payload = isEngineer
@@ -173,7 +174,7 @@ function ProjectModal({ project, onClose, onSaved }) {
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Client</label>
+              <label className="form-label">Client *</label>
               <select className="form-select" {...f('client_id')}>
                 <option value="">— Select Client —</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.type === 'company' ? '🏢' : '👤'} {c.name}</option>)}
@@ -859,6 +860,7 @@ function ImportPdfModal({ onClose, onCreated }) {
 
   const handleCreate = async () => {
     if (!form.project_name.trim()) { toast.error('Project name required'); return; }
+    if (!form.client_id) { toast.error('Client is required'); return; }
     setCreating(true);
     try {
       const panelsWithItems = preview.panels.map(p => {
@@ -937,7 +939,7 @@ function ImportPdfModal({ onClose, onCreated }) {
                   <input className="form-input" value={form.project_name} onChange={e => setForm(f => ({ ...f, project_name: e.target.value }))} placeholder="e.g. New Office Building" />
                 </div>
                 <div>
-                  <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Client</label>
+                  <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Client *</label>
                   <select className="form-input" value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}>
                     <option value="">Select client...</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}

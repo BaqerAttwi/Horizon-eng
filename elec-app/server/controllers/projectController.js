@@ -164,6 +164,7 @@ async function createProject(req, res, next) {
   try {
     const { project_name, quote_number, engineer_id, client_id, exchange_rate_eur_usd, deadline, notes, items = [], total_panels = 0, vat_pct, project_discount_pct, margin_warning_pct, payment_terms, client_pdf_note } = req.body;
     if (!project_name) return res.status(400).json({ error: 'project_name is required' });
+    if (!Number.isSafeInteger(Number(client_id)) || Number(client_id) <= 0) return res.status(400).json({ error: 'Client is required' });
 
     // Auto-assign engineer to themselves
     const assignedEngineer = req.worker.role === 'engineer' ? req.worker.id : (engineer_id || null);

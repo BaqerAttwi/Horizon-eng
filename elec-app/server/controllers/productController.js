@@ -1,5 +1,4 @@
 const db = require('../db/connection');
-const { notifyRoles } = require('./notificationController');
 const { canViewPrices } = require('../utils/rolePolicy');
 
 // GET /api/products
@@ -101,8 +100,6 @@ async function updateProduct(req, res, next) {
       const next = parseInt(stock_qty) || 0;
       await db.execute(`INSERT INTO reservation_history(product_id,old_qty,new_qty,change_qty,reason,changed_by)
         VALUES(?,?,?,?,?,?)`, [req.params.id, before.stock_qty, next, next-before.stock_qty, 'stock_adjustment', req.worker.id]);
-      const threshold = min_stock_level !== undefined ? Math.max(0, parseInt(min_stock_level)||0) : Number(before.min_stock_level||0);
-      if (next-Number(before.reserved_qty||0) <= threshold) await notifyRoles(['owner','stock_manager'], 'stock', 'Low stock warning', `Product #${req.params.id} has ${next-Number(before.reserved_qty||0)} available`, '/products');
     }
 
     const [updated] = await db.execute(

@@ -194,12 +194,13 @@ export default function ProductsPage() {
       const r = await api.post('/manual-product-requests', manualForm);
       if (r.data.auto_approved) {
         toast.success('✅ Product added directly');
+        showCreatedProduct(r.data.product);
       } else {
         toast.success('⏳ Request sent for owner approval');
       }
       setManualForm({ name: '', description: '', price_usd: '', price_euro: '', brand: '', reference: '' });
       setShowManualForm(false);
-      load({ background: true }); // Refresh products table
+      if (!r.data.auto_approved) load({ background: true });
       if (!isRole('engineer')) loadPending();
     } catch (e) {
       toast.error('❌ ' + e.message);
@@ -208,10 +209,10 @@ export default function ProductsPage() {
 
   const handleApproveRequest = async (id) => {
     try {
-      await api.patch(`/manual-product-requests/${id}/approve`);
+      const { data } = await api.patch(`/manual-product-requests/${id}/approve`);
       toast.success('✅ Product approved');
       loadPending();
-      load({ background: true });
+      showCreatedProduct(data.product);
     } catch (e) { toast.error('❌ ' + e.message); }
   };
 
@@ -247,6 +248,14 @@ export default function ProductsPage() {
     setProducts(ps => ps.map(p => p.id === updated.id ? updated : p));
   };
 
+  const showCreatedProduct = (product) => {
+    setPage(1);
+    setBrand('');
+    setSearch(product.reference);
+    setProducts([product]);
+    setTotal(1);
+  };
+
   return (
     <div className="page">
       <div className="page-header">
@@ -258,7 +267,7 @@ export default function ProductsPage() {
           {!stockOnly && <button className="btn btn-secondary" onClick={() => setShowManualForm(!showManualForm)}>
             {showManualForm ? '✕ Close' : '➕ Manual Product'}
           </button>}
-          {stockOnly && <button className="btn btn-primary" onClick={async()=>{const smart_code=prompt('Smart code for new stock item:');if(!smart_code)return;const qty=parseInt(prompt('Starting stock quantity:')||'0',10)||0;try{await api.post('/products/provision',{smart_code,qty});toast.success('Stock item created');load({ background: true });}catch(e){toast.error(e.response?.data?.error||e.message);}}}>➕ Add Stock Item</button>}
+          {stockOnly && <button className="btn btn-primary" onClick={async()=>{const smart_code=prompt('Smart code for new stock item:');if(!smart_code)return;const qty=parseInt(prompt('Starting stock quantity:')||'0',10)||0;try{const { data } = await api.post('/products/provision',{smart_code,qty});toast.success('Stock item created');showCreatedProduct(data);}catch(e){toast.error(e.response?.data?.error||e.message);}}}>➕ Add Stock Item</button>}
           <a href="/api/export/products" className="btn btn-secondary" style={{ textDecoration: 'none' }}>
             📥 CSV
           </a>

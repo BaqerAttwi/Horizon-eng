@@ -11,7 +11,7 @@ async function getNotifications(req, res, next) {
     let query = `
       SELECT n.id, n.type, n.title, n.message, n.link, n.is_read, n.created_at
       FROM notifications n
-      WHERE n.user_id = ?
+      WHERE n.user_id = ? AND NOT (n.type = 'stock' AND n.link = '/products')
     `;
     const params = [userId];
 
@@ -25,7 +25,7 @@ async function getNotifications(req, res, next) {
     const [notifications] = await pool.query(query, params);
 
     const [[unreadCount]] = await pool.query(
-      `SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = FALSE`,
+      `SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = FALSE AND NOT (type = 'stock' AND link = '/products')`,
       [userId]
     );
 
@@ -255,33 +255,6 @@ async function checkPendingApprovals() {
   }
 }
 
-// ── Cron-like: Low stock warnings ─────────────────────────────
-async function checkLowStock() {
-  try {
-    const [lowStock] = await pool.query(`
-      SELECT id, reference, description, stock_qty, reserved_qty, min_stock_level
-      FROM products
-      WHERE (stock_qty-reserved_qty) <= min_stock_level
-      ORDER BY (stock_qty-reserved_qty) ASC
-      LIMIT 20
-    `);
-
-    for (const p of lowStock) {
-      const available = Number(p.stock_qty)-Number(p.reserved_qty);
-      const severity = available <= 0 ? 'OUT OF STOCK' : `Low: ${available} available`;
-      await notifyRoles(['owner','stock_manager'],
-        'stock',
-        `${severity}: ${p.reference}`,
-        p.description || 'No description',
-        '/products'
-      );
-    }
-
-  } catch (err) {
-    console.error('[Notification] Stock check failed:', err.message);
-  }
-}
-
 // ── Cron-like: Outstanding payment reminders ───────────────────
 // A project is usually paid across several installments, and each payment
 // can carry a deadline for the *next* one (set right in the "Record
@@ -328,12 +301,11 @@ async function checkOutstandingPayments() {
 async function runNotificationChecks() {
   await checkDeadlineWarnings();
   await checkPendingApprovals();
-  await checkLowStock();
   await checkOutstandingPayments();
 }
 
 module.exports = {
   getNotifications, markAsRead, markAllAsRead, deleteNotification,
   createNotification, notifyOwners, notifyRoles, notifyEngineer,
-  checkDeadlineWarnings, checkPendingApprovals, checkLowStock, checkOutstandingPayments, runNotificationChecks
+  checkDeadlineWarnings, checkPendingApprovals, checkOutstandingPayments, runNotificationChecks
 };

@@ -107,7 +107,7 @@ export function drawTechnicalQuotation(project, fields, logoPng) {
       };
       (div.items || []).filter(item => !item.source_group_instance_id).forEach(addItem);
       (div.group_instances || []).forEach(group => {
-        const groupStyles = { fillColor: [240, 244, 249], fontStyle: 'bold' };
+        const groupStyles = { fillColor: [240, 244, 249], fontStyle: 'normal' };
         body.push([
           { content: clean(div.division_type, '-'), styles: groupStyles },
           { content: clean(group.group_name, `Group #${group.item_group_id}`), styles: groupStyles },
@@ -404,7 +404,7 @@ export async function exportProjectPdf(projectId, type = 'owner', fields = {}) {
         didParseCell: (data) => {
           if (data.section === 'body' && data.row.index >= groupStartIdx - 1) {
             data.cell.styles.fillColor = [240, 244, 249];
-            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fontStyle = 'normal';
           }
         },
       });

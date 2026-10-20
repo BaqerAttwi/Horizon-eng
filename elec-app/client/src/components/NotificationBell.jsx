@@ -1,5 +1,6 @@
 import toast from 'react-hot-toast';
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/client';
@@ -85,6 +86,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const ref = useRef();
+  const panelRef = useRef();
 
   const loadNotifications = () => {
     api.get('/notifications?limit=20')
@@ -107,7 +109,7 @@ export default function NotificationBell() {
   // Close on outside click
   useEffect(() => {
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target) && !panelRef.current?.contains(e.target)) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -155,7 +157,7 @@ export default function NotificationBell() {
         )}
       </button>
 
-      <AnimatePresence>
+      {createPortal(<AnimatePresence>
         {open && (
           // Fixed, full-viewport flex-centering wrapper — centering lives here via
           // flexbox instead of a `transform: translate(-50%,-50%)` on the panel
@@ -172,6 +174,7 @@ export default function NotificationBell() {
             }}
           >
           <motion.div
+            ref={panelRef}
             initial={{ opacity: 0, y: -8, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
@@ -241,7 +244,7 @@ export default function NotificationBell() {
           </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>, document.body)}
     </div>
   );
 }

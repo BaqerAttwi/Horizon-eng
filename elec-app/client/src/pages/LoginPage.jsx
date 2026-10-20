@@ -31,7 +31,10 @@ export default function LoginPage() {
     try {
       const worker = await login(email.trim(), password);
       toast.success(`✅ Welcome, ${worker.name}!`);
-      navigate('/products');
+      const landingPage = ['owner', 'head_engineer', 'engineer'].includes(worker.role)
+        ? '/projects'
+        : '/products';
+      navigate(landingPage);
     } catch (err) {
       toast.error('❌ ' + err.message);
     } finally {
