@@ -409,6 +409,23 @@ tr:hover td { background: var(--panel2); }
 .modal-footer { flex-shrink:0; flex-wrap:wrap; padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
 .modal-title { min-width:0; overflow-wrap:anywhere; }
 .modal-header .btn-icon { flex-shrink:0; }
+.project-import-actions { display:flex; flex-wrap:wrap; gap:12px; max-width:100%; }
+.project-import-actions .btn { max-width:100%; white-space:normal; overflow-wrap:anywhere; }
+.legacy-import-action { border-left:1px solid var(--muted); padding-left:12px; min-width:0; }
+.project-list-filters { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+.project-list-filters > input { flex:1; min-width:180px; }
+.import-preview-item { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:2px 0; }
+.import-item-name { flex:1 1 180px; min-width:0; overflow-wrap:anywhere; }
+.import-project-modal .modal-body, .price-comparison-modal .modal-body { min-width:0; flex-shrink:0; }
+.price-comparison-modal .table-wrap { max-width:100%; min-width:0; }
+.price-comparison-modal td:first-child { max-width:240px; white-space:normal; overflow-wrap:anywhere; }
+@media (max-width:480px) {
+  .project-import-actions { width:100%; flex-direction:column; }
+  .project-import-actions > .btn, .legacy-import-action .btn { width:100%; }
+  .legacy-import-action { border-left:0; padding-left:0; border-top:1px solid var(--border); padding-top:10px; }
+  .project-list-filters > input, .project-list-filters > select { flex-basis:100%; min-width:0; max-width:100% !important; }
+  .price-comparison-modal .modal-header strong { min-width:0; overflow-wrap:anywhere; }
+}
 .form-row > * { min-width:0; }
 
 /* search bar */

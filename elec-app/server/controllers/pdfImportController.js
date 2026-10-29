@@ -294,10 +294,13 @@ async function createFromImport(req, res, next) {
   let conn;
   let committed = false;
   try {
-    const { project_name, quote_number, engineer_id, client_id, exchange_rate_eur_usd, deadline, panels, matched_items, unmatched_items, total_panels,
+    const { project_name, quote_number, engineer_id, client_id, exchange_rate_eur_usd, deadline, panels: inputPanels, matched_items, unmatched_items, total_panels,
       vat_pct, project_discount_pct, margin_warning_pct, payment_terms, client_pdf_note } = req.body;
 
-    if (!project_name) return res.status(400).json({ error: 'project_name required' });
+    if (typeof project_name !== 'string' || !project_name.trim() || project_name.length > 250) return res.status(400).json({ error: 'Project name must be text up to 250 characters' });
+    if (quote_number != null && (typeof quote_number !== 'string' || quote_number.length > 100)) return res.status(400).json({ error: 'Invalid quotation number' });
+    if ((matched_items != null && !Array.isArray(matched_items)) || (unmatched_items != null && !Array.isArray(unmatched_items))) return res.status(400).json({ error: 'Invalid import item lists' });
+    const panels = require('../utils/importPanels').normalizeImportPanels(inputPanels, [...(matched_items || []), ...(unmatched_items || [])]);
     if (!Number.isSafeInteger(Number(client_id)) || Number(client_id) <= 0) return res.status(400).json({ error: 'Client is required' });
     if (!panels?.length) return res.status(400).json({ error: 'No panel data provided' });
 
@@ -313,17 +316,14 @@ async function createFromImport(req, res, next) {
 
     // 1. Create the project
     const [projResult] = await conn.execute(
-      `INSERT INTO projects(project_name,engineer_id,client_id,exchange_rate_eur_usd,deadline,total_panels,vat_pct,project_discount_pct,margin_warning_pct,payment_terms,client_pdf_note,project_stage)
-       VALUES(?,?,?,?,?,?,?,?,?,?,?,'design')`,
+      `INSERT INTO projects(project_name,engineer_id,client_id,exchange_rate_eur_usd,deadline,total_panels,vat_pct,project_discount_pct,margin_warning_pct,payment_terms,client_pdf_note,import_source,project_stage)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'design')`,
       [project_name, assignedEngineer, client_id||null, exchange_rate_eur_usd||1.18, deadline||null, total_panels||panels.length,
-       (vat_pct == null ? 11 : parseFloat(vat_pct)||0),parseFloat(project_discount_pct)||0,parseFloat(margin_warning_pct)||10,payment_terms||null,client_pdf_note||null]
+       (vat_pct == null ? 11 : parseFloat(vat_pct)||0),parseFloat(project_discount_pct)||0,parseFloat(margin_warning_pct)||10,payment_terms||null,client_pdf_note||null,req.importSource === 'legacy_excel' ? 'legacy_excel' : 'technical_pdf']
     );
     const projectId = projResult.insertId;
     const finalQuoteNumber = quote_number?.trim() || generateQuotationNumber(project_name, projectId);
     await conn.execute('UPDATE projects SET quote_number=? WHERE id=?',[finalQuoteNumber,projectId]);
-
-    // Collect all items from matched + unmatched to use as fallback
-    const allFlatItems = [...(matched_items || []), ...(unmatched_items || [])];
 
     // 2. Create panel rows, divisions, items
     for (let pi = 0; pi < panels.length; pi++) {
@@ -334,12 +334,7 @@ async function createFromImport(req, res, next) {
       );
       const panelId = panelResult.insertId;
 
-      // Get divisions for this panel
-      let panelDivs = p.divisions || [];
-      // If no divisions from parsing, create one default division
-      if (!panelDivs.length) {
-        panelDivs = [{ division_type: 'INCOMING', items: allFlatItems }];
-      }
+      const panelDivs = p.divisions;
 
       for (const div of panelDivs) {
         const [divResult] = await conn.execute(
@@ -348,11 +343,7 @@ async function createFromImport(req, res, next) {
         );
         const divisionId = divResult.insertId;
 
-        // If this division has no items, use flat items as fallback (only for first panel)
-        let divItems = div.items || [];
-        if (!divItems.length && pi === 0) {
-          divItems = allFlatItems;
-        }
+        const divItems = div.items;
 
         for (const item of divItems) {
           if (item._skip) continue;
@@ -421,6 +412,10 @@ async function createFromImport(req, res, next) {
             basePriceUsd = Number(product.price_usd) || 0;
             basePriceEur = Number(product.price_euro) || 0;
           }
+          if (req.worker.role === 'engineer' && !item.product_id) {
+            basePriceUsd = 0;
+            basePriceEur = 0;
+          }
           const rate = parseFloat(exchange_rate_eur_usd) || 1.18;
           if (basePriceUsd && !basePriceEur) {
             basePriceEur = (basePriceUsd / rate);
@@ -439,7 +434,7 @@ async function createFromImport(req, res, next) {
           if (isManual && item.name) {
             const [mp] = await conn.execute(
               'INSERT INTO panel_manual_products(project_id,name,description,price_usd,price_euro) VALUES(?,?,?,?,?)',
-              [projectId, item.name, `Imported from PDF`, basePriceUsd, basePriceEur]
+              [projectId, item.name, item.description || null, basePriceUsd, basePriceEur]
             );
             manualProductId = mp.insertId;
           }
@@ -453,34 +448,32 @@ async function createFromImport(req, res, next) {
 
           await conn.execute(
             `INSERT INTO panel_crm_items(division_id,product_id,manual_product_id,is_manual,
-              custom_name,custom_desc,custom_price_usd,custom_price_euro,
+              custom_name,custom_desc,custom_brand,custom_price_usd,custom_price_euro,
               qty,base_price_usd,base_price_euro,markupP_pct,discount_pct,manpower_pct,markupM_pct,
               markupP_amt,discount_amt,totalpriceT,manpower_amt,markupM_amt,totalfinalProduct,cost,cr_amount,override_markup)
-             VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)`,
+             VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)`,
             [divisionId, productId, manualProductId, isManual,
-             isManual ? item.name : null, isManual ? `Imported from PDF` : null,
+             item.name || null, item.description || null, item.brand || null,
              isManual ? basePriceUsd : null, isManual ? basePriceEur : null,
              qty, basePriceUsd, basePriceEur,
              markupP_pct, discount, manpower_pct, markupM_pct,
              pricing.markupP_amt, pricing.discount_amt, pricing.totalpriceT,
-             pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct, 0, 0]
+             pricing.manpower_amt, pricing.markupM_amt, pricing.totalfinalProduct,
+             req.worker.role === 'engineer' ? 0 : (Number(item.cost) || 0), 0]
           );
         }
 
       }
     }
 
+    // Items, totals and reservations commit together so retrying an error cannot duplicate an already-created project.
+    const [createdPanels] = await conn.execute('SELECT id FROM project_crm_panels WHERE project_id=?', [projectId]);
+    for (const panel of createdPanels) await recalcPanelTotals(panel.id, conn);
+    await recalcReservedQty(conn);
     await conn.commit();
     committed = true;
 
-    // Recalculate after commit so the pool-based helpers can see all rows.
-    const [createdPanels] = await db.execute('SELECT id FROM project_crm_panels WHERE project_id=?', [projectId]);
-    for (const panel of createdPanels) await recalcPanelTotals(panel.id);
-
-    // 3. Recalc reserved quantities
-    await recalcReservedQty();
-
-    res.status(201).json({ message: 'Project created from PDF', project_id: projectId, quote_number: finalQuoteNumber, project_stage: 'design' });
+    res.status(201).json({ message: req.importSource === 'legacy_excel' ? 'Legacy project imported from Excel CRM' : 'Project created from technical offer', project_id: projectId, quote_number: finalQuoteNumber, project_stage: 'design' });
   } catch (err) {
     if (conn && !committed) await conn.rollback();
     if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Quotation number already belongs to another project' });

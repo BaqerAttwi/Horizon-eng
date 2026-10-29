@@ -1,7 +1,9 @@
+import { useProjectReadOnly } from '../../context/ProjectReadOnlyContext';
 import { useState, useEffect, memo } from 'react';
 import CrmItemRow from './CrmItemRow';
 
 const GroupInstanceSection = memo(function GroupInstanceSection({ instance, division, panel, exchangeRate, onInstanceQtyChange, onInstanceDescriptionChange, onInstanceRemove, onItemUpdate, onItemDelete, hideCost, showCr, pendingPriceChanges, selectedItems, onToggleItem, editView }) {
+  const readOnly = useProjectReadOnly();
   const [localQty, setLocalQty] = useState(instance.quantity);
   const [description, setDescription] = useState(instance.description || '');
 
@@ -14,18 +16,18 @@ const GroupInstanceSection = memo(function GroupInstanceSection({ instance, divi
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent2)' }}>📦 {instance.group_name}</span>
           <span style={{ fontSize: 11, color: 'var(--muted)' }}>×</span>
-          <input type="number" min={1} className="form-input" style={{ width: 50, padding: '2px 4px', fontSize: 11 }}
+          <input disabled={readOnly} type="number" min={1} className="form-input" style={{ width: 50, padding: '2px 4px', fontSize: 11 }}
             value={localQty}
             onChange={e => setLocalQty(Math.max(1, parseInt(e.target.value) || 1))}
             onBlur={() => { if (localQty !== instance.quantity) onInstanceQtyChange(instance.id, localQty); }} />
           <span style={{ fontSize: 11, color: 'var(--muted)' }}>= {instance.quantity} × group</span>
         </div>
-        <button className="btn-icon" style={{ color: 'var(--danger)', fontSize: 12 }}
+        <button disabled={readOnly} className="btn-icon" style={{ color: 'var(--danger)', fontSize: 12 }}
           onClick={() => onInstanceRemove(instance.id)}>✕</button>
       </div>
       <div style={{ padding: '6px 10px', borderBottom: '1px dashed var(--border)' }}>
         <label style={{ display: 'block', fontSize: 10, color: 'var(--muted)', marginBottom: 3 }}>Group Description</label>
-        <textarea className="form-input" rows={2} value={description} placeholder="Add a description for this group..."
+        <textarea disabled={readOnly} className="form-input" rows={2} value={description} placeholder="Add a description for this group..."
           onChange={e => setDescription(e.target.value)}
           onBlur={() => { if (description !== (instance.description || '')) onInstanceDescriptionChange(instance.id, description); }} />
       </div>
@@ -53,7 +55,7 @@ const GroupInstanceSection = memo(function GroupInstanceSection({ instance, divi
             <thead>
               <tr>
                 <th style={{ width: 28, textAlign: 'center' }}>
-                  <input type="checkbox"
+                  <input disabled={readOnly} type="checkbox"
                     checked={instance.items?.length > 0 && instance.items.every(i => selectedItems?.has(i.id))}
                     onChange={e => {
                       const checked = e.target.checked;

@@ -15,7 +15,7 @@ function visit(node, file, form = false) {
     if (name === 'form') form = has('onSubmit');
     if (name === 'button') {
       const type = attrs.find(a => a.name?.name === 'type')?.value?.value;
-      const handled = has('onClick') || has('disabled') || (form && type !== 'button' && type !== 'reset');
+      const handled = has('onClick') || (form && (type === 'reset' || type !== 'button'));
       buttons.push({ file: path.relative(root, file), line: opening.loc.start.line, handled });
     }
   }

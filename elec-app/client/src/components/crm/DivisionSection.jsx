@@ -1,3 +1,4 @@
+import { useProjectReadOnly } from '../../context/ProjectReadOnlyContext';
 import { useState, useEffect, memo } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../api/client';
@@ -272,11 +273,12 @@ function GroupSelectModal({ project, division, panel, onClose, onGroupAdded }) {
 }
 
 function StandaloneItemsTable({ items, division, panel, exchangeRate, onItemUpdate, onItemDelete, hideCost, showCr, pendingPriceChanges, selectedItems, onToggleItem, onSelectAll, editView }) {
+  const readOnly = useProjectReadOnly();
   if (!items.length) return null;
   return <div className="table-wrap" style={{ overflowX: 'auto', background: 'var(--panel)' }}>
     <table className="crm-items-table">
       <thead><tr>
-        <th style={{ width: 28, textAlign: 'center' }}><input type="checkbox"
+        <th style={{ width: 28, textAlign: 'center' }}><input disabled={readOnly} type="checkbox"
           checked={items.every(i => selectedItems?.has(i.id))}
           onChange={e => items.forEach(i => { if (e.target.checked !== selectedItems?.has(i.id)) onToggleItem?.(i.id); })}
           style={{ width: 15, height: 15, cursor: 'pointer' }} /></th>
@@ -295,6 +297,7 @@ function StandaloneItemsTable({ items, division, panel, exchangeRate, onItemUpda
 
 const DivisionSection = memo(function DivisionSection({ division, panel, project, exchangeRate, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, hideCost, showCr, pendingPriceChanges,
   onGroupInstanceQtyChange, onGroupInstanceDescriptionChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll, editView }) {
+  const readOnly = useProjectReadOnly();
   const [showAdd, setShowAdd] = useState(false);
   const [showGroup, setShowGroup] = useState(false);
   const [manualModal, setManualModal] = useState(null);
@@ -389,7 +392,7 @@ const DivisionSection = memo(function DivisionSection({ division, panel, project
             markupP:{division.markupP}% markupM:{division.markupM}% manpower:{division.manpower_pct}%
           </span>
         </div>
-        <button className="btn-icon" title="Delete division" style={{ color: 'var(--danger)', flexShrink: 0 }}
+        <button className="btn-icon" disabled={readOnly} title="Delete division" style={{ color: 'var(--danger)', flexShrink: 0 }}
           onClick={() => onDivisionDelete(division.id)}>✕</button>
       </div>
 
@@ -539,7 +542,7 @@ const DivisionSection = memo(function DivisionSection({ division, panel, project
         </div>
       )}
 
-      {!showAdd && !pendingProduct && !pendingManual && (
+      {!readOnly && !showAdd && !pendingProduct && !pendingManual && (
         <div style={{ padding: '6px 12px', borderTop: '1px solid var(--border)', display: 'flex', gap: 6 }}>
           <button className="btn btn-sm btn-secondary" onClick={() => setShowAdd(true)}>+ Add Product</button>
           <button className="btn btn-sm btn-secondary" onClick={() => setShowGroup(true)}>+ Add Group</button>

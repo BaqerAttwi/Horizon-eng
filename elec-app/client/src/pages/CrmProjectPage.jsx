@@ -1,3 +1,5 @@
+import { canEditProject, canWriteProjects } from '../utils/actionPermissions';
+import CheckPrices from '../components/crm/CheckPrices';
 import { useConfirmUnsaved, useUnsavedChange } from '../context/UnsavedChangesContext';
 import ReviewHistory from '../components/ReviewHistory';
 import { useMemo, useState } from 'react';
@@ -195,7 +197,7 @@ export default function CrmProjectPage() {
   const navigate = useNavigate();
   const [reviewNote, setReviewNote] = useState('');
   const [reviewSaving, setReviewSaving] = useState(false);
-  const { isRole } = useAuth();
+  const { isRole, worker } = useAuth();
   const {
     project, setProject, panels, loading,divisionTypes,
     pendingPriceChanges,
@@ -235,7 +237,7 @@ export default function CrmProjectPage() {
 
   if (loading) return <div className="page"><div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /> Loading CRM...</div></div>;
   if (!project) return <div className="page"><div className="empty"><p>Project not found</p></div></div>;
-  const commercialLocked = project.status === 'cancelled' || (!isRole('owner','head_engineer') && (project.client_approval === 'approved' || (project.ready_for_review && project.admin_approval === 'pending')));
+  const commercialLocked = !canEditProject(worker?.role, project);
 
   const decideReview = async status => {
     if (['recheck','cancelled'].includes(status) && !reviewNote.trim()) return toast.error('Enter notes for the engineer first');
@@ -246,6 +248,7 @@ export default function CrmProjectPage() {
   };
   return (
     <div className="page">
+      {isRole('owner','head_engineer') && <CheckPrices projectId={project.id} onUpdated={load} locked={commercialLocked} />}
       <ReviewHistory projectId={project.id} reviewStatus={project.admin_approval} submitted={project.ready_for_review} />
       <section className="workflow-card" aria-label="Management review">
         <strong>Management review: {project.admin_approval || 'pending'}{project.ready_for_review && project.admin_approval === 'pending' ? ' — awaiting approval' : ''}</strong>
@@ -264,7 +267,7 @@ export default function CrmProjectPage() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <button className="btn btn-sm btn-secondary" style={{ flexShrink: 0 }} onClick={() => navigate('/projects')}>← Back</button>
-            <div className="page-title" style={{ minWidth: 0 }}>🔧 {project.project_name}</div>
+            <div className="page-title" style={{ minWidth: 0 }}>🔧 {project.project_name}</div>{project.import_source === 'legacy_excel' && <span className="badge badge-yellow">Imported legacy project</span>}
           </div>
           <div className="page-subtitle">
             Engineer: {project.engineer_name || '—'} • Client: {project.client_name || '—'} •
@@ -291,7 +294,7 @@ export default function CrmProjectPage() {
           {!commercialLocked && <button className="btn btn-primary" onClick={() => setShowAddPanel(true)}>+ Add Panel</button>}
           <a href={`/api/export/crm/${project.id}`} className="btn btn-secondary" style={{ textDecoration: 'none' }}>📥 CSV</a>
           {!commercialLocked && <button className="btn btn-secondary" onClick={openCopyPanel}>📋 Copy from existing</button>}
-          <button className="btn btn-success" onClick={handleReadyForReview} disabled={project.ready_for_review || project.status === 'cancelled'}
+          <button className="btn btn-success" onClick={handleReadyForReview} disabled={!canWriteProjects(worker?.role) || project.ready_for_review || project.status === 'cancelled'}
             style={{ background: 'var(--success)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
             ✅ Submit for approval
           </button>
@@ -299,7 +302,7 @@ export default function CrmProjectPage() {
       </div>
 
       {commercialLocked && <div className="tint-box" style={{ marginBottom: 12, borderColor:'var(--accent2)', color:'var(--accent2)' }}>
-        🔒 {project.status === 'cancelled' ? 'Canceled project is read-only until management reopens it.' : project.ready_for_review && project.admin_approval === 'pending' ? 'Submitted project is read-only while awaiting management review. A recheck unlocks editing.' : 'Client-approved quotation is read-only.'}
+        🔒 {!canWriteProjects(worker?.role) ? 'Your role can view this project but cannot edit its items.' : project.status === 'cancelled' ? 'Canceled project is read-only until management reopens it.' : project.ready_for_review && project.admin_approval === 'pending' ? 'Submitted project is read-only while awaiting management review. A recheck unlocks editing.' : 'Client-approved quotation is read-only.'}
       </div>}
 
       <div style={{ display: 'flex', gap: 0, marginBottom: 4, borderBottom: '1px solid var(--border)', flexWrap: 'wrap', overflowX: 'auto' }}>
@@ -334,7 +337,7 @@ export default function CrmProjectPage() {
           🧪 Summary Testing
         </button>
         )}
-        {project.client_approval === 'approved' && (
+        {project.client_approval === 'approved' && canWriteProjects(worker?.role) && (
           <button onClick={() => setActiveTab('execution')}
             style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', background: 'transparent', color: activeTab === 'execution' ? 'var(--success)' : 'var(--muted)', borderBottom: activeTab === 'execution' ? '2px solid var(--success)' : '2px solid transparent', cursor: 'pointer' }}>
             🔧 Execution

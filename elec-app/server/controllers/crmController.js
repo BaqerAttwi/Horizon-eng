@@ -378,7 +378,7 @@ async function getCrmItems(req, res, next) {
     if (!hasAccess) return;
 
     const [items] = await db.execute(
-      `SELECT i.*, p.reference, p.description as product_desc, b.name as brand_name,
+      `SELECT i.*, COALESCE(i.custom_name,p.reference) reference, COALESCE(i.custom_desc,p.description) as product_desc, COALESCE(i.custom_brand,b.name) as brand_name,
               p.price_euro, p.price_usd
        FROM panel_crm_items i
        LEFT JOIN products p ON i.product_id = p.id
@@ -505,7 +505,7 @@ async function createCrmItem(req, res, next) {
     // response into its local list, so returning only the raw row made the
     // product name/reference appear blank until a full refresh.
     const [rows] = await db.execute(
-      `SELECT i.*, p.reference, p.description as product_desc, b.name as brand_name,
+      `SELECT i.*, COALESCE(i.custom_name,p.reference) reference, COALESCE(i.custom_desc,p.description) as product_desc, COALESCE(i.custom_brand,b.name) as brand_name,
               p.price_euro, p.price_usd
        FROM panel_crm_items i
        LEFT JOIN products p ON i.product_id = p.id
@@ -659,7 +659,7 @@ async function updateCrmItem(req, res, next) {
     }
 
     const [rows] = await db.execute(
-      `SELECT i.*, p.reference, p.description AS product_desc, b.name AS brand_name
+      `SELECT i.*, COALESCE(i.custom_name,p.reference) reference, COALESCE(i.custom_desc,p.description) AS product_desc, COALESCE(i.custom_brand,b.name) AS brand_name
        FROM panel_crm_items i
        LEFT JOIN products p ON p.id=i.product_id
        LEFT JOIN brands b ON b.id=p.brand_id
@@ -753,7 +753,7 @@ async function getProjectCrm(req, res, next) {
       if (divisionIds.length) {
         [[allItems], [allGroupInstances]] = await Promise.all([
           db.query(
-            `SELECT i.*, p.reference, p.description as product_desc, b.name as brand_name,
+            `SELECT i.*, COALESCE(i.custom_name,p.reference) reference, COALESCE(i.custom_desc,p.description) as product_desc, COALESCE(i.custom_brand,b.name) as brand_name,
                     p.price_euro, p.price_usd
              FROM panel_crm_items i
              LEFT JOIN products p ON i.product_id = p.id

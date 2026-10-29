@@ -17,11 +17,13 @@ export default function UpdatesPage() {
 
   const markRead = async update => {
     if (update.is_read) return;
+    try {
     await api.patch(`/updates/${update.id}/read`);
     setData(previous => ({ ...previous, unread_count: Math.max(0,previous.unread_count-1), updates: previous.updates.map(item=>item.id===update.id?{...item,is_read:1}:item) }));
     window.dispatchEvent(new Event('updates-read'));
+    } catch(e) { toast.error(e.message); }
   };
-  const markAll = async () => { await api.patch('/updates/read-all'); await load(); window.dispatchEvent(new Event('updates-read')); toast.success('All updates marked as read'); };
+  const markAll = async () => { try { await api.patch('/updates/read-all'); await load(); window.dispatchEvent(new Event('updates-read')); toast.success('All updates marked as read'); } catch(e) { toast.error(e.message); } };
   const toggleRole = role => setForm(previous => ({ ...previous, target_roles: role==='all' ? ['all'] : [...new Set(previous.target_roles.filter(r=>r!=='all').includes(role)?previous.target_roles.filter(r=>r!==role):[...previous.target_roles.filter(r=>r!=='all'),role])] }));
   const publish = async () => {
     try {

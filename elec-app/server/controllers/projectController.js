@@ -12,8 +12,8 @@ function hideProjectPricing(project) {
   return safe;
 }
 
-async function recalcReservedQty() {
-  await db.execute(`
+async function recalcReservedQty(executor = db) {
+  await executor.execute(`
     UPDATE products p
     SET reserved_qty = COALESCE((
       SELECT SUM(sub.qty) FROM (

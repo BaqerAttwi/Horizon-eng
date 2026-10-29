@@ -14,6 +14,7 @@ async function main() {
   const originalDatabase = process.env.DB_NAME || 'elec_app';
   const scratch = `codex_flow_audit_${Date.now()}`;
   const config = { host:process.env.DB_HOST || 'localhost',port:Number(process.env.DB_PORT || 3306),user:process.env.DB_USER || 'root',password:process.env.DB_PASSWORD || '',database:originalDatabase };
+  if (!['localhost','127.0.0.1','::1'].includes(config.host)) throw Error('Audit is restricted to a local database');
   const admin = await mysql.createConnection(config);
   let fixture, db, closeReviewLocks, server, created = false;
   const results=[];
@@ -36,6 +37,7 @@ async function main() {
     process.env.COOKIE_SECURE='false';
     process.env.RESEND_API_KEY='';
     db=require('../db/connection');
+    await require('../utils/projectItemSnapshots').ensureProjectItemSnapshots(db);
     ({closeReviewLocks}=require('../middleware/projectReview'));
     const router=require('../routes');
     const {JWT_SECRET}=require('../controllers/authController');
@@ -50,10 +52,11 @@ async function main() {
     await fixture.execute('INSERT INTO division_types(name,color,sort_order,is_active,created_by) VALUES(?,?,?,?,?)',['Power','#123456',1,1,users.owner]);
     const [second]=await fixture.execute('INSERT INTO workers(name,email,role,password_hash) VALUES(?,?,?,?)',['Audit collaborator','collaborator@example.com','engineer',hash]);
     const app=express(); app.use(cookieParser());app.use(express.json());app.use('/api',router);
+    if(process.argv.includes('--ui')) app.get('/__audit/session/:role',(req,res)=>{const token=tokens[req.params.role];if(!token)return res.sendStatus(404);res.cookie('token',token,{httpOnly:true,sameSite:'strict'});res.redirect('/projects');});
     app.use('/api',(req,res)=>res.status(404).json({error:'API route not found'}));
     app.use(express.static(path.join(__dirname,'../../client/dist')));
     app.get('*',(req,res)=>res.sendFile(path.join(__dirname,'../../client/dist/index.html')));
-    app.use((error,req,res,next)=>res.status(500).json({error:error.code || error.message}));
+    app.use(require('../middleware/errorHandler').errorHandler);
     server=await new Promise(resolve=>{const running=app.listen(0,'127.0.0.1',()=>resolve(running));});
     const base=`http://127.0.0.1:${server.address().port}/api`;
     async function call(role,method,url,body,status=200) {
@@ -84,6 +87,8 @@ async function main() {
     await flow('Client creation, editing, validation and deletion',async()=>{
       client=await call('secretary','POST','/clients',{name:'Audit Client',type:'company',phone:'123'},201);
       await call('accounting','PATCH',`/clients/${client.id}`,{credit_limit:1000,address:'Test address'});
+      await call('engineer','PATCH',`/clients/${client.id}`,{phone:'456'});
+      await call('engineer','DELETE',`/clients/${client.id}`,undefined,403);
       await call('secretary','PATCH',`/clients/${client.id}`,{name:''},400);
       const disposable=await call('owner','POST','/clients',{name:'Disposable'},201);
       await call('owner','DELETE',`/clients/${disposable.id}`);
@@ -186,7 +191,7 @@ async function main() {
     });
     let copiedProject,copiedPanel,copiedDivision,copiedItem;
     await flow('Copy panels preserves groups, quantities, overrides and manual items',async()=>{
-      copiedProject=await call('owner','POST','/projects',{project_name:'Copied project',engineer_id:users.engineer,total_panels:0},201);
+      copiedProject=await call('owner','POST','/projects',{project_name:'Copied project',client_id:client.id,engineer_id:users.engineer,total_panels:0},201);
       await call('owner','POST',`/projects/${copiedProject.id}/panels/copy-from`,{sourceProjectId:project.id,sourcePanelId:panel.id},201);
       const copied=await call('owner','GET',`/projects/${copiedProject.id}/crm`);
       copiedPanel=copied.panels[0];copiedDivision=copiedPanel.divisions[0];copiedItem=copiedDivision.items.find(i=>!i.is_manual&&!i.source_group_instance_id);
@@ -220,7 +225,7 @@ async function main() {
       await call('stock_manager','GET','/reservation-history');
     });
     await flow('PDF import confirmation creates grouped and manual items',async()=>{
-      const imported=await call('owner','POST','/projects/import-pdf/create',{project_name:'Imported audit',engineer_id:users.engineer,panels:[{panel_number:1,panel_name:'Imported panel',divisions:[{division_type:'Power',items:[{item_group_id:group.id,qty:2},{name:'Imported manual',description:'Example',qty:1}]}]}]},201);
+      const imported=await call('owner','POST','/projects/import-pdf/create',{project_name:'Imported audit',client_id:client.id,engineer_id:users.engineer,panels:[{panel_number:1,panel_name:'Imported panel',divisions:[{division_type:'Power',items:[{item_group_id:group.id,qty:2},{name:'Imported manual',description:'Example',qty:1}]}]}]},201);
       const crm=await call('owner','GET',`/projects/${imported.project_id}/crm`);
       assert.equal(crm.panels[0].divisions[0].group_instances.length,1);
       assert.equal(Number(crm.vat_pct),11);
@@ -244,6 +249,50 @@ async function main() {
       await upload('/projects/import-pdf/preview',Buffer.from(doc.output('arraybuffer')),'audit.pdf','application/pdf');
       await upload('/upload',Buffer.from('unsupported'),'audit.txt','text/plain',400);
     });
+    let legacyProject, legacyProduct;
+    await flow('Legacy Excel CRM preview and import preserve historical prices and costs',async()=>{
+      legacyProduct=await call('owner','POST','/products/provision',{smart_code:'LEGACY-AUDIT',qty:10},201);
+      await call('owner','PATCH',`/products/${legacyProduct.id}`,{price_usd:20,price_euro:10});
+      const XLSX=require('xlsx'),book=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(book,XLSX.utils.aoa_to_sheet([
+        ['Project','Panel#','Panel name','Division','Part number','Description','Brand','QTY','UNIT PRICE EUR','UNIT PRICE USD','UNIT PRICE USD2','DISCOUNT','MAN POWER','MARKUP','TOTAL COST'],
+        ['Old audit',1,'Historical panel','Power',legacyProduct.reference,'Saved description','Saved brand',2,4,8,8,0,0,0,12]
+      ]),'CRM');
+      const preview=await upload('/projects/import-excel/preview',XLSX.write(book,{type:'buffer',bookType:'xlsx'}),'legacy.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      assert.equal(preview.matched.length,1);
+      const imported=await call('owner','POST','/projects/import-excel/create',{project_name:'Legacy audit',client_id:client.id,panels:[{panel_number:1,divisions:[{division_type:'Power',items:preview.matched}]}]},201);
+      legacyProject=imported.project_id;
+      const crm=await call('owner','GET',`/projects/${legacyProject}/crm`);
+      assert.equal(crm.import_source,'legacy_excel');assert.equal(Number(crm.total_price),16);assert.equal(Number(crm.total_cost),12);
+    });
+    await flow('Single and atomic bulk price updates reject stale catalog and project values',async()=>{
+      let rows=await call('owner','GET',`/projects/${legacyProject}/check-prices`);
+      const select=row=>({id:row.id,expected_usd:row.current_usd,expected_euro:row.current_euro,saved_usd:row.saved_usd,saved_euro:row.saved_euro});
+      await call('owner','PATCH',`/products/${legacyProduct.id}`,{price_usd:22,price_euro:11});
+      await call('owner','POST',`/projects/${legacyProject}/check-prices`,{items:rows.map(select)},409);
+      let crm=await call('owner','GET',`/projects/${legacyProject}/crm`);assert.equal(Number(crm.total_price),16);
+      rows=await call('owner','GET',`/projects/${legacyProject}/check-prices`);
+      await call('owner','POST',`/projects/${legacyProject}/check-prices`,{items:rows.map(select)});
+      crm=await call('owner','GET',`/projects/${legacyProject}/crm`);assert.equal(Number(crm.total_price),44);
+      await call('owner','PATCH',`/products/${legacyProduct.id}`,{price_usd:24,price_euro:12});
+      rows=await call('owner','GET',`/projects/${legacyProject}/check-prices`);
+      await call('owner','POST',`/projects/${legacyProject}/check-prices/${rows[0].id}`,select(rows[0]));
+      crm=await call('owner','GET',`/projects/${legacyProject}/crm`);assert.equal(Number(crm.total_price),48);
+      assert.equal((await call('owner','GET',`/projects/${legacyProject}/check-prices`))[0].status,'Unchanged');
+      await call('accounting','GET',`/export/crm/${legacyProject}`);
+      for(const role of ['engineer','accounting','stock_manager','secretary','technician']) {
+        await call(role,'POST','/projects/import-excel/create',{},403);
+        await call(role,'POST',`/projects/${legacyProject}/check-prices`,{items:rows.map(select)},403);
+      }
+    });
+    await flow('Catalog deletion retains historical CRM item labels and saved prices',async()=>{
+      await fixture.execute('DELETE FROM products WHERE id=?',[legacyProduct.id]);
+      const crm=await call('owner','GET',`/projects/${legacyProject}/crm`);
+      const item=crm.panels[0].divisions[0].items[0];
+      assert.equal(item.reference,legacyProduct.reference);assert.equal(Number(item.base_price_usd),24);
+      assert.equal((await call('owner','GET',`/projects/${legacyProject}/check-prices`))[0].status,'Unavailable in database');
+      await call('owner','POST','/projects/import-excel/create',{project_name:'Bad import',client_id:client.id,panels:[{divisions:'bad'}]},400);
+    });
     await flow('Role assistant guidance and record lookups',async()=>{
       for(const role of Object.keys(users)) {
         const result=await call(role,'POST','/assistant/chat',{message:'What do I have today?'});assert.ok(result.reply);
@@ -264,9 +313,12 @@ async function main() {
       readChecks=checks;
     });
     await flow('Password changes invalidate the old session',async()=>{
+      await call('secretary','POST','/auth/change-password',{current_password:'WrongPassword',new_password:'ChangedFixture123'},400);
+      await call('secretary','GET','/auth/me');
       await call('secretary','POST','/auth/change-password',{current_password:'FixturePassword123',new_password:'ChangedFixture123'});
       await call('secretary','GET','/auth/me',undefined,401);
     });
+    if(process.argv.includes('--ui')) { fs.mkdirSync(path.join(__dirname,'../../../tmp/audits'),{recursive:true});fs.writeFileSync(path.join(__dirname,'../../../tmp/audits/ui-fixture.json'),JSON.stringify({url:base.replace('/api',''),projectId:legacyProject}));console.log('UI fixture ready on '+base.replace('/api',''));await new Promise(resolve=>setTimeout(resolve,300000)); }
     const destination=path.join(__dirname,'../../../tmp/audits/write-flows.json');fs.mkdirSync(path.dirname(destination),{recursive:true});fs.writeFileSync(destination,JSON.stringify(results,null,2));
     console.log(JSON.stringify({flows:results.length,passed:results.filter(r=>r.status==='passed').length,readChecks,results,report:destination},null,2));
     if(results.some(r=>r.status==='failed'))process.exitCode=1;

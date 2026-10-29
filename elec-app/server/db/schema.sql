@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS order_items (
 CREATE TABLE IF NOT EXISTS projects (
   id              INT AUTO_INCREMENT PRIMARY KEY,
   project_name    VARCHAR(250) NOT NULL,
+  import_source   VARCHAR(30) NOT NULL DEFAULT 'current',
   quote_number    VARCHAR(100) DEFAULT NULL,
   project_stage   ENUM('design','quotation','approval','procurement','assembly','testing','delivered') NOT NULL DEFAULT 'design',
   procurement_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',

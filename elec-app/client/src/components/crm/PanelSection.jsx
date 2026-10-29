@@ -1,3 +1,6 @@
+import { useAuth } from '../../context/AuthContext';
+import { ProjectReadOnlyContext } from '../../context/ProjectReadOnlyContext';
+import { canEditProject, canProgressProject } from '../../utils/actionPermissions';
 import { useState, useRef, useEffect, memo } from 'react';
 import toast from 'react-hot-toast';
 import DivisionSection from './DivisionSection';
@@ -31,6 +34,9 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
   onAddDivision, onItemAdd, onItemUpdate, onItemDelete, onDivisionDelete, hideCost, showCr, pendingPriceChanges,
   onGroupInstanceQtyChange, onGroupInstanceDescriptionChange, onGroupInstanceRemove, onGroupAdded, selectedItems, onToggleItem, onSelectAll, editView,divisionTypes=[] }) {
 
+  const { worker } = useAuth();
+  const readOnly = !canEditProject(worker?.role, project);
+  const canComplete = canProgressProject(worker?.role, project);
   const [editing, setEditing] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
   const panelForm = () => ({ panel_name: panel.panel_name, quantity: panel.quantity || 1, markupP: panel.markupP, markupM: panel.markupM, manpower_pct: panel.manpower_pct, note: panel.note || '', show_note_in_client_pdf: panel.show_note_in_client_pdf || false, onedrive_link: panel.onedrive_link || '' });
@@ -43,7 +49,7 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
   };
 
   return (
-    <div className="panel-section" style={{ marginBottom: 20, border: panel.is_completed ? '2px solid var(--success)' : '1px solid var(--border)', borderRadius: 10, overflow: 'visible', position: 'relative', background: 'var(--panel2)' }}>
+    <ProjectReadOnlyContext.Provider value={readOnly}><div className="panel-section" style={{ marginBottom: 20, border: panel.is_completed ? '2px solid var(--success)' : '1px solid var(--border)', borderRadius: 10, overflow: 'visible', position: 'relative', background: 'var(--panel2)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--accent)', borderBottom: collapsed ? 'none' : '1px solid var(--border)', borderRadius: collapsed ? '9px' : '9px 9px 0 0', cursor: 'pointer', userSelect: 'none', flexWrap: 'wrap', gap: 8 }}
         onClick={() => setCollapsed(!collapsed)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', minWidth: 0, flex: '1 1 auto' }}>
@@ -94,19 +100,19 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
           ) : (
             <>
               <button className="btn btn-sm" style={{ background: panel.is_completed ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.2)', color: panel.is_completed ? 'var(--success)' : '#fff', flexShrink: 0 }}
-                onClick={e => { e.stopPropagation(); onToggleComplete(panel.id); }}>
+                disabled={!canComplete} onClick={e => { e.stopPropagation(); onToggleComplete(panel.id); }}>
                 {panel.is_completed ? '✓ Complete' : '☐ Mark Complete'}
               </button>
               <button className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}
-                onClick={e => { e.stopPropagation(); setEditing(true); setForm(panelForm()); }}>Edit Panel</button>
+                disabled={readOnly} onClick={e => { e.stopPropagation(); setEditing(true); setForm(panelForm()); }}>Edit Panel</button>
             </>
           )}
           <button className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.25)', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}
-            onClick={e => { e.stopPropagation(); onDeletePanel(panel.id); }}>Delete</button>
+            disabled={readOnly} onClick={e => { e.stopPropagation(); onDeletePanel(panel.id); }}>Delete</button>
         </div>
       </div>
 
-      {editing && (
+      {editing && !readOnly && (
         <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'rgba(0,0,0,0.15)' }}>
           <div className="form-row" style={{ gap: 12 }}>
             <div className="form-group" style={{ flex: 2 }}>
@@ -172,7 +178,7 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
         </IntersectionLazy>
       )}
 
-      {!collapsed && (
+      {!collapsed && !readOnly && (
         <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {divisionTypes.map(typeRow => {
             const type=typeRow.name;
@@ -187,7 +193,7 @@ const PanelSection = memo(function PanelSection({ panel, project, exchangeRate, 
           })}
         </div>
       )}
-    </div>
+    </div></ProjectReadOnlyContext.Provider>
   );
 });
 

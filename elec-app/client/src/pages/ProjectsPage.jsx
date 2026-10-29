@@ -1,7 +1,8 @@
+import { canEditProject, canProgressProject } from '../utils/actionPermissions';
 import { useConfirmUnsaved, useUnsavedChange } from '../context/UnsavedChangesContext';
 import RecycleBin from '../components/RecycleBin';
 import ReviewHistory from '../components/ReviewHistory';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -13,7 +14,7 @@ const APPROVAL_BADGE = { pending:'badge-yellow', approved:'badge-green', rejecte
 const ADMIN_APPROVAL_BADGE = { pending:'badge-yellow', approved:'badge-green', rejected:'badge-red', recheck:'badge-yellow', cancelled:'badge-red' };
 const PROJECT_STAGES = ['design','quotation','approval','procurement','assembly','testing','delivered'];
 
-function ProjectStageBar({ project, onChanged, canManage }) {
+function ProjectStageBar({ project, onChanged, canManage, canAdvanceProject }) {
   const current = PROJECT_STAGES.indexOf(project.project_stage || 'design');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
@@ -27,7 +28,7 @@ function ProjectStageBar({ project, onChanged, canManage }) {
   const nextStage = PROJECT_STAGES[current + 1];
   const engineerCanAdvance = current < PROJECT_STAGES.indexOf('quotation');
   const awaitingStock = project.project_stage === 'procurement' && project.procurement_status !== 'approved';
-  const canAdvance = nextStage && (canManage || engineerCanAdvance) && !awaitingStock && project.status !== 'cancelled' && (nextStage !== 'quotation' || project.admin_approval === 'approved');
+  const canAdvance = canAdvanceProject && nextStage && (canManage || engineerCanAdvance) && !awaitingStock && project.status !== 'cancelled' && (nextStage !== 'quotation' || project.admin_approval === 'approved');
   return <section className="workflow-card" aria-label="Project workflow">
     <div className="workflow-heading">
       <div><span className="workflow-eyebrow">Project workflow</span><strong>{PROJECT_STAGES[current]}</strong></div>
@@ -45,7 +46,7 @@ function ProjectStageBar({ project, onChanged, canManage }) {
       </button>
       {!canAdvance && !awaitingStock && <span className="workflow-lock">Management approval is required for the next stage.</span>}
       {awaitingStock && <span className="workflow-lock">📦 Waiting for Stock Manager approval{project.procurement_status==='rejected'&&project.procurement_note?`: ${project.procurement_note}`:''}.</span>}
-      {canManage && current > 0 && <select className="form-select workflow-back" defaultValue="" disabled={saving} onChange={e=>{ if(e.target.value) change(e.target.value); e.target.value=''; }} aria-label="Move project to an earlier stage">
+      {canManage && current > 0 && <select className="form-select workflow-back" defaultValue="" disabled={saving || !canAdvanceProject} onChange={e=>{ if(e.target.value) change(e.target.value); e.target.value=''; }} aria-label="Move project to an earlier stage">
         <option value="">Move back…</option>{PROJECT_STAGES.slice(0,current).map(stage=><option key={stage} value={stage}>{stage}</option>)}
       </select>}
     </div> : <div className="workflow-complete">✓ Workflow complete — project delivered</div>}
@@ -113,8 +114,8 @@ function ProjectModal({ project, onClose, onSaved }) {
   const isEngineer = isRole('engineer');
 
   useEffect(() => {
-    api.get('/workers', { params: { role: 'engineer' } }).then(r => setWorkers(r.data));
-    api.get('/clients').then(r => setClients(r.data));
+    api.get('/workers', { params: { role: 'engineer' } }).then(r => setWorkers(r.data)).catch(e=>toast.error(e.message));
+    api.get('/clients').then(r => setClients(r.data)).catch(e=>toast.error(e.message));
   }, []);
 
   // Auto-fill engineer from logged-in user (engineers can't change it)
@@ -130,7 +131,7 @@ function ProjectModal({ project, onClose, onSaved }) {
     setSaving(true);
     try {
       const payload = isEngineer
-        ? Object.fromEntries(Object.entries(form).filter(([key]) => !['engineer_id','margin_warning_pct'].includes(key)))
+        ? Object.fromEntries(Object.entries(form).filter(([key]) => !['engineer_id','margin_warning_pct','exchange_rate_eur_usd','vat_pct','project_discount_pct'].includes(key)))
         : form;
       const r = project?.id
         ? await api.patch(`/projects/${project.id}`, payload)
@@ -237,7 +238,7 @@ function ProjectModal({ project, onClose, onSaved }) {
 
 // ── Project Detail Modal ──────────────────────────────────────
 function ProjectDetailModal({ projectId, onClose, onUpdated }) {
-  const { isRole } = useAuth();
+  const { isRole, worker } = useAuth();
   const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -397,6 +398,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
           <div className="modal-header">
             <div>
               <div className="modal-title">🔧 {project.project_name}</div>
+              {project.import_source === 'legacy_excel' && <span className="badge badge-yellow">Imported legacy project</span>}
               <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
                 ID: {project.id} • Engineer: {project.engineer_name || '—'} • Client: {project.client_name || '—'}
               </div>
@@ -406,7 +408,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
           <div className="modal-body">
 
             <div style={{fontSize:11,color:'var(--muted)'}}>Quotation: <strong>{project.quote_number}</strong> · Editable version V{project.current_version || 1}{revisions[0] ? ` • Latest revision R${revisions[0].revision_number}` : ''}</div>
-            <ProjectStageBar project={project} canManage={isRole('owner','head_engineer')} onChanged={p=>{setProject(v=>({...v,...p}));onUpdated?.(p);}} />
+            <ProjectStageBar canAdvanceProject={canProgressProject(worker?.role, project)} project={project} canManage={isRole('owner','head_engineer')} onChanged={p=>{setProject(v=>({...v,...p}));onUpdated?.(p);}} />
             {isRole('owner','head_engineer') && <section className="revision-history">
               <div className="revision-history-head">
                 <div><span className="workflow-eyebrow">Quotation records</span><strong>Revision History</strong></div>
@@ -598,7 +600,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
                 onClick={()=>navigate(`/procurement?project=${project.id}`)}>
                 📦 Open Procurement Queue
               </button>}
-              {isRole('owner','head_engineer') || (isRole('engineer') && project.client_approval !== 'approved') ? (
+              {canEditProject(worker?.role, project) ? (
                 <button className="btn btn-secondary" onClick={() => setShowEdit(true)}>
                   ✏️ Edit Project
                 </button>
@@ -652,7 +654,7 @@ function ProjectDetailModal({ projectId, onClose, onUpdated }) {
 
 // ── Main Projects Page ─────────────────────────────────────────
 export default function ProjectsPage() {
-  const { isRole } = useAuth();
+  const { isRole, worker } = useAuth();
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -661,14 +663,16 @@ export default function ProjectsPage() {
   const [importModal, setImportModal] = useState(false);
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState('table');
+  const [projectKind, setProjectKind] = useState('all');
 
   const filtered = projects.filter(p =>
+    (projectKind === 'all' || (projectKind === 'legacy' ? p.import_source === 'legacy_excel' : p.import_source !== 'legacy_excel')) && (
     !search.trim() ||
     p.quote_number?.toLowerCase().includes(search.trim().toLowerCase()) ||
     p.project_name?.toLowerCase().includes(search.toLowerCase()) ||
     String(p.id).includes(search) ||
     p.engineer_name?.toLowerCase().includes(search.toLowerCase()) ||
-    p.client_name?.toLowerCase().includes(search.toLowerCase())
+    p.client_name?.toLowerCase().includes(search.toLowerCase()))
   );
 
   const load = async () => {
@@ -718,15 +722,23 @@ export default function ProjectsPage() {
           <div className="page-title">🔧 Projects CRM</div>
           <div className="page-subtitle">{projects.length} projects{search ? ` (${filtered.length} matching)` : ''}</div>
         </div>
-        <button className="btn btn-primary" onClick={() => setModal({})}>+ New Project</button>
-        <button className="btn btn-secondary" onClick={() => setImportModal(true)}>📄 Import PDF</button>
+        {isRole('owner','head_engineer','engineer') && <button className="btn btn-primary" onClick={() => setModal({})}>+ New Project</button>}
+        <div className="project-import-actions" aria-label="Project imports">
+          {isRole('owner','head_engineer','engineer') && <button className="btn btn-secondary" onClick={() => setImportModal('technical')}>📄 Import Technical Offer</button>}
+          {isRole('owner','head_engineer') && <div className="legacy-import-action">
+            <button className="btn btn-secondary" onClick={() => setImportModal('legacy')}>📁 Import Old Project (Excel CRM)</button>
+          </div>}
+        </div>
         <button className="btn btn-secondary" onClick={() => setViewMode(v => v === 'progress' ? 'table' : 'progress')}>
           {viewMode === 'progress' ? '☷ Table View' : '🧭 Progress Board'}
         </button>
         {isRole('owner','head_engineer','accounting') && <a href="/api/export/projects" className="btn btn-secondary" style={{ textDecoration: 'none' }}>📥 CSV</a>}
       </div>
 
-      <div style={{ marginBottom: 16 }}>
+      <div className="project-list-filters">
+        <select className="form-input" style={{ maxWidth: 180 }} aria-label="Project type" value={projectKind} onChange={e=>setProjectKind(e.target.value)}>
+          <option value="all">All projects</option><option value="current">Current projects</option><option value="legacy">Legacy projects</option>
+        </select>
         <input className="form-input" placeholder="🔍 Search by EQ, name, ID, engineer, or client..."
           value={search} onChange={e => setSearch(e.target.value)} />
       </div>
@@ -740,7 +752,7 @@ export default function ProjectsPage() {
               {stageProjects.map(project => {
                 const progress = project.total_panels > 0 ? Math.round((project.completed_panels / project.total_panels) * 100) : 0;
                 return <button className="project-progress-card" key={project.id} onClick={() => setDetail(project.id)}>
-                  <strong>{project.project_name}</strong>
+                  <strong>{project.project_name}</strong>{project.import_source === 'legacy_excel' && <span className="badge badge-yellow">Imported legacy project</span>}
                   <span className="project-eq-number">{project.quote_number || '—'}</span>
                   <span>{project.engineer_name || 'Unassigned'} · {project.client_name || 'No client'}</span>
                   <div className="project-mini-progress"><i style={{ width: `${progress}%` }} /></div>
@@ -776,7 +788,7 @@ export default function ProjectsPage() {
                     <td className="mono" style={{ color: 'var(--muted)' }}>{p.id}</td>
                     <td><button className="project-eq-number" onClick={() => setDetail(p.id)}>{p.quote_number || '—'}</button></td>
                     <td style={{ fontWeight: 600, color: 'var(--white)', cursor: 'pointer' }} onClick={() => setDetail(p.id)}>
-                      {p.project_name}
+                      {p.project_name} {p.import_source === 'legacy_excel' && <span className="badge badge-yellow">Imported legacy project</span>}
                     </td>
                     <td style={{ fontSize: 12 }}>{p.engineer_name || <span style={{ color: 'var(--muted)' }}>—</span>}</td>
                     <td style={{ fontSize: 12 }}>{p.client_name || <span style={{ color: 'var(--muted)' }}>—</span>}</td>
@@ -818,14 +830,17 @@ export default function ProjectsPage() {
         <ProjectDetailModal projectId={detail} onClose={() => setDetail(null)} onUpdated={onUpdated} />
       )}
       {importModal && (
-        <ImportPdfModal onClose={() => setImportModal(false)} onCreated={(pid) => { setImportModal(false); setDetail(pid); load(); }} />
+        <ImportPdfModal mode={importModal} onClose={() => setImportModal(false)} onCreated={(pid) => { setImportModal(false); setDetail(pid); load(); }} />
       )}
     </div>
   );
 }
 
 // ── Import PDF Modal ────────────────────────────────────────────
-function ImportPdfModal({ onClose, onCreated }) {
+function ImportPdfModal({ onClose, onCreated, mode = 'technical' }) {
+  const legacy = mode === 'legacy';
+  const inFlight = useRef(false);
+  const itemKey = item => JSON.stringify([item.panel_number,item.division_type,item.source_row,item.name]);
   const [step, setStep] = useState('form');
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -841,33 +856,40 @@ function ImportPdfModal({ onClose, onCreated }) {
   }, []);
 
   const handleFileAndPreview = async (e) => {
+    if (inFlight.current) return;
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.type !== 'application/pdf') { toast.error('Please select a PDF file'); return; }
+    const excel = /\.xlsx?$/i.test(file.name);
+    if (legacy ? !excel : file.type !== 'application/pdf') { toast.error(legacy ? 'Please select an Excel CRM workbook' : 'Please select a technical offer PDF'); return; }
 
+    inFlight.current = true;
     setUploading(true);
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const r = await api.post('/projects/import-pdf/preview', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const r = await api.post(legacy ? '/projects/import-excel/preview' : '/projects/import-pdf/preview', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setUnmatchedAction({});
       setPreview(r.data);
+      if (r.data.metadata?.exchange_rate) setForm(f=>({...f,exchange_rate:r.data.metadata.exchange_rate}));
       setForm(previous=>({...previous,project_name:previous.project_name||r.data.metadata?.project_name||'',quote_number:previous.quote_number||r.data.metadata?.quote_number||'',payment_terms:r.data.metadata?.payment_terms||previous.payment_terms}));
       setStep('preview');
       toast.success(`Found ${r.data.total_items} items (${r.data.matched.length} matched, ${r.data.unmatched.length} unmatched)`);
     } catch (err) { toast.error(err.response?.data?.error || err.message); }
-    finally { setUploading(false); }
+    finally { inFlight.current = false; setUploading(false); }
   };
 
   const handleCreate = async () => {
+    if (inFlight.current) return;
     if (!form.project_name.trim()) { toast.error('Project name required'); return; }
     if (!form.client_id) { toast.error('Client is required'); return; }
+    inFlight.current = true;
     setCreating(true);
     try {
       const panelsWithItems = preview.panels.map(p => {
-        const divs = {};
+        const divs = Object.create(null);
         // Rebuild only this panel's divisions. Import preview preserves these
         // fields so items no longer collapse into one INCOMING division.
-        const panelItems = [...preview.matched, ...(preview.unmatched.filter(u => !unmatchedAction[u.name]?.skip))]
+        const panelItems = [...preview.matched, ...(preview.unmatched.filter(u => unmatchedAction[itemKey(u)] !== 'skip'))]
           .filter(item => Number(item.panel_number) === Number(p.panel_number));
         for (const item of panelItems) {
           const divType = item.division_type || 'INCOMING';
@@ -884,14 +906,14 @@ function ImportPdfModal({ onClose, onCreated }) {
       });
 
       // Include unmatched items that aren't skipped
-      const finalUnmatched = preview.unmatched.filter(u => !unmatchedAction[u.name]?.skip).map(u => ({
+      const finalUnmatched = preview.unmatched.filter(u => unmatchedAction[itemKey(u)] !== 'skip').map(u => ({
         ...u,
         product_id: null,
-        base_price_usd: 0,
-        base_price_euro: 0,
+        base_price_usd: u.base_price_usd ?? 0,
+        base_price_euro: u.base_price_euro ?? 0,
       }));
 
-      const res = await api.post('/projects/import-pdf/create', {
+      const res = await api.post(legacy ? '/projects/import-excel/create' : '/projects/import-pdf/create', {
         project_name: form.project_name,
         quote_number: form.quote_number.trim() || null,
         engineer_id: parseInt(form.engineer_id) || null,
@@ -909,24 +931,25 @@ function ImportPdfModal({ onClose, onCreated }) {
         unmatched_items: finalUnmatched,
       });
       const newProjectId = res.data?.project_id;
-      toast.success('Project created from PDF!');
+      toast.success('Project imported!');
       onCreated(newProjectId);
       onClose();
     } catch (err) {
       const msg = err.response?.data?.error || err.message;
       toast.error(`Create failed: ${msg}`);
     }
-    finally { setCreating(false); }
+    finally { inFlight.current = false; setCreating(false); }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={() => !inFlight.current && onClose()}>
+      <div className="modal modal-lg import-project-modal" role="dialog" aria-modal="true" aria-label={legacy ? "Import old project" : "Import technical offer"} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <div className="modal-title">📄 Import Project from PDF</div>
-          <button className="btn-icon" onClick={onClose}>✕</button>
+          <div className="modal-title">{legacy ? '📁 Import Old Project (Excel CRM)' : '📄 Import Technical Offer'}</div>
+          <button className="btn-icon" aria-label="Close import" disabled={creating || uploading} onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
+          <p>{legacy ? 'Owner / Head of Engineering: import historical items and saved prices from the CRM sheet. Database prices are applied only when you choose Check prices.' : 'Import an exported technical offer PDF using the existing technical offer workflow.'}</p>
           {step === 'form' && (
             <>
               <div className="form-row">
@@ -962,7 +985,7 @@ function ImportPdfModal({ onClose, onCreated }) {
                 </div>
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>Panel Count</label>
-                  <input className="form-input" type="number" min={1} value={form.panel_count} onChange={e => setForm(f => ({ ...f, panel_count: e.target.value }))} placeholder="Auto from PDF" />
+                  <input className="form-input" type="number" min={1} value={form.panel_count} onChange={e => setForm(f => ({ ...f, panel_count: e.target.value }))} placeholder="Auto from file" />
                 </div>
                 <div><label className="form-label">VAT %</label><input className="form-input" type="number" min="0" value={form.vat_pct} onChange={e=>setForm(f=>({...f,vat_pct:e.target.value}))}/></div>
                 <div><label className="form-label">Project Discount %</label><input className="form-input" type="number" min="0" value={form.project_discount_pct} onChange={e=>setForm(f=>({...f,project_discount_pct:e.target.value}))}/></div>
@@ -970,9 +993,9 @@ function ImportPdfModal({ onClose, onCreated }) {
               </div>
               <div className="form-row" style={{marginTop:12}}><div className="form-group"><label className="form-label">Payment Terms</label><textarea className="form-textarea" rows={2} value={form.payment_terms} onChange={e=>setForm(f=>({...f,payment_terms:e.target.value}))}/></div><div className="form-group"><label className="form-label">Client PDF Note</label><textarea className="form-textarea" rows={2} value={form.client_pdf_note} onChange={e=>setForm(f=>({...f,client_pdf_note:e.target.value}))}/></div></div>
               <div style={{ marginTop: 16 }}>
-                <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>PDF File *</label>
-                <input className="form-input" type="file" accept="application/pdf" onChange={handleFileAndPreview} disabled={uploading} />
-                {uploading && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>⏳ Parsing PDF...</div>}
+                <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 3 }}>{legacy ? 'Excel CRM Workbook *' : 'Technical Offer PDF *'}</label>
+                <input className="form-input" type="file" accept={legacy ? ".xlsx,.xls" : "application/pdf"} onChange={handleFileAndPreview} disabled={uploading} />
+                {uploading && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>⏳ Reading project...</div>}
               </div>
             </>
           )}
@@ -980,7 +1003,8 @@ function ImportPdfModal({ onClose, onCreated }) {
           {step === 'preview' && preview && (
             <>
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--white)' }}>Preview: {preview.panels.length} panels, {preview.total_items} items</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--white)' }}>{legacy ? 'Legacy CRM preview' : 'Technical offer preview'}: {preview.panels.length} panels, {preview.total_items} items</div>
+                {legacy && <div className="tint-box" style={{ marginTop: 8 }}>This project will be marked as an imported legacy project. Historical Excel prices, discounts, and markup are kept.</div>}
                 <div className="tint-box" style={{marginTop:8}}>Quotation <strong>{form.quote_number||'will be generated automatically'}</strong> · VAT {form.vat_pct||0}% · Discount {form.project_discount_pct||0}% · Starts at Design stage</div>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
                   <span style={{ color: 'var(--success)' }}>{preview.matched.length} matched</span>
@@ -997,8 +1021,8 @@ function ImportPdfModal({ onClose, onCreated }) {
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>✅ Matched Items</div>
                   <div style={{ fontSize: 11, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {preview.matched.map((item, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 8, padding: '2px 0' }}>
-                        <span style={{ color: 'var(--white)', minWidth: 200 }}>{item.name}</span>
+                      <div key={i} className="import-preview-item">
+                        <span className="import-item-name" style={{ color: 'var(--white)' }}>{item.name}</span>
                         <span>x{item.qty}</span>
                         {item.discount > 0 && <span style={{ color: 'var(--danger)' }}>{item.discount}% off</span>}
                       </div>
@@ -1012,12 +1036,12 @@ function ImportPdfModal({ onClose, onCreated }) {
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent2)', marginBottom: 4 }}>⚠️ Unmatched Items (not found in DB)</div>
                   <div style={{ fontSize: 11, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {preview.unmatched.map((item, i) => {
-                      const action = unmatchedAction[item.name] || 'create';
+                      const action = unmatchedAction[itemKey(item)] || 'create';
                       return (
-                        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '2px 0' }}>
-                          <span style={{ color: 'var(--white)', minWidth: 200 }}>{item.name}</span>
+                        <div key={i} className="import-preview-item">
+                          <span className="import-item-name" style={{ color: 'var(--white)' }}>{item.name}</span>
                           <span>x{item.qty}</span>
-                          <select className="form-input" style={{ width: 130, fontSize: 10 }} value={action} onChange={e => setUnmatchedAction(u => ({ ...u, [item.name]: e.target.value }))}>
+                          <select className="form-input" style={{ width: 130, fontSize: 10 }} value={action} onChange={e => setUnmatchedAction(u => ({ ...u, [itemKey(item)]: e.target.value }))}>
                             <option value="create">Create as manual</option>
                             <option value="skip">Skip item</option>
                           </select>
@@ -1029,7 +1053,7 @@ function ImportPdfModal({ onClose, onCreated }) {
               )}
 
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16, flexWrap: 'wrap' }}>
-                <button className="btn btn-sm btn-secondary" onClick={() => setStep('form')}>Back</button>
+                <button className="btn btn-sm btn-secondary" disabled={creating} onClick={() => setStep('form')}>Back</button>
                 <button className="btn btn-sm btn-primary" onClick={handleCreate} disabled={creating}>
                   {creating ? '⏳ Creating...' : '✅ Create Project'}
                 </button>

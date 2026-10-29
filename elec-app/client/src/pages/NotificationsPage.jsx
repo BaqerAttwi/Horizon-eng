@@ -37,15 +37,15 @@ export default function NotificationsPage() {
   useEffect(() => { load(); }, [filter]);
 
   const handleRead = (id) => {
-    api.patch(`/notifications/${id}/read`).then(load);
+    api.patch(`/notifications/${id}/read`).then(load).catch(e=>toast.error(e.message));
   };
 
   const handleReadAll = () => {
-    api.patch('/notifications/read-all').then(load);
+    api.patch('/notifications/read-all').then(load).catch(e=>toast.error(e.message));
   };
 
   const handleDelete = (id) => {
-    api.delete(`/notifications/${id}`).then(load);
+    api.delete(`/notifications/${id}`).then(load).catch(e=>toast.error(e.message));
   };
 
   return (

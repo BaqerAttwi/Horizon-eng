@@ -122,7 +122,7 @@ router.delete('/workers/:id',   requireAuth, requireRole('owner'), deleteWorker)
 // ── Clients (owner + accounting + secretary) ─────────────────
 router.get('/clients',          requireAuth, requireRole('owner','head_engineer','accounting','secretary','engineer'), getClients);
 router.post('/clients',         requireAuth, requireRole('owner','head_engineer','accounting','secretary','engineer'), validate('createClient'), createClient);
-router.patch('/clients/:id',    requireAuth, requireRole('owner','head_engineer','accounting','secretary'), updateClient);
+router.patch('/clients/:id',    requireAuth, requireRole('owner','head_engineer','accounting','secretary','engineer'), updateClient);
 router.delete('/clients/:id',   requireAuth, requireRole('owner','head_engineer'), deleteClient);
 
 // ── Projects (all roles read, owner+engineer write) ──────────
@@ -132,7 +132,31 @@ router.get('/projects/recycle-bin', requireAuth, requireRole('owner'), require('
 router.post('/projects/:id/restore', requireAuth, requireRole('owner'), serializeProject, require('../controllers/recycleBinController').restoreProject);
 router.get('/projects/:id',                  requireAuth, getProject);
 router.post('/projects',                     requireAuth, requireRole('owner','head_engineer','engineer'), validate('createProject'), createProject);
+router.post('/projects/import-excel/preview', requireAuth, requireRole('owner','head_engineer'), uploadExcel.single('file'), async (req,res,next) => {
+  try {
+    if (!req.file) return res.status(400).json({error:'Excel file required'});
+    const preview = require('../utils/crmExcel').parseCrmExcel(req.file.buffer);
+    const references = [...new Set(preview.unmatched.map(item => item.name))];
+    const [products] = await require('../db/connection').query('SELECT id,reference FROM products WHERE reference IN (?)', [references]);
+    const matchesByReference = new Map();
+    for (const product of products) {
+      const key = String(product.reference).toLowerCase();
+      if (!matchesByReference.has(key)) matchesByReference.set(key, []);
+      matchesByReference.get(key).push(product);
+    }
+    for (const item of preview.unmatched) {
+      const matches = matchesByReference.get(item.name.toLowerCase()) || [];
+      if (matches.length === 1) { item.product_id=matches[0].id; preview.matched.push(item); }
+    }
+    preview.unmatched=preview.unmatched.filter(i=>!i.product_id);
+    res.json(preview);
+  } catch(e) { if (e.code) return next(e); res.status(400).json({error:e.message}); }
+});
+router.get('/projects/:projectId/check-prices', requireAuth, requireRole('owner','head_engineer'), require('../controllers/catalogPriceController').check);
+router.post('/projects/:projectId/check-prices', requireAuth, requireRole('owner','head_engineer'), serializeProject, guardProjectEdit, require('../controllers/catalogPriceController').apply);
+router.post('/projects/:projectId/check-prices/:itemId', requireAuth, requireRole('owner','head_engineer'), serializeProject, guardProjectEdit, require('../controllers/catalogPriceController').apply);
 router.post('/projects/import-pdf/preview',  requireAuth, requireRole('owner','head_engineer','engineer'), uploadPdf.single('file'), previewImport);
+router.post('/projects/import-excel/create', requireAuth, requireRole('owner','head_engineer'), (req,res,next) => { req.importSource = 'legacy_excel'; return createFromImport(req,res,next); });
 router.post('/projects/import-pdf/create',   requireAuth, requireRole('owner','head_engineer','engineer'), createFromImport);
 router.patch('/projects/:id',                requireAuth, requireRole('owner','head_engineer','engineer'), serializeProject, guardProjectEdit, updateProject);
 router.patch('/projects/:id/admin-approval',   requireAuth, requireRole('owner','head_engineer'), serializeProject, adminApproval);
@@ -286,7 +310,7 @@ router.get('/export/products',    requireAuth, exportProducts);
 router.get('/export/projects',    requireAuth, exportProjects);
 router.get('/export/analytics',   requireAuth, requireRole('owner','head_engineer'), exportAnalytics);
 router.get('/export/reservations', requireAuth, exportReservations);
-router.get('/export/crm/:projectId', requireAuth, requireRole('owner','head_engineer','engineer'), exportCrm);
+router.get('/export/crm/:projectId', requireAuth, requireRole('owner','head_engineer','engineer','accounting'), exportCrm);
 
 // ── Messages / Announcements ────────────────────────────────
 const { getMessages, createMessage, deleteMessage } = require('../controllers/messageController');

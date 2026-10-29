@@ -7,6 +7,7 @@ const financialFields = new Set([
   'discount_amt','manpower_amt','totalpriceT','totalfinalProduct','total_final','total_product','total_manpower',
   'project_discount_amount','project_discount_pct','vat_pct','exchange_rate_eur_usd','margin_warning_pct',
   'old_base_price_usd','old_base_price_euro','new_base_price_usd','new_base_price_euro',
+  'catalog_prices','saved_usd','saved_euro','current_usd','current_euro',
 ]);
 function redactFinancials(value) {
   if (Array.isArray(value)) return value.map(redactFinancials);

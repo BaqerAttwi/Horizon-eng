@@ -1,3 +1,4 @@
+import { canProgressProject, canEditProject } from '../utils/actionPermissions';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../api/client';
@@ -15,7 +16,8 @@ export default function FileAttachments({ projectId, panels, project, onProjectU
   const [projectLinkDraft, setProjectLinkDraft] = useState('');
   const [savingProjectLink, setSavingProjectLink] = useState(false);
 
-  const canUpload = worker?.role === 'owner' || worker?.role === 'engineer';
+  const canUpload = canProgressProject(worker?.role, project);
+  const canEditFolder = canEditProject(worker?.role, project);
 
   const saveProjectLink = async () => {
     setSavingProjectLink(true);
@@ -93,9 +95,9 @@ export default function FileAttachments({ projectId, panels, project, onProjectU
             <a href={project.onedrive_folder_link} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
               ☁️ Project OneDrive Folder (all files) →
             </a>
-            {canUpload && <button className="btn-icon" title="Edit link" onClick={() => { setProjectLinkDraft(project.onedrive_folder_link || ''); setEditingProjectLink(true); }}>✏️</button>}
+            {canEditFolder && <button className="btn-icon" title="Edit link" onClick={() => { setProjectLinkDraft(project.onedrive_folder_link || ''); setEditingProjectLink(true); }}>✏️</button>}
           </div>
-        ) : canUpload ? (
+        ) : canEditFolder ? (
           <button className="btn btn-sm btn-secondary" onClick={() => { setProjectLinkDraft(''); setEditingProjectLink(true); }}>
             ☁️ + Add project OneDrive folder link
           </button>

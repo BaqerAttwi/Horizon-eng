@@ -146,7 +146,7 @@ async function changePassword(req, res, next) {
     if (!rows.length) return res.status(404).json({ error: 'Worker not found' });
 
     const valid = await bcrypt.compare(current_password, rows[0].password_hash);
-    if (!valid) return res.status(401).json({ error: 'Current password is wrong' });
+    if (!valid) return res.status(400).json({ error: 'Current password is wrong' });
 
     const hash = await bcrypt.hash(new_password, 10);
     await db.execute('UPDATE workers SET password_hash=? WHERE id=?', [hash, workerId]);

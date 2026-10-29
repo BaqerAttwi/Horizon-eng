@@ -1,12 +1,14 @@
+import { useProjectReadOnly } from '../../context/ProjectReadOnlyContext';
 import { useConfirmUnsaved, useUnsavedChange } from '../../context/UnsavedChangesContext';
 import ItemNoteEditor from '../ItemNoteEditor';
 import { useRef, useState, memo } from 'react';
 
 const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRate, onUpdate, onDelete, hideCost, showCr, pendingPriceChange, isSelected, onToggleSelect, editView }) {
+  const readOnly = useProjectReadOnly();
   const latestItem = useRef(item);
   latestItem.current = item;
   const confirmUnsaved = useConfirmUnsaved();
-  const enterEditing = ()=>confirmUnsaved(()=>{setForm({...latestItem.current});setEditing(true);});
+  const enterEditing = ()=>!readOnly && confirmUnsaved(()=>{setForm({...latestItem.current});setEditing(true);});
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...item });
 
@@ -63,43 +65,43 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
     const updatePercent = (field, value) => onUpdate(item.id, { [field]: parseFloat(value) || 0 });
     return (
       <tr className="crm-item-row">
-        <td style={{ textAlign: 'center' }}><input type="checkbox" checked={!!isSelected} onChange={() => onToggleSelect?.(item.id)} /></td>
+        <td style={{ textAlign: 'center' }}><input disabled={readOnly} type="checkbox" checked={!!isSelected} onChange={() => onToggleSelect?.(item.id)} /></td>
         <td style={{ textAlign: 'center' }}>{item.visible_in_client_pdf ? '👁' : '🚫'}</td>
         <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>{name}</td>
-        <td><input type="number" min="1" className="form-input" style={{ width: 64 }} defaultValue={item.qty || 1}
+        <td><input disabled={readOnly} type="number" min="1" className="form-input" style={{ width: 64 }} defaultValue={item.qty || 1}
           onBlur={e => { const next = Math.max(1, parseInt(e.target.value, 10) || 1); if (next !== Number(item.qty)) onUpdate(item.id, { qty: next }); }} /></td>
         <td className="crm-description">{desc}</td><td>{brand || '—'}</td>
         {['discount_pct','markupP_pct','manpower_pct','markupM_pct'].map(field => <td key={field}>
-          <input type="number" min="0" step="0.1" className="form-input crm-percent-input" defaultValue={item[field] || 0}
+          <input disabled={readOnly} type="number" min="0" step="0.1" className="form-input crm-percent-input" defaultValue={item[field] || 0}
             onBlur={e => { if (Number(e.target.value) !== Number(item[field] || 0)) updatePercent(field, e.target.value); }} />
         </td>)}
-        <td><ItemNoteEditor value={item.notes} label={`Note for ${name}`} onSave={notes=>onUpdate(item.id,{notes})} /></td>
-        <td className="crm-actions-column"><button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }} onClick={() => onDelete(item.id)}>✕</button></td>
+        <td><ItemNoteEditor readOnly={readOnly} value={item.notes} label={`Note for ${name}`} onSave={notes=>onUpdate(item.id,{notes})} /></td>
+        <td className="crm-actions-column"><button disabled={readOnly} className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }} onClick={() => onDelete(item.id)}>✕</button></td>
       </tr>
     );
   }
 
-  if (editing) {
+  if (editing && !readOnly) {
     return (
       <tr className="crm-item-row" style={{ background: 'var(--panel2)' }}>
         <td style={{ textAlign: 'center', verticalAlign: 'middle', width: 28 }}>
-          <input type="checkbox" checked={!!isSelected}
+          <input disabled={readOnly} type="checkbox" checked={!!isSelected}
             onChange={() => onToggleSelect?.(item.id)}
             style={{ width: 15, height: 15, cursor: 'pointer' }} />
         </td>
         <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-          <input type="checkbox" checked={!!form.visible_in_client_pdf}
+          <input disabled={readOnly} type="checkbox" checked={!!form.visible_in_client_pdf}
             onChange={e => setForm(f => ({ ...f, visible_in_client_pdf: e.target.checked ? 1 : 0 }))} />
         </td>
         <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', verticalAlign: 'middle' }}>{name}</td>
         <td style={{ verticalAlign: 'middle' }}>
-          <input type="number" min={1} className="form-input" style={{ width: 55, padding: '2px 4px', fontSize: 11 }} value={form.qty || 1}
+          <input disabled={readOnly} type="number" min={1} className="form-input" style={{ width: 55, padding: '2px 4px', fontSize: 11 }} value={form.qty || 1}
             onChange={e => setForm(f => ({ ...f, qty: parseInt(e.target.value) || 1 }))} onKeyDown={handleKeyDown} />
         </td>
         <td style={{ verticalAlign: 'middle' }}>
-          <input type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11 }} value={form.base_price_usd ?? ''}
+          <input disabled={readOnly} type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11 }} value={form.base_price_usd ?? ''}
             onChange={e => convertUsdEdit(e.target.value)} placeholder="USD $" onKeyDown={handleKeyDown} />
-          <input type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11, marginTop: 2 }} value={form.base_price_euro ?? ''}
+          <input disabled={readOnly} type="number" step="0.01" className="form-input" style={{ width: 58, padding: '2px 4px', fontSize: 11, marginTop: 2 }} value={form.base_price_euro ?? ''}
             onChange={e => convertEurEdit(e.target.value)} placeholder="EUR €" onKeyDown={handleKeyDown} />
         </td>
         <td className="mono" style={{ verticalAlign: 'middle', color: 'var(--muted)', fontWeight: 600 }}>
@@ -108,33 +110,33 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
         <td className="crm-description">{desc}</td>
         <td style={{ fontSize: 11, verticalAlign: 'middle' }}>{brand || '—'}</td>
         <td style={{ verticalAlign: 'middle' }}>
-          <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.discount_pct}
+          <input disabled={readOnly} type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.discount_pct}
             onChange={e => setForm(f => ({ ...f, discount_pct: parseFloat(e.target.value) || 0 }))} onKeyDown={handleKeyDown} />
         </td>
         <td className="mono" style={{ fontSize: 11, color: 'var(--primary-light)', fontWeight: 600, verticalAlign: 'middle' }}>${afterDisc.toFixed(2)}</td>
         <td style={{ verticalAlign: 'middle' }}>
-          <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.markupP_pct}
+          <input disabled={readOnly} type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.markupP_pct}
             onChange={e => setForm(f => ({ ...f, markupP_pct: parseFloat(e.target.value) || 0 }))} onKeyDown={handleKeyDown} />
         </td>
         <td className="mono" style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, verticalAlign: 'middle' }}>${totalT.toFixed(2)}</td>
         <td style={{ verticalAlign: 'middle' }}>
-          <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.manpower_pct}
+          <input disabled={readOnly} type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.manpower_pct}
             onChange={e => setForm(f => ({ ...f, manpower_pct: parseFloat(e.target.value) || 0 }))} onKeyDown={handleKeyDown} />
         </td>
         <td style={{ verticalAlign: 'middle' }}>
-          <input type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.markupM_pct}
+          <input disabled={readOnly} type="number" step="0.1" className="form-input" style={{ width: 48, padding: '2px 4px', fontSize: 11 }} value={form.markupM_pct}
             onChange={e => setForm(f => ({ ...f, markupM_pct: parseFloat(e.target.value) || 0 }))} onKeyDown={handleKeyDown} />
         </td>
         <td className="mono" style={{ fontWeight: 700, color: isLoss ? 'var(--danger)' : 'var(--success)', verticalAlign: 'middle' }}>${final.toFixed(2)}</td>
         {!hideCost && <td style={{ verticalAlign: 'middle' }}>
-           <input type="number" step="0.01" className="form-input" style={{ width: 62, padding: '2px 4px', fontSize: 11 }} value={form.cost ?? ''}
+           <input disabled={readOnly} type="number" step="0.01" className="form-input" style={{ width: 62, padding: '2px 4px', fontSize: 11 }} value={form.cost ?? ''}
             onChange={e => setForm(f => ({ ...f, cost: parseFloat(e.target.value) || 0 }))} onKeyDown={handleKeyDown} />
         </td>}
         {!hideCost && <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? 'var(--success)' : 'var(--danger)', verticalAlign: 'middle' }}>
           ${profit.toFixed(2)}
         </td>}
         {showCr && <td style={{ verticalAlign: 'middle' }}>
-          <input type="number" step="0.01" className="form-input" style={{ width: 55, padding: '2px 4px', fontSize: 11 }} value={form.cr_amount ?? ''}
+          <input disabled={readOnly} type="number" step="0.01" className="form-input" style={{ width: 55, padding: '2px 4px', fontSize: 11 }} value={form.cr_amount ?? ''}
             onChange={e => setForm(f => ({ ...f, cr_amount: parseFloat(e.target.value) || 0 }))} onKeyDown={handleKeyDown} />
         </td>}
         {showCr && <td className="mono" style={{ fontWeight: 700, color: nProfit >= 0 ? 'var(--success)' : 'var(--danger)', verticalAlign: 'middle' }}>
@@ -142,9 +144,9 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
         </td>}
         <td><textarea className="form-input" rows={2} maxLength={5000} aria-label={`Note for ${name}`} placeholder="Leave an item note…" value={form.notes || ''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></td>
         <td style={{ verticalAlign: 'middle' }}>
-          <button className="btn btn-sm btn-primary" style={{ marginRight: 4 }}
+          <button disabled={readOnly} className="btn btn-sm btn-primary" style={{ marginRight: 4 }}
             onClick={handleSave}>Save</button>
-          <button className="btn btn-sm btn-secondary" onClick={() => { setEditing(false); setForm({ ...item }); }}>Cancel</button>
+          <button disabled={readOnly} className="btn btn-sm btn-secondary" onClick={() => { setEditing(false); setForm({ ...item }); }}>Cancel</button>
         </td>
       </tr>
     );
@@ -154,13 +156,13 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
     <tr className="crm-item-row" style={{ ...(pendingPriceChange ? { background: 'rgba(245,158,11,0.06)' } : {}), ...(editView ? { cursor: 'pointer' } : {}) }}
       onClick={() => { if (editView) enterEditing(); }}>
       <td style={{ textAlign: 'center', verticalAlign: 'middle', width: 28 }} onClick={e => e.stopPropagation()}>
-        <input type="checkbox" checked={!!isSelected}
+        <input disabled={readOnly} type="checkbox" checked={!!isSelected}
           onChange={() => onToggleSelect?.(item.id)}
           style={{ width: 15, height: 15, cursor: 'pointer' }} />
       </td>
       <td style={{ textAlign: 'center', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
         <span style={{ cursor: 'pointer', fontSize: 14, opacity: item.visible_in_client_pdf ? 1 : 0.35, userSelect: 'none' }}
-          onClick={async (e) => { e.stopPropagation(); await onUpdate(item.id, { visible_in_client_pdf: item.visible_in_client_pdf ? 0 : 1 }); }}
+          onClick={async (e) => { e.stopPropagation(); if (readOnly) return; await onUpdate(item.id, { visible_in_client_pdf: item.visible_in_client_pdf ? 0 : 1 }); }}
           title={item.visible_in_client_pdf ? 'Visible in Client PDF — click to hide' : 'Hidden from Client PDF — click to show'}>
           {item.visible_in_client_pdf ? '👁' : '🚫'}
         </span>
@@ -188,10 +190,10 @@ const CrmItemRow = memo(function CrmItemRow({ item, division, panel, exchangeRat
       {!hideCost && <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>{profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>}
       {showCr && <td className="mono" style={{ color: 'var(--accent2)' }}>${crAmount.toFixed(2)}</td>}
       {showCr && <td className="mono" style={{ fontWeight: 700, color: nProfit >= 0 ? 'var(--success)' : 'var(--danger)' }}>${nProfit.toFixed(2)}</td>}
-      <td><ItemNoteEditor value={item.notes} label={`Note for ${name}`} onSave={notes=>onUpdate(item.id,{notes})} /></td>
+      <td><ItemNoteEditor readOnly={readOnly} value={item.notes} label={`Note for ${name}`} onSave={notes=>onUpdate(item.id,{notes})} /></td>
       <td className="crm-actions-column" onClick={e => e.stopPropagation()}>
-        <button className="btn-icon" title="Edit" onClick={enterEditing}>✏️</button>
-        <button className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }}
+        <button disabled={readOnly} className="btn-icon" title="Edit" onClick={enterEditing}>✏️</button>
+        <button disabled={readOnly} className="btn-icon" title="Delete" style={{ color: 'var(--danger)' }}
           onClick={() => onDelete(item.id)}>✕</button>
       </td>
     </tr>

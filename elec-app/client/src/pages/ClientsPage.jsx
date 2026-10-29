@@ -1,3 +1,5 @@
+import { useAuth } from '../context/AuthContext';
+import { canEditClients, canDeleteClients } from '../utils/actionPermissions';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../api/client';
@@ -80,6 +82,7 @@ function ClientModal({ client, onClose, onSaved }) {
 }
 
 export default function ClientsPage() {
+  const { worker } = useAuth();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modal, setModal]     = useState(null);
@@ -136,8 +139,8 @@ export default function ClientsPage() {
                   <td style={{color:'var(--muted)'}}>{c.email||'—'}</td>
                   <td className="mono">{c.credit_limit ? `${Number(c.credit_limit).toFixed(0)} DA` : '—'}</td>
                   <td style={{display:'flex',gap:6}}>
-                    <button className="btn-icon" onClick={()=>setModal(c)}>✏️</button>
-                    <button className="btn-icon" onClick={()=>del(c)} style={{color:'var(--danger)'}}>🗑</button>
+                    <>{canEditClients(worker?.role) && <button className="btn-icon" title="Edit client" onClick={()=>setModal(c)}>✏️</button>}</>
+                    <>{canDeleteClients(worker?.role) && <button className="btn-icon" title="Delete client" onClick={()=>del(c)} style={{color:'var(--danger)'}}>🗑</button>}</>
                   </td>
                 </tr>
               ))}

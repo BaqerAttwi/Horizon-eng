@@ -66,7 +66,9 @@ async function ensureOwner() {
   }
 }
 
-const server = app.listen(PORT, () => {
+let server;
+require('./utils/projectItemSnapshots').ensureProjectItemSnapshots(db).then(() => {
+server = app.listen(PORT, () => {
   console.log(`[Server] ✅ Running on http://localhost:${PORT}`);
 
   ensureOwner();
@@ -87,3 +89,4 @@ const server = app.listen(PORT, () => {
   setInterval(runNotificationChecks, 6 * 60 * 60 * 1000);
 });
 server.timeout = 600000;
+}).catch(error => { console.error('[Project snapshots]', error.message); process.exit(1); });
